@@ -15,22 +15,19 @@ EXT = .exe
 LDFLAGS = -lopengl32 -lgdi32
 endif
 
+.SUFFIXES:
+#.SUFFIXES: .cpp .o
+
 all: prog$(EXT)
 
-main.o: main.cpp app.h
-	$(CC) -c main.cpp -o main.o
+OBJ = main.o app.o app_win32.o app_x11.o
 
-app.o: app.cpp app.h
-	$(CC) -c app.cpp -o app.o
-	
-app_x11.o: app_x11.cpp app.h
-	$(CC) -c app_x11.cpp -o app_x11.o
+$(OBJ): %.o: %.cpp
+	@echo '   ' CC $@; $(CC) -c $< -o $@
 
-app_win32.o: app_win32.cpp app.h
-	$(CC) -c app_win32.cpp -o app_win32.o
+prog$(EXT): $(OBJ)
+	@echo '   ' CC $@; $(CC) -o $@ $^ $(LDFLAGS)
 
-prog$(EXT): main.o app.o app_x11.o app_win32.o
-	$(CC) -o prog$(EXT) main.o app.o app_x11.o app_win32.o $(LDFLAGS)
-
+.PHONY: clean
 clean:
 	rm -rf prog$(EXT) *.o
