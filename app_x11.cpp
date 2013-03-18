@@ -60,12 +60,19 @@ void Application::processEvents() {
       break;
       
    case KeyRelease:
+      //fprintf(stderr, "%d\n", XLookupKeysym(&event.xkey, 0));
       //keyUp(XLookupKeysym(&event.xkey, 0));
       break;
       
-   case KeyPress:
+   case KeyPress: {
+      char buffer[80];
+      KeySym keysym;
+      int count = XLookupString((XKeyEvent*)&event, buffer, 80, &keysym, NULL);
+      if(keysym >= XK_space && keysym <= XK_asciitilde)
+         fprintf(stderr, "%s\n", buffer);
       //keyDown(XLookupKeysym(&event.xkey, 0));
       break;
+   }
       
    case ConfigureNotify:
       resize(event.xconfigure.width, event.xconfigure.height);

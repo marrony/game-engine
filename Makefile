@@ -22,7 +22,7 @@ all: prog$(EXT)
 
 OBJ = main.o app.o app_win32.o app_x11.o
 
-$(OBJ): %.o: %.cpp
+$(OBJ): %.o: %.cpp app.h
 	@echo '   ' CC $@; $(CC) -c $< -o $@
 
 prog$(EXT): $(OBJ)

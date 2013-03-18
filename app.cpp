@@ -38,6 +38,6 @@ void Application::keyDown(int key) {
    keysPressed[key] = true;
 }
 
-bool Application::isKeyPressed(int key) const {
+bool Application::isKeyPressed(AppKeyCode key) const {
    return keysPressed[key];
 }

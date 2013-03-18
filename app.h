@@ -11,6 +11,36 @@
 #endif
 
 #include <stdlib.h>
+#include <stdio.h>
+
+enum AppKeyCode {
+   KEY_A = 0x41,
+   KEY_B = 0x42,
+   KEY_C = 0x43,
+   KEY_D = 0x44,
+   KEY_E = 0x45,
+   KEY_F = 0x46,
+   KEY_G = 0x47,
+   KEY_H = 0x48,
+   KEY_I = 0x49,
+   KEY_J = 0x4a,
+   KEY_K = 0x4b,
+   KEY_L = 0x4c,
+   KEY_M = 0x4d,
+   KEY_N = 0x4e,
+   KEY_O = 0x4f,
+   KEY_P = 0x50,
+   KEY_Q = 0x51,
+   KEY_R = 0x52,
+   KEY_S = 0x53,
+   KEY_T = 0x54,
+   KEY_U = 0x55,
+   KEY_V = 0x56,
+   KEY_W = 0x57,
+   KEY_X = 0x58,
+   KEY_Y = 0x59,
+   KEY_Z = 0x5a,
+};
 
 class Game {
 public:
@@ -54,7 +84,7 @@ public:
 
    int run(Game& game);
    
-   bool isKeyPressed(int key) const;
+   bool isKeyPressed(AppKeyCode key) const;
 };
 
 #endif //APP_H
