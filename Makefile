@@ -1,6 +1,8 @@
 UNAME_S := $(shell sh -c 'uname -s')
 
-CC = g++
+CXX = g++
+CXX_QUIT = @echo '   ' CXX $@;
+CXXFLAGS =
 
 ifeq (MINGW,$(findstring MINGW,$(UNAME_S)))
 EXT = .exe
@@ -10,7 +12,7 @@ EXT =
 LDFLAGS = -lGL -lX11
 endif
 
-ifeq (mingw,$(findstring mingw,$(CC)))
+ifeq (mingw,$(findstring mingw,$(CXX)))
 EXT = .exe
 LDFLAGS = -lopengl32 -lgdi32
 endif
@@ -23,10 +25,10 @@ all: prog$(EXT)
 OBJ = main.o app.o app_win32.o app_x11.o
 
 $(OBJ): %.o: %.cpp app.h
-	@echo '   ' CC $@; $(CC) -c $< -o $@
+	$(CXX_QUIT) $(CXX) $(CXXFLAGS) -c $< -o $@
 
 prog$(EXT): $(OBJ)
-	@echo '   ' CC $@; $(CC) -o $@ $^ $(LDFLAGS)
+	$(CXX_QUIT) $(CXX) -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 clean:

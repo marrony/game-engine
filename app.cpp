@@ -30,11 +30,11 @@ void Application::resize(int width, int height) {
    }
 }
 
-void Application::keyUp(int key) {
+void Application::keyUp(AppKeyCode key) {
    keysPressed[key] = false;
 }
 
-void Application::keyDown(int key) {
+void Application::keyDown(AppKeyCode key) {
    keysPressed[key] = true;
 }
 
