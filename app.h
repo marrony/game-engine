@@ -14,7 +14,8 @@
 #include <stdio.h>
 
 enum AppKeyCode {
-   KEY_LBUTTON,
+   KEY_NONE = -1,
+   KEY_LBUTTON = 0,
    KEY_RBUTTON,
    KEY_MBUTTON,
    KEY_XBUTTON1,
@@ -82,7 +83,6 @@ enum AppKeyCode {
    KEY_NUMPAD_7 = 0x67,
    KEY_NUMPAD_8 = 0x68,
    KEY_NUMPAD_9 = 0x69,
-   
    KEY_MULTIPLY = 0x6a,
    KEY_ADD = 0x6b,
    KEY_COMMA = 0x6c,
@@ -152,9 +152,9 @@ class Application {
    
    bool keysPressed[256];
    
-   void resize(int width, int height);
-   void keyUp(AppKeyCode key);
-   void keyDown(AppKeyCode key);
+   void onResize(int width, int height);
+   void onKeyUp(AppKeyCode key);
+   void onKeyDown(AppKeyCode key);
    
    void initialize();
    void finalize();

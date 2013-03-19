@@ -48,34 +48,80 @@ void Application::finalize() {
    XCloseDisplay(display);
 }
 
+static AppKeyCode getAppKeyCode(KeySym keysym) {
+   if(keysym >= XK_A && keysym <= XK_Z)
+      return (AppKeyCode)(KEY_A + (keysym - XK_A));
+
+   if(keysym >= XK_a && keysym <= XK_z)
+      return (AppKeyCode)(KEY_A + (keysym - XK_a));
+
+   if(keysym >= XK_0 && keysym <= XK_9)
+      return (AppKeyCode)(KEY_0 + (keysym - XK_0));
+
+   if(keysym >= XK_KP_0 && keysym <= XK_KP_0)
+      return (AppKeyCode)(KEY_NUMPAD_0 + (keysym - XK_KP_0));
+   
+   if(keysym >= XK_F1 && keysym <= XK_F12)
+      return (AppKeyCode)(KEY_F1 + (keysym - XK_F1));
+
+   switch(keysym) {
+      //case VK_LBUTTON: return KEY_LBUTTON;
+      //case VK_RBUTTON: return KEY_RBUTTON;
+      //case VK_MBUTTON: return KEY_MBUTTON
+      //case VK_XBUTTON1: return KEY_XBUTTON1;
+      //case VK_XBUTTON2: return KEY_XBUTTON2;
+      case XK_BackSpace: return KEY_BACKSPACE;
+      case XK_Tab: return KEY_TAB;
+      case XK_Return: return KEY_ENTER;
+      case XK_Escape: return KEY_ESCAPE;
+      case XK_space: return KEY_SPACE;
+      case XK_Page_Up: return KEY_PAGE_UP;
+      case XK_Page_Down: return KEY_PAGE_DOWN;
+      case XK_End: return KEY_END;
+      case XK_Home: return KEY_HOME;
+      case XK_Insert: return KEY_INSERT;
+      case XK_Delete: return KEY_DELETE;
+      case XK_Shift_L: return KEY_LEFT_SHIFT;
+      case XK_Alt_L: return KEY_LEFT_ALT;
+      case XK_Control_L: return KEY_LEFT_CONTROL;
+      //case VK_LWIN: return KEY_LEFT_WIN;
+      case XK_Shift_R: return KEY_RIGHT_SHIFT;
+      case XK_Alt_R: return KEY_RIGHT_ALT;
+      case XK_Control_R: return KEY_RIGHT_CONTROL;
+      //case VK_RWIN: return KEY_RIGHT_WIN;
+      case XK_Caps_Lock: return KEY_CAPS_LOCK;
+      case XK_Left: return KEY_LEFT;
+      case XK_Up: return KEY_UP;
+      case XK_Right: return KEY_RIGHT;
+      case XK_Down: return KEY_DOWN;
+      case XK_Print: return KEY_PRINT_SCREEN;
+      case XK_Scroll_Lock: return KEY_SCROLL_LOCK;
+      case XK_Pause: return KEY_PAUSE;
+   }
+   
+   return KEY_NONE;
+}
+
 void Application::processEvents() {
    XEvent event;
    XNextEvent(display, &event);
    
    switch(event.type) {
    case ClientMessage:
-      if (event.xclient.data.l[0] == WM_DELETE_MESSAGE) {
+      if (event.xclient.data.l[0] == WM_DELETE_MESSAGE)
          running = false;
-      }
       break;
       
    case KeyRelease:
-      //fprintf(stderr, "%d\n", XLookupKeysym(&event.xkey, 0));
-      //keyUp(XLookupKeysym(&event.xkey, 0));
+      onKeyUp(getAppKeyCode(XLookupKeysym(&event.xkey, 0)));
       break;
       
-   case KeyPress: {
-      char buffer[80];
-      KeySym keysym;
-      int count = XLookupString((XKeyEvent*)&event, buffer, 80, &keysym, NULL);
-      if(keysym >= XK_space && keysym <= XK_asciitilde)
-         fprintf(stderr, "%s\n", buffer);
-      //keyDown(XLookupKeysym(&event.xkey, 0));
+   case KeyPress:
+      onKeyDown(getAppKeyCode(XLookupKeysym(&event.xkey, 0)));
       break;
-   }
       
    case ConfigureNotify:
-      resize(event.xconfigure.width, event.xconfigure.height);
+      onResize(event.xconfigure.width, event.xconfigure.height);
       break;
    }
 

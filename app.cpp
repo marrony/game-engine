@@ -1,7 +1,10 @@
 #include "app.h"
 
+#include <memory.h>
+
 Application::Application(const char* title, int width, int height, bool fullscreen) :
    title(title), width(width), height(height), fullscreen(fullscreen) {
+   memset(keysPressed, 0, sizeof(keysPressed));
 }
 
 int Application::run(Game& game) {
@@ -11,6 +14,10 @@ int Application::run(Game& game) {
    running = true;
    while(running) {
       processEvents();
+      
+      if(isKeyPressed(KEY_ESCAPE))
+         break;
+      
       game.doFrame();
       swapBuffers();
    }
@@ -21,7 +28,7 @@ int Application::run(Game& game) {
    return 0;
 }
 
-void Application::resize(int width, int height) {
+void Application::onResize(int width, int height) {
    if(this->width != width && this->height != height) {
       this->width = width;
       this->height = height;
@@ -30,14 +37,20 @@ void Application::resize(int width, int height) {
    }
 }
 
-void Application::keyUp(AppKeyCode key) {
+void Application::onKeyUp(AppKeyCode key) {
+   if(key == KEY_NONE) return;
+   
    keysPressed[key] = false;
 }
 
-void Application::keyDown(AppKeyCode key) {
+void Application::onKeyDown(AppKeyCode key) {
+   if(key == KEY_NONE) return;
+   
    keysPressed[key] = true;
 }
 
 bool Application::isKeyPressed(AppKeyCode key) const {
+   if(key == KEY_NONE) return false;
+   
    return keysPressed[key];
 }

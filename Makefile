@@ -6,7 +6,7 @@ CXXFLAGS =
 
 ifeq (MINGW,$(findstring MINGW,$(UNAME_S)))
 EXT = .exe
-LDFLAGS = -lopengl32 -lgdi32
+LDFLAGS = -mwindows -lopengl32 -lgdi32
 else
 EXT = 
 LDFLAGS = -lGL -lX11
@@ -14,7 +14,7 @@ endif
 
 ifeq (mingw,$(findstring mingw,$(CXX)))
 EXT = .exe
-LDFLAGS = -lopengl32 -lgdi32
+LDFLAGS = -mwindows -lopengl32 -lgdi32
 endif
 
 .SUFFIXES:
