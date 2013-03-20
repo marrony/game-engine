@@ -14,10 +14,6 @@ int Application::run(Game& game) {
    running = true;
    while(running) {
       processEvents();
-      
-      if(isKeyPressed(KEY_ESCAPE))
-         break;
-      
       game.doFrame();
       swapBuffers();
    }
@@ -28,8 +24,12 @@ int Application::run(Game& game) {
    return 0;
 }
 
+void Application::stopMainLoop() {
+   running = false;
+}
+
 void Application::onResize(int width, int height) {
-   if(this->width != width && this->height != height) {
+   if(this->width != width || this->height != height) {
       this->width = width;
       this->height = height;
       

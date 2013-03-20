@@ -107,8 +107,8 @@ static AppKeyCode getAppKeyCode(WPARAM wParam) {
       case VK_LBUTTON: return KEY_LBUTTON;
       case VK_RBUTTON: return KEY_RBUTTON;
       case VK_MBUTTON: return KEY_MBUTTON;
-      case VK_XBUTTON1: return KEY_XBUTTON1;
-      case VK_XBUTTON2: return KEY_XBUTTON2;
+      //case VK_XBUTTON1: return KEY_XBUTTON1;
+      //case VK_XBUTTON2: return KEY_XBUTTON2;
       case VK_BACK: return KEY_BACKSPACE;
       case VK_TAB: return KEY_TAB;
       case VK_RETURN: return KEY_ENTER;

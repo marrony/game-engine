@@ -164,6 +164,7 @@ public:
    Application(const char* title, int width, int height, bool fullscreen);
 
    int run(Game& game);
+   void stopMainLoop();
    
    bool isKeyPressed(AppKeyCode key) const;
 };

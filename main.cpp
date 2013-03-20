@@ -12,6 +12,11 @@ public:
    }
 
    virtual void doFrame() {
+      if(app.isKeyPressed(KEY_ESCAPE)) {
+         app.stopMainLoop();
+         return;
+      }
+   
       glClearColor(1.0, 1.0, 1.0, 1.0);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -31,7 +36,29 @@ public:
    }
 };
 
+struct Method {
+   void invoke() {
+      fprintf(stderr, "invoke\n");
+   }
+};
+
+template<typename M, typename T>
+Method createMethod(M m, T* t) {
+   (t->*m)();
+}
+
+struct A {
+   void teste() {
+      fprintf(stderr, "teste\n");
+   }
+};
+
 int main(void) {
+   A a;
+   Method m = createMethod(&A::teste, &a);
+   m.invoke();
+
+   return 0;
    Application app("my x11/win32 window", 600, 600, true);
    Game2 game(app);
    return app.run(game);
