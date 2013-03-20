@@ -3,134 +3,133 @@
 #ifndef WIN32
 
 void Application::swapBuffers() {
-   glXSwapBuffers(display, window);
+	glXSwapBuffers(display, window);
 }
 
 void Application::initialize() {
-   Window root;
-   Colormap cmap;
-   XSetWindowAttributes swa;
-   XVisualInfo *vi;
-   GLint att[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
- 
-   display = XOpenDisplay(NULL);
+	Window root;
+	Colormap cmap;
+	XSetWindowAttributes swa;
+	XVisualInfo *vi;
+	GLint att[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
 
-   if (display == NULL) {
-      //fprintf(stderr, "Cannot open display\n");
-      exit(1);
-   }
-   
-   root = DefaultRootWindow(display);
+	display = XOpenDisplay(NULL);
 
-   vi = glXChooseVisual(display, 0, att);
+	if (display == NULL) {
+		//fprintf(stderr, "Cannot open display\n");
+		exit(1);
+	}
 
-   cmap = XCreateColormap(display, root, vi->visual, AllocNone);
-   swa.colormap = cmap;
-   swa.event_mask = ExposureMask | KeyPressMask | KeyReleaseMask | StructureNotifyMask;
+	root = DefaultRootWindow(display) ;
 
-   window = XCreateWindow(display, root, 0, 0, width, height, 0, vi->depth, InputOutput, vi->visual, CWColormap | CWEventMask, &swa);
+	vi = glXChooseVisual(display, 0, att);
 
-   XMapWindow(display, window);
-   XStoreName(display, window, title);
+	cmap = XCreateColormap(display, root, vi->visual, AllocNone);
+	swa.colormap = cmap;
+	swa.event_mask = ExposureMask | KeyPressMask | KeyReleaseMask | StructureNotifyMask;
 
-   glc = glXCreateContext(display, vi, NULL, GL_TRUE);
-   glXMakeCurrent(display, window, glc);
-   //XSelectInput(display, window, ExposureMask | KeyPressMask);
- 
-   WM_DELETE_MESSAGE = XInternAtom(display, "WM_DELETE_WINDOW", False);
-   XSetWMProtocols(display, window, &WM_DELETE_MESSAGE, 1);
+	window = XCreateWindow(display, root, 0, 0, width, height, 0, vi->depth, InputOutput, vi->visual, CWColormap | CWEventMask, &swa);
+
+	XMapWindow(display, window);
+	XStoreName(display, window, title);
+
+	glc = glXCreateContext(display, vi, NULL, GL_TRUE);
+	glXMakeCurrent(display, window, glc);
+	//XSelectInput(display, window, ExposureMask | KeyPressMask);
+
+	WM_DELETE_MESSAGE = XInternAtom(display, "WM_DELETE_WINDOW", False);
+	XSetWMProtocols(display, window, &WM_DELETE_MESSAGE, 1);
 }
 
 void Application::finalize() {
-   glXMakeCurrent(display, None, NULL);
-   glXDestroyContext(display, glc);
-   XDestroyWindow(display, window);
-   XCloseDisplay(display);
+	glXMakeCurrent(display, None, NULL);
+	glXDestroyContext(display, glc);
+	XDestroyWindow(display, window);
+	XCloseDisplay(display);
 }
 
 static AppKeyCode getAppKeyCode(KeySym keysym) {
-   if(keysym >= XK_A && keysym <= XK_Z)
-      return (AppKeyCode)(KEY_A + (keysym - XK_A));
+	if (keysym >= XK_A && keysym <= XK_Z)
+		return (AppKeyCode) (KEY_A + (keysym - XK_A));
 
-   if(keysym >= XK_a && keysym <= XK_z)
-      return (AppKeyCode)(KEY_A + (keysym - XK_a));
+	if (keysym >= XK_a && keysym <= XK_z)
+		return (AppKeyCode) (KEY_A + (keysym - XK_a));
 
-   if(keysym >= XK_0 && keysym <= XK_9)
-      return (AppKeyCode)(KEY_0 + (keysym - XK_0));
+	if (keysym >= XK_0 && keysym <= XK_9)
+		return (AppKeyCode) (KEY_0 + (keysym - XK_0));
 
-   if(keysym >= XK_KP_0 && keysym <= XK_KP_0)
-      return (AppKeyCode)(KEY_NUMPAD_0 + (keysym - XK_KP_0));
-   
-   if(keysym >= XK_F1 && keysym <= XK_F12)
-      return (AppKeyCode)(KEY_F1 + (keysym - XK_F1));
+	if (keysym >= XK_KP_0 && keysym <= XK_KP_0)
+		return (AppKeyCode) (KEY_NUMPAD_0 + (keysym - XK_KP_0));
 
-   switch(keysym) {
-      //case VK_LBUTTON: return KEY_LBUTTON;
-      //case VK_RBUTTON: return KEY_RBUTTON;
-      //case VK_MBUTTON: return KEY_MBUTTON
-      //case VK_XBUTTON1: return KEY_XBUTTON1;
-      //case VK_XBUTTON2: return KEY_XBUTTON2;
-      case XK_BackSpace: return KEY_BACKSPACE;
-      case XK_Tab: return KEY_TAB;
-      case XK_Return: return KEY_ENTER;
-      case XK_Escape: return KEY_ESCAPE;
-      case XK_space: return KEY_SPACE;
-      case XK_Page_Up: return KEY_PAGE_UP;
-      case XK_Page_Down: return KEY_PAGE_DOWN;
-      case XK_End: return KEY_END;
-      case XK_Home: return KEY_HOME;
-      case XK_Insert: return KEY_INSERT;
-      case XK_Delete: return KEY_DELETE;
-      case XK_Shift_L: return KEY_LEFT_SHIFT;
-      case XK_Alt_L: return KEY_LEFT_ALT;
-      case XK_Control_L: return KEY_LEFT_CONTROL;
-      //case VK_LWIN: return KEY_LEFT_WIN;
-      case XK_Shift_R: return KEY_RIGHT_SHIFT;
-      case XK_Alt_R: return KEY_RIGHT_ALT;
-      case XK_Control_R: return KEY_RIGHT_CONTROL;
-      //case VK_RWIN: return KEY_RIGHT_WIN;
-      case XK_Caps_Lock: return KEY_CAPS_LOCK;
-      case XK_Left: return KEY_LEFT;
-      case XK_Up: return KEY_UP;
-      case XK_Right: return KEY_RIGHT;
-      case XK_Down: return KEY_DOWN;
-      case XK_Print: return KEY_PRINT_SCREEN;
-      case XK_Scroll_Lock: return KEY_SCROLL_LOCK;
-      case XK_Pause: return KEY_PAUSE;
-   }
-   
-   return KEY_NONE;
+	if (keysym >= XK_F1 && keysym <= XK_F12)
+		return (AppKeyCode) (KEY_F1 + (keysym - XK_F1));
+
+	switch (keysym) {
+	//case VK_LBUTTON: return KEY_LBUTTON;
+	//case VK_RBUTTON: return KEY_RBUTTON;
+	//case VK_MBUTTON: return KEY_MBUTTON
+	//case VK_XBUTTON1: return KEY_XBUTTON1;
+	//case VK_XBUTTON2: return KEY_XBUTTON2;
+	case XK_BackSpace: return KEY_BACKSPACE;
+	case XK_Tab: return KEY_TAB;
+	case XK_Return: return KEY_ENTER;
+	case XK_Escape: return KEY_ESCAPE;
+	case XK_space: return KEY_SPACE;
+	case XK_Page_Up: return KEY_PAGE_UP;
+	case XK_Page_Down: return KEY_PAGE_DOWN;
+	case XK_End: return KEY_END;
+	case XK_Home: return KEY_HOME;
+	case XK_Insert: return KEY_INSERT;
+	case XK_Delete: return KEY_DELETE;
+	case XK_Shift_L: return KEY_LEFT_SHIFT;
+	case XK_Alt_L: return KEY_LEFT_ALT;
+	case XK_Control_L: return KEY_LEFT_CONTROL;
+	//case VK_LWIN: return KEY_LEFT_WIN;
+	case XK_Shift_R: return KEY_RIGHT_SHIFT;
+	case XK_Alt_R: return KEY_RIGHT_ALT;
+	case XK_Control_R: return KEY_RIGHT_CONTROL;
+	//case VK_RWIN: return KEY_RIGHT_WIN;
+	case XK_Caps_Lock: return KEY_CAPS_LOCK;
+	case XK_Left: return KEY_LEFT;
+	case XK_Up: return KEY_UP;
+	case XK_Right: return KEY_RIGHT;
+	case XK_Down: return KEY_DOWN;
+	case XK_Print: return KEY_PRINT_SCREEN;
+	case XK_Scroll_Lock: return KEY_SCROLL_LOCK;
+	case XK_Pause: return KEY_PAUSE;
+	}
+
+	return KEY_NONE;
 }
 
 void Application::processEvents() {
-   XEvent event;
-   XNextEvent(display, &event);
-   
-   switch(event.type) {
-   case ClientMessage:
-      if (event.xclient.data.l[0] == WM_DELETE_MESSAGE)
-         running = false;
-      break;
-      
-   case KeyRelease:
-      onKeyUp(getAppKeyCode(XLookupKeysym(&event.xkey, 0)));
-      break;
-      
-   case KeyPress:
-      onKeyDown(getAppKeyCode(XLookupKeysym(&event.xkey, 0)));
-      break;
-      
-   case ConfigureNotify:
-      onResize(event.xconfigure.width, event.xconfigure.height);
-      break;
-   }
+	XEvent event;
+	XNextEvent(display, &event);
 
-   if (event.type == Expose) {
-      //XWindowAttributes gwa;
-      //XGetWindowAttributes(display, window, &gwa);
-      //glViewport(0, 0, gwa.width, gwa.height);
-   }
+	switch (event.type) {
+	case ClientMessage:
+		if (event.xclient.data.l[0] == WM_DELETE_MESSAGE)
+			running = false;
+		break;
+
+	case KeyRelease:
+		onKeyUp(getAppKeyCode(XLookupKeysym(&event.xkey, 0)));
+		break;
+
+	case KeyPress:
+		onKeyDown(getAppKeyCode(XLookupKeysym(&event.xkey, 0)));
+		break;
+
+	case ConfigureNotify:
+		onResize(event.xconfigure.width, event.xconfigure.height);
+		break;
+	}
+
+	if (event.type == Expose) {
+		//XWindowAttributes gwa;
+		//XGetWindowAttributes(display, window, &gwa);
+		//glViewport(0, 0, gwa.width, gwa.height);
+	}
 }
 
 #endif //WIN32
-

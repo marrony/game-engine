@@ -2,7 +2,7 @@ UNAME_S := $(shell sh -c 'uname -s')
 
 CXX = g++
 CXX_QUIT = @echo '   ' CXX $@;
-CXXFLAGS =
+CXXFLAGS = -g
 
 ifeq (MINGW,$(findstring MINGW,$(UNAME_S)))
 EXT = .exe
