@@ -161,6 +161,8 @@ class Application {
 	void finalize();
 	void processEvents();
 	void swapBuffers();
+
+	void initializeVariables();
 public:
 	Application(const char* title, int width, int height, bool fullscreen);
 

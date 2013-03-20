@@ -2,6 +2,13 @@
 
 #ifndef WIN32
 
+void Application::initializeVariables() {
+	display = 0;
+	window = 0;
+	glc = 0;
+	WM_DELETE_MESSAGE = 0;
+}
+
 void Application::swapBuffers() {
 	glXSwapBuffers(display, window);
 }

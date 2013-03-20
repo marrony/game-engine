@@ -2,6 +2,12 @@
 
 #ifdef WIN32
 
+void Application::initializeVariables() {
+	hwnd = 0;
+	hdc = 0;
+	hglrc = 0;
+}
+
 void Application::swapBuffers() {
 	SwapBuffers(hdc);
 }

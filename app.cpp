@@ -5,6 +5,7 @@
 Application::Application(const char* title, int width, int height, bool fullscreen) :
 	running(false), title(title), width(width), height(height), fullscreen(fullscreen) {
 	memset(keysPressed, 0, sizeof(keysPressed));
+	initializeVariables();
 }
 
 int Application::run(Game& game) {
