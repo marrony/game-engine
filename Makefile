@@ -24,7 +24,7 @@ endif
 
 all: prog$(EXT)
 
-OBJ = main.o app.o app_win32.o app_x11.o
+OBJ = main.o app.o app_win32.o app_x11.o json.o
 
 $(OBJ): %.o: %.cpp app.h
 	$(CXX_QUIT) $(CXX) $(CXXFLAGS) -c $< -o $@
