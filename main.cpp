@@ -102,9 +102,17 @@ public:
 	}
 };
 
+#include <iostream>
+
 int main(void) {
-	char data[] = "{\"teste\": [10, {\"xx\": {\"yy\": 10}}]}";
-	Json json = json_parse(data, sizeof(data));
+	FILE* fr = fopen("test.json", "r");
+	Json json = json_read(fr);
+//	const char data[] = "{\"teste\": [10, {\"xx\": {\"yy\": 10}}]}";
+//	Json json = json_parse(data, sizeof(data));
+
+	FILE* fw = fopen("test.json", "w+");
+	json_write(fw, json);
+	fclose(fw);
 
 	json_free(json);
 

@@ -7,10 +7,10 @@
 
 #include "json.h"
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <sys/stat.h>
 
 static void insert_token(Token*& tokens, int& count, int& capacity, int start, int end, int type) {
 	if(count >= capacity) {
@@ -26,6 +26,10 @@ static void insert_token(Token*& tokens, int& count, int& capacity, int start, i
 	tok->end = end;
 }
 
+static bool is_number(int ch) {
+	return ch == '+' || ch == '-' || isdigit(ch);
+}
+
 void json_tokenize(const char* data, int data_lenght, Token*& tokens, int& count) {
 	int old_begin = 0;
 	int begin = 0;
@@ -36,18 +40,45 @@ void json_tokenize(const char* data, int data_lenght, Token*& tokens, int& count
 	tokens = (Token*)malloc(capacity * sizeof(Token));
 
 	while(begin < data_lenght) {
-		if(isalnum(data[begin])) {
-			while(begin < data_lenght && isalnum(data[begin]))
+		if(is_number(data[begin])) {
+			begin++;
+
+			while(begin < data_lenght && isdigit(data[begin]))
 				begin++;
+
+			if(data[begin] == '.') {
+				begin++;
+
+				while(begin < data_lenght && isdigit(data[begin]))
+					begin++;
+			}
+
+			if(data[begin] == 'e' || data[begin] == 'E') {
+				begin++;
+
+				if(data[begin] == '-' || data[begin] == '+')
+					begin++;
+
+				while(begin < data_lenght && isdigit(data[begin]))
+					begin++;
+			}
 
 			insert_token(tokens, count, capacity, old_begin, begin, TP_NUMBER);
 		} else if(data[begin] == '\"') {
 			begin++;
-			while(begin < data_lenght && data[begin] != '\"')
-				begin++;
+			while(begin < data_lenght) {
+				char ch = data[begin++];
 
-			insert_token(tokens, count, capacity, old_begin+1, begin, TP_STRING);
-			begin++;
+				if(ch == '\\') {
+					if(begin < data_lenght && (data[begin] == '\"' || data[begin] == '\\' || data[begin] == '/' ||
+						data[begin] == 'b' || data[begin] == 'f' || data[begin] == 'n' ||
+						data[begin] == 'r' || data[begin] == 't'))
+						begin++;
+				} else if(ch == '\"')
+					break;
+			}
+
+			insert_token(tokens, count, capacity, old_begin+1, begin-1, TP_STRING);
 		} else if(data[begin] == ',') {
 			begin++;
 			insert_token(tokens, count, capacity, old_begin, begin, ',');
@@ -103,8 +134,36 @@ static void parse_value(const char* data, int data_lenght, Value& value, int& be
 		int string_size = tokens[begin].end - tokens[begin].start;
 		value.type = TP_STRING;
 		value.string = (char*)malloc(string_size+1);
-		strncpy(value.string, data+tokens[begin].start, string_size);
-		value.string[string_size] = 0;
+
+		int src = tokens[begin].start;
+		int dst = 0;
+		while(src < string_size) {
+			if(data[src] == '\\') {
+				src++;
+
+				if(data[src] == '\"')
+					value.string[dst++] = '\"';
+				else if(data[src] == '\\')
+					value.string[dst++] = '\\';
+				else if(data[src] == '/')
+					value.string[dst++] = 0xff; //TODO
+				else if(data[src] == 'b')
+					value.string[dst++] = '\b';
+				else if(data[src] == 'f')
+					value.string[dst++] = '\f';
+				else if(data[src] == 'n')
+					value.string[dst++] = '\n';
+				else if(data[src] == 'r')
+					value.string[dst++] = '\r';
+				else if(data[src] == 't')
+					value.string[dst++] = '\t';
+
+				src++;
+			} else {
+				value.string[dst++] = data[src++];
+			}
+		}
+		value.string[dst] = 0;
 
 		begin++;
 		break;
@@ -221,11 +280,11 @@ Json json_parse(const char* data, int data_lenght, Token* tokens, int count) {
 }
 
 Json json_parse(const char* data, int data_lenght) {
-	Token* tokens;
-	int count;
-	json_tokenize(data, data_lenght, tokens, count);
+	Token* tokens = 0;
+	int count = 0;
 
-	Json json = json_parse(data, sizeof(data), tokens, count);
+	json_tokenize(data, data_lenght, tokens, count);
+	Json json = json_parse(data, data_lenght, tokens, count);
 
 	free(tokens);
 
@@ -250,4 +309,81 @@ static void free_value(Value& v) {
 
 void json_free(Json& json) {
 	free_value(json.value);
+}
+
+#if defined(MSDOS) || defined(OS2) || defined(WIN32) || defined(__CYGWIN__)
+#  include <fcntl.h>
+#  include <io.h>
+#  define SET_BINARY_MODE(file) setmode(fileno(file), O_BINARY)
+#else
+#  define SET_BINARY_MODE(file)
+#endif
+
+Json json_read(FILE* file) {
+	struct stat st;
+
+	//SET_BINARY_MODE(file);
+
+	fstat(fileno(file), &st);
+
+	char* data = (char*)malloc(st.st_size+1);
+	int read = fread(data, sizeof(char), st.st_size, file);
+	data[read] = 0;
+
+	Json json = json_parse(data, read);
+
+	free(data);
+
+	return json;
+}
+
+static void json_print_ident(FILE* fp, int ident) {
+	for(int i = 0; i < ident; i++)
+		fprintf(fp, "\t");
+}
+
+static void json_print(FILE* fp, const Value* value, int ident) {
+	switch(value->type) {
+	case TP_STRING:
+		fprintf(fp, "\"%s\"", value->string);
+		break;
+	case TP_NUMBER:
+		fprintf(fp, "%lf", value->number);
+		break;
+	case TP_OBJECT:
+		fprintf(fp, "{\n");
+		for(int i = 0; i < value->object.size; i++) {
+			json_print_ident(fp, ident+1); fprintf(fp, "\"%s\": ", value->object.fields[i].name);
+			json_print(fp, &value->object.fields[i].value, ident+1);
+			if(i+1 < value->object.size)
+				fprintf(fp, ",\n");
+		}
+		fprintf(fp, "\n");
+		json_print_ident(fp, ident); fprintf(fp, "}");
+		break;
+	case TP_ARRAY:
+		fprintf(fp, "[\n");
+		for(int i = 0; i < value->array.size; i++) {
+			json_print_ident(fp, ident+1); json_print(fp, &value->array.values[i], ident+1);
+			if(i+1 < value->array.size)
+				fprintf(fp, ",\n");
+		}
+		fprintf(fp, "\n");
+		json_print_ident(fp, ident); fprintf(fp, "]");
+		break;
+	case TP_TRUE:
+		fprintf(fp, "true");
+		break;
+	case TP_FALSE:
+		fprintf(fp, "false");
+		break;
+	case TP_NULL:
+		fprintf(fp, "null");
+		break;
+	}
+}
+
+void json_write(FILE* file, const Json& json) {
+	SET_BINARY_MODE(file);
+	json_print(file, &json.value, 0);
 }
