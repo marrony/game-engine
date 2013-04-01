@@ -135,9 +135,10 @@ static void parse_value(const char* data, int data_lenght, Value& value, int& be
 		value.type = TP_STRING;
 		value.string = (char*)malloc(string_size+1);
 
+		int end = tokens[begin].start + string_size;
 		int src = tokens[begin].start;
 		int dst = 0;
-		while(src < string_size) {
+		while (src < end) {
 			if(data[src] == '\\') {
 				src++;
 
