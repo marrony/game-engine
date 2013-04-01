@@ -14,6 +14,7 @@
 enum Type {
 	TP_INVALID,
 	TP_STRING,
+	TP_INT,
 	TP_NUMBER,
 	TP_OBJECT,
 	TP_ARRAY,
@@ -39,6 +40,7 @@ struct Value {
 	Type type;
 	union {
 		char* string;
+		int integer;
 		double number;
 		Object object;
 		Array array;
@@ -64,6 +66,14 @@ void json_tokenize(const char* data, int data_lenght, Token*& tokens, int& count
 Json json_parse(const char* data, int data_lenght, Token* tokens, int count);
 Json json_parse(const char* data, int data_lenght);
 void json_free(Json& json);
+
+Value json_clone(const Value& value);
+
+Value* json_get_attribute(const Value& object, const char* attribute);
+void json_set_attribute(Value& object, const char* attribute, const Value& value);
+
+Value* json_get_at(const Value& array, int index);
+void json_set_at(Value& array, int index, const Value& value);
 
 Json json_read(FILE* file);
 void json_write(FILE* file, const Json& json);

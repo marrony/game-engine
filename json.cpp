@@ -8,8 +8,9 @@
 #include "json.h"
 
 #include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
+#include <cstring>
+#include <cctype>
+#include <algorithm>
 #include <sys/stat.h>
 
 static void insert_token(Token*& tokens, int& count, int& capacity, int start, int end, int type) {
@@ -46,11 +47,15 @@ void json_tokenize(const char* data, int data_lenght, Token*& tokens, int& count
 			while(begin < data_lenght && isdigit(data[begin]))
 				begin++;
 
+			int type = TP_INT;
+
 			if(data[begin] == '.') {
 				begin++;
 
 				while(begin < data_lenght && isdigit(data[begin]))
 					begin++;
+
+				type = TP_NUMBER;
 			}
 
 			if(data[begin] == 'e' || data[begin] == 'E') {
@@ -61,9 +66,11 @@ void json_tokenize(const char* data, int data_lenght, Token*& tokens, int& count
 
 				while(begin < data_lenght && isdigit(data[begin]))
 					begin++;
+
+				type = TP_NUMBER;
 			}
 
-			insert_token(tokens, count, capacity, old_begin, begin, TP_NUMBER);
+			insert_token(tokens, count, capacity, old_begin, begin, type);
 		} else if(data[begin] == '\"') {
 			begin++;
 			while(begin < data_lenght) {
@@ -117,6 +124,7 @@ static bool is_value(Token& token) {
 	char type = token.token;
 
 	return type == TP_STRING ||
+			type == TP_INT ||
 			type == TP_NUMBER ||
 			type == TP_TRUE ||
 			type == TP_FALSE ||
@@ -169,6 +177,11 @@ static void parse_value(const char* data, int data_lenght, Value& value, int& be
 		begin++;
 		break;
 	}
+	case TP_INT:
+		value.type = TP_INT;
+		value.integer = atoi(data+tokens[begin].start);
+		begin++;
+		break;
 	case TP_NUMBER:
 		value.type = TP_NUMBER;
 		value.number = atof(data+tokens[begin].start);
@@ -312,6 +325,82 @@ void json_free(Json& json) {
 	free_value(json.value);
 }
 
+Value json_clone(const Value& value) {
+	Value cloned = {TP_INVALID, 0};
+
+	if(value.type == TP_ARRAY) {
+		cloned.type = TP_ARRAY;
+		cloned.array.size = value.array.size;
+		cloned.array.values = (Value*)malloc(sizeof(Value) * cloned.array.size);
+
+		for(int i = 0; i < value.array.size; i++)
+			cloned.array.values[i] = json_clone(value.array.values[i]);
+	} else if(value.type == TP_OBJECT) {
+		cloned.type = TP_OBJECT;
+		cloned.object.size = value.array.size;
+		cloned.object.fields = (Pair*)malloc(sizeof(Pair) * cloned.object.size);
+
+		for(int i = 0; i < value.object.size; i++) {
+			cloned.object.fields[i].name = strdup(value.object.fields[i].name);
+			cloned.object.fields[i].value = json_clone(value.object.fields[i].value);
+		}
+	} else if(value.type == TP_STRING) {
+		cloned.type = TP_STRING;
+		cloned.string = strdup(value.string);
+	} else {
+		cloned = value;
+	}
+
+	return cloned;
+}
+
+Value* json_get_attribute(const Value& object, const char* attribute) {
+	if(object.type == TP_OBJECT) {
+		for(int i = 0; i < object.object.size; i++) {
+			if(!strcmp(object.object.fields[i].name, attribute))
+				return &object.object.fields[i].value;
+		}
+	}
+
+	return NULL;
+}
+
+void json_set_attribute(Value& object, const char* attribute, const Value& value) {
+	if(object.type == TP_OBJECT) {
+		for(int i = 0; i < object.object.size; i++) {
+			if(!strcmp(object.object.fields[i].name, attribute)) {
+				object.object.fields[i].value = value;
+				return;
+			}
+		}
+
+		int index = object.object.size++;
+		object.object.fields = (Pair*)realloc(object.object.fields, sizeof(Pair) * object.object.size);
+
+		object.object.fields[index].name = strdup(attribute);
+		object.object.fields[index].value = value;
+	}
+}
+
+Value* json_get_at(const Value& array, int index) {
+	if(array.type == TP_ARRAY && index < array.array.size)
+		return &array.array.values[index];
+
+	return NULL;
+}
+
+void json_set_at(Value& array, int index, const Value& value) {
+	if(array.type == TP_ARRAY) {
+		if(index >= array.array.size) {
+			array.array.size = std::max(index + 1, array.array.size + 1);
+			array.array.values = (Value*)realloc(array.array.values, sizeof(Value) * array.array.size);
+		}
+
+		array.array.values[index] = value;
+	}
+}
+
+
 #if defined(MSDOS) || defined(OS2) || defined(WIN32) || defined(__CYGWIN__)
 #  include <fcntl.h>
 #  include <io.h>
@@ -347,6 +436,9 @@ static void json_print(FILE* fp, const Value* value, int ident) {
 	switch(value->type) {
 	case TP_STRING:
 		fprintf(fp, "\"%s\"", value->string);
+		break;
+	case TP_INT:
+		fprintf(fp, "%d", value->integer);
 		break;
 	case TP_NUMBER:
 		fprintf(fp, "%lf", value->number);

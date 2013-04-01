@@ -105,8 +105,15 @@ public:
 int main(void) {
 	FILE* fr = fopen("test.json", "r");
 	Json json = json_read(fr);
-//	const char data[] = "{\"teste\": [10, {\"xx\": {\"yy\": 10}}]}";
-//	Json json = json_parse(data, sizeof(data));
+
+	Value* name = json_get_attribute(json.value, "name");
+	Value* url = json_get_attribute(json.value, "url");
+	Value* data = json_get_attribute(json.value, "data");
+
+	Value* at_1 = json_get_at(*data, 1);
+	json_set_at(*data, 10, *at_1);
+
+	fclose(fr);
 
 	FILE* fw = fopen("test.json", "w+");
 	json_write(fw, json);
