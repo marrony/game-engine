@@ -264,7 +264,7 @@ static Object parse_object(const char* data, int data_lenght, int& begin, Token*
 }
 
 Json json_parse(const char* data, int data_lenght, Token* tokens, int count) {
-	Json json;
+	Json json = {{TP_INVALID, 0}};
 
 	int begin = 0;
 
@@ -384,6 +384,6 @@ static void json_print(FILE* fp, const Value* value, int ident) {
 }
 
 void json_write(FILE* file, const Json& json) {
-	SET_BINARY_MODE(file);
+	//SET_BINARY_MODE(file);
 	json_print(file, &json.value, 0);
 }

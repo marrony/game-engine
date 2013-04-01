@@ -102,8 +102,6 @@ public:
 	}
 };
 
-#include <iostream>
-
 int main(void) {
 	FILE* fr = fopen("test.json", "r");
 	Json json = json_read(fr);
