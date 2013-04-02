@@ -5,20 +5,16 @@
 void Application::initializeVariables() {
 	display = 0;
 	window = 0;
-	glc = 0;
 	WM_DELETE_MESSAGE = 0;
 }
 
 void Application::swapBuffers() {
-	glXSwapBuffers(display, window);
+//	glXSwapBuffers(display, window);
 }
 
 void Application::initialize() {
 	Window root;
-	Colormap cmap;
 	XSetWindowAttributes swa;
-	XVisualInfo *vi;
-	GLint att[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
 
 	display = XOpenDisplay(NULL);
 
@@ -29,30 +25,20 @@ void Application::initialize() {
 
 	root = DefaultRootWindow(display) ;
 
-	vi = glXChooseVisual(display, 0, att);
-
-	cmap = XCreateColormap(display, root, vi->visual, AllocNone);
-	swa.colormap = cmap;
 	swa.event_mask = ExposureMask | KeyPressMask | KeyReleaseMask | StructureNotifyMask;
+	window = XCreateWindow(display, root, 0, 0, 100, 100, 0,  CopyFromParent, InputOutput,  CopyFromParent, CWEventMask, &swa);
 
-	window = XCreateWindow(display, root, 0, 0, width, height, 0, vi->depth, InputOutput, vi->visual, CWColormap | CWEventMask, &swa);
+	XSelectInput(display, window, ExposureMask | KeyPressMask | KeyReleaseMask | StructureNotifyMask);
 
 	XMapWindow(display, window);
 	XStoreName(display, window, title);
-
-	glc = glXCreateContext(display, vi, NULL, GL_TRUE);
-	glXMakeCurrent(display, window, glc);
-	//XSelectInput(display, window, ExposureMask | KeyPressMask);
 
 	WM_DELETE_MESSAGE = XInternAtom(display, "WM_DELETE_WINDOW", False);
 	XSetWMProtocols(display, window, &WM_DELETE_MESSAGE, 1);
 }
 
 void Application::finalize() {
-	glXMakeCurrent(display, None, NULL);
-	glXDestroyContext(display, glc);
 	XDestroyWindow(display, window);
-	XCloseDisplay(display);
 }
 
 static AppKeyCode getAppKeyCode(KeySym keysym) {

@@ -82,23 +82,23 @@ public:
 			return;
 		}
 
-		glClearColor(1.0, 1.0, 1.0, 1.0);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glOrtho(-1., 1., -1., 1., 1., 20.);
-
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		//gluLookAt(0., 0., 10., 0., 0., 0., 0., 1., 0.);
-
-		glEnableClientState(GL_VERTEX_ARRAY);
-		glEnableClientState(GL_COLOR_ARRAY);
-
-		glVertexPointer(3, GL_FLOAT, 0, mesh->vertex_pointer());
-		glColorPointer(3, GL_FLOAT, 0, mesh->color_pointer());
-		glDrawElements(GL_TRIANGLES, mesh->index_count, GL_UNSIGNED_SHORT, mesh->index_pointer());
+//		glClearColor(1.0, 1.0, 1.0, 1.0);
+//		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+//
+//		glMatrixMode(GL_PROJECTION);
+//		glLoadIdentity();
+//		glOrtho(-1., 1., -1., 1., 1., 20.);
+//
+//		glMatrixMode(GL_MODELVIEW);
+//		glLoadIdentity();
+//		//gluLookAt(0., 0., 10., 0., 0., 0., 0., 1., 0.);
+//
+//		glEnableClientState(GL_VERTEX_ARRAY);
+//		glEnableClientState(GL_COLOR_ARRAY);
+//
+//		glVertexPointer(3, GL_FLOAT, 0, mesh->vertex_pointer());
+//		glColorPointer(3, GL_FLOAT, 0, mesh->color_pointer());
+//		glDrawElements(GL_TRIANGLES, mesh->index_count, GL_UNSIGNED_SHORT, mesh->index_pointer());
 	}
 };
 

@@ -1,4 +1,5 @@
 #include "app.h"
+#include "exec.h"
 
 #include <memory.h>
 
@@ -10,6 +11,20 @@ Application::Application(const char* title, int width, int height, bool fullscre
 
 int Application::run(Game& game) {
 	initialize();
+
+	char id[32+1];
+
+	snprintf(id, 32, "%d", (int)window);
+
+	const char* const args[] = {
+			"build/engine/engine",
+			"--window-id",
+			id,
+			NULL
+	};
+
+	execute_program(args, NULL, NULL);
+
 	game.initialize();
 
 	running = true;
@@ -34,7 +49,7 @@ void Application::onResize(int width, int height) {
 		this->width = width;
 		this->height = height;
 
-		glViewport(0, 0, width, height);
+//		glViewport(0, 0, width, height);
 	}
 }
 

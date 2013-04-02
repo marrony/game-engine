@@ -141,7 +141,6 @@ class Application {
 #else
 	Display *display;
 	Window window;
-	GLXContext glc;
 	Atom WM_DELETE_MESSAGE;
 #endif
 
