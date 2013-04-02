@@ -8,9 +8,18 @@ find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
 
 include_directories(${OPENGL_INCLUDE_DIRS})
+if(GLEW_FOUND)
 include_directories(${GLEW_INCLUDE_PATH})
+endif()
 
-add_executable(prog main.cpp app.cpp app_win32.cpp app_x11.cpp json.cpp)
-target_link_libraries(prog ${OPENGL_LIBRARIES})
+include_directories(engine)
 
-install(TARGETS prog DESTINATION bin)
+add_library(eng STATIC engine/app.cpp engine/app_win32.cpp engine/app_x11.cpp engine/json.cpp)
+
+add_executable(engine engine/engine.cpp)
+target_link_libraries(engine eng ${OPENGL_LIBRARIES})
+
+add_executable(tool tool/main.cpp)
+target_link_libraries(tool eng ${OPENGL_LIBRARIES})
+
+#install(TARGETS prog DESTINATION bin)

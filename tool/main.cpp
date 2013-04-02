@@ -102,25 +102,7 @@ public:
 	}
 };
 
-int main(void) {
-	FILE* fr = fopen("test.json", "r");
-	Json json = json_read(fr);
-
-	Value* name = json_get_attribute(json.value, "name");
-	Value* url = json_get_attribute(json.value, "url");
-	Value* data = json_get_attribute(json.value, "data");
-
-	Value* at_1 = json_get_at(*data, 1);
-	json_set_at(*data, 10, *at_1);
-
-	fclose(fr);
-
-	FILE* fw = fopen("test.json", "w+");
-	json_write(fw, json);
-	fclose(fw);
-
-	json_free(json);
-
+int main(int argc, char* argv[]) {
 	Application app("my x11/win32 window", 600, 600, true);
 	Game2 game(app);
 	return app.run(game);
