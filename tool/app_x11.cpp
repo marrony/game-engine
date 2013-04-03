@@ -13,21 +13,16 @@ void Application::swapBuffers() {
 }
 
 void Application::initialize() {
-	Window root;
-	XSetWindowAttributes swa;
-
 	display = XOpenDisplay(NULL);
 
 	if (display == NULL) {
-		//fprintf(stderr, "Cannot open display\n");
 		exit(1);
 	}
 
-	root = DefaultRootWindow(display) ;
+	Window root = DefaultRootWindow(display) ;
+	int screen = DefaultScreen(display);
 
-	swa.event_mask = ExposureMask | KeyPressMask | KeyReleaseMask | StructureNotifyMask;
-	window = XCreateWindow(display, root, 0, 0, 100, 100, 0,  CopyFromParent, InputOutput,  CopyFromParent, CWEventMask, &swa);
-
+	window = XCreateSimpleWindow(display, root, 0, 0, width, height, 1, BlackPixel(display, screen), WhitePixel(display, screen));
 	XSelectInput(display, window, ExposureMask | KeyPressMask | KeyReleaseMask | StructureNotifyMask);
 
 	XMapWindow(display, window);

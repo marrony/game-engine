@@ -11,22 +11,24 @@
 #include <cstring>
 #include <stdlib.h>
 
-WindowID get_window_handle(int argc, char* argv[]) {
+int get_argument(int argc, char* argv[], const char* arg_name) {
 	for(int i = 0; i < argc; i++) {
-		if(!strcmp("--window-id", argv[i]) && i+1 < argc)
+		if(!strcmp(arg_name, argv[i]) && i+1 < argc)
 			return (WindowID)atoi(argv[i+1]);
 	}
 
-	return (WindowID)-1;
+	return -1;
 }
 
 int main(int argc, char* argv[]) {
-	WindowID handle = get_window_handle(argc, argv);
+	WindowID handle = (WindowID)get_argument(argc, argv, "--window-id");
+	int width = get_argument(argc, argv, "--width");
+	int height = get_argument(argc, argv, "--height");
 
 	if(handle == WINDOW_NULL)
 		return 1;
 
-	SwapChain swap_chain = create_swap_chain(handle);
+	SwapChain swap_chain = create_swap_chain(handle, width, height);
 
 	while(true) {
 		glClearColor(1.0, 1.0, 1.0, 1.0);

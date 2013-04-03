@@ -12,14 +12,19 @@ Application::Application(const char* title, int width, int height, bool fullscre
 int Application::run(Game& game) {
 	initialize();
 
-	char id[32+1];
+	char window_id[32+1];
+	char width_str[32+1];
+	char height_str[32+1];
 
-	snprintf(id, 32, "%d", (int)window);
+	snprintf(window_id, 32, "%d", (int)window);
+	snprintf(width_str, 32, "%d", width);
+	snprintf(height_str, 32, "%d", height);
 
 	const char* const args[] = {
 			"build/engine/engine",
-			"--window-id",
-			id,
+			"--window-id", window_id,
+			"--width", width_str,
+			"--height", height_str,
 			NULL
 	};
 

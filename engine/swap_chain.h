@@ -17,13 +17,14 @@
 #include "engine.h"
 
 struct SwapChain {
+	Window parent;
 	Window window;
 	Display* display;
 	GLXContext glc;
 	XVisualInfo *vi;
 };
 
-SwapChain create_swap_chain(WindowID handle);
+SwapChain create_swap_chain(WindowID handle, int width, int height);
 void destroy_swap_chain(SwapChain& swap_chain);
 void swap_swap_chain(SwapChain& swap_chain);
 

@@ -13,34 +13,31 @@
 
 #else
 
-SwapChain create_swap_chain(WindowID handle) {
+SwapChain create_swap_chain(WindowID handle, int width, int height) {
 	SwapChain swap_chain;
 
 	GLint att[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
 
-	swap_chain.window = handle;
+	swap_chain.parent = handle;
 	swap_chain.display = XOpenDisplay(":0.0");
 
-	fprintf(stderr, "Window: %d\n", (int)swap_chain.window);
-	fprintf(stderr, "Display: %p\n", swap_chain.display);
+	Window root = DefaultRootWindow(swap_chain.display);
 
 	swap_chain.vi = glXChooseVisual(swap_chain.display, 0, att);
 
-	fprintf(stderr, "Visual Info: %p\n", swap_chain.vi);
-
-	Window root = DefaultRootWindow(swap_chain.display) ;
 	Colormap cmap = XCreateColormap(swap_chain.display, root, swap_chain.vi->visual, AllocNone);
+	XSetWindowAttributes swa;
+	swa.colormap = cmap;
+	swa.event_mask = ExposureMask | KeyPressMask | KeyReleaseMask | StructureNotifyMask;
 
-	XSetWindowColormap(swap_chain.display, swap_chain.window, cmap);
+	swap_chain.window = XCreateWindow(swap_chain.display, swap_chain.parent, 0, 0, width, height, 0, swap_chain.vi->depth, InputOutput, swap_chain.vi->visual, CWColormap | CWEventMask, &swa);
+
+	XMapWindow(swap_chain.display, swap_chain.window);
 
 	swap_chain.glc = glXCreateContext(swap_chain.display, swap_chain.vi, NULL, GL_TRUE);
-	fprintf(stderr, "GL Context: %p\n", swap_chain.glc);
 
-	//TODO create another child window
-	//BadMatch is generated if drawable was not created with the same X screen and visual as ctx. It is also generated if drawable is None and ctx is not NULL.
 	glXMakeCurrent(swap_chain.display, swap_chain.window, swap_chain.glc);
 
-	fprintf(stderr, "GL Context created\n");
 	return swap_chain;
 }
 
