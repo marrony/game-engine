@@ -10,6 +10,7 @@
 
 #ifdef WIN32
 #include <windows.h>
+#include <winsock2.h>
 #include <GL/gl.h>
 typedef HWND WindowID;
 #else

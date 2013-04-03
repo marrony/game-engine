@@ -11,6 +11,46 @@
 
 #ifdef WIN32
 
+SwapChain create_swap_chain(WindowID handle, int width, int height) {
+	SwapChain swap_chain;
+
+	swap_chain.window = handle;
+
+	PIXELFORMATDESCRIPTOR pfd = {0};
+
+	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+	pfd.nVersion = 1;
+	pfd.dwFlags = PFD_DOUBLEBUFFER | PFD_SUPPORT_OPENGL | PFD_DRAW_TO_WINDOW;
+	pfd.iPixelType = PFD_TYPE_RGBA;
+	pfd.cColorBits = 32;
+	pfd.cDepthBits = 32;
+	pfd.cDepthBits = 32;
+	pfd.cAccumBits = 32;
+	pfd.cStencilBits = 32;
+	pfd.cAlphaBits = 32;
+	pfd.iLayerType = PFD_MAIN_PLANE;
+
+	swap_chain.hdc = GetWindowDC(swap_chain.window);
+
+	int nPixelFormat = ChoosePixelFormat(swap_chain.hdc, &pfd);
+	BOOL bResult = SetPixelFormat(swap_chain.hdc, nPixelFormat, &pfd);
+
+	swap_chain.hglrc = wglCreateContext(swap_chain.hdc);
+	wglMakeCurrent(swap_chain.hdc, swap_chain.hglrc);
+
+	return swap_chain;
+}
+
+void destroy_swap_chain(SwapChain& swap_chain) {
+	wglMakeCurrent(swap_chain.hdc, NULL);
+	wglDeleteContext(swap_chain.hglrc);
+	ReleaseDC(swap_chain.window, swap_chain.hdc);
+}
+
+void swap_swap_chain(SwapChain& swap_chain) {
+	SwapBuffers(swap_chain.hdc);
+}
+
 #else
 
 SwapChain create_swap_chain(WindowID handle, int width, int height) {

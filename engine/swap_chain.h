@@ -17,11 +17,17 @@
 #include "engine.h"
 
 struct SwapChain {
+#ifdef WIN32
+	HWND window;
+	HDC hdc;
+	HGLRC hglrc;
+#else
 	Window parent;
 	Window window;
 	Display* display;
 	GLXContext glc;
 	XVisualInfo *vi;
+#endif
 };
 
 SwapChain create_swap_chain(WindowID handle, int width, int height);

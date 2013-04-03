@@ -133,14 +133,12 @@ public:
 
 class Application {
 #ifdef WIN32
-	HWND hwnd;
-	HDC hdc;
-	HGLRC hglrc;
+	HWND window;
 
 	static LRESULT CALLBACK MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 #else
-	Display *display;
 	Window window;
+	Display* display;
 	Atom WM_DELETE_MESSAGE;
 #endif
 
