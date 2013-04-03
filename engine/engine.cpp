@@ -7,9 +7,12 @@
 
 #include "engine.h"
 #include "swap_chain.h"
+#include "socket.h"
+#include "json.h"
 
 #include <cstring>
 #include <stdlib.h>
+#include <stdio.h>
 
 int get_argument(int argc, char* argv[], const char* arg_name) {
 	for(int i = 0; i < argc; i++) {
@@ -20,52 +23,27 @@ int get_argument(int argc, char* argv[], const char* arg_name) {
 	return -1;
 }
 
-int create_server(short port) {
-#ifdef WIN32
-	WSADATA data;
-	WSAStartup(MAKEWORD(2, 2), &data);
-#endif
-
-	int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	if(sock < 0)
-		return -1;
-
-	int reuseaddr = 1;
-	if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&reuseaddr, sizeof(reuseaddr)) < 0) {
-		closesocket(sock);
-		return -1;
-	}
-
-	sockaddr_in service;
-	service.sin_family = AF_INET;
-	service.sin_addr.s_addr = INADDR_ANY;// inet_addr("127.0.0.1");
-	service.sin_port = htons(27015);
-
-	if(bind(sock, (struct sockaddr*)&service, sizeof(service)) < 0) {
-		closesocket(sock);
-		return -1;
-	}
-
-	if(listen(sock, SOMAXCONN) < 0) {
-		closesocket(sock);
-		return -1;
-	}
-
-	return sock;
-}
-
 int main(int argc, char* argv[]) {
-	WindowID handle = (WindowID)get_argument(argc, argv, "--window-id");
-	int width = get_argument(argc, argv, "--width");
-	int height = get_argument(argc, argv, "--height");
-
 	int port = get_argument(argc, argv, "--port");
-	int socket = create_server(port < 0 ? 9090 : port);
 
-	if(handle == WINDOW_NULL)
-		return 1;
+	ServerSocket server(port < 0 ? 9090 : port);
+	Socket client = server.accept();
 
-	SwapChain swap_chain = create_swap_chain(handle, width, height);
+	char buffer[1024];
+	int nbytes = client.recv(buffer, sizeof(buffer));
+	buffer[nbytes]= 0;
+
+	fprintf(stderr, "%s", buffer);
+	fflush(stderr);
+
+	Json json = json_parse(buffer, nbytes);
+	Value* window = json_get_attribute(json.value, "window");
+	Value* width = json_get_attribute(json.value, "width");
+	Value* height = json_get_attribute(json.value, "height");
+
+	SwapChain swap_chain = create_swap_chain(window->integer, width->integer, height->integer);
+
+	json_free(json);
 
 	while(true) {
 		glClearColor(1.0, 1.0, 1.0, 1.0);
@@ -90,6 +68,9 @@ int main(int argc, char* argv[]) {
 
 		swap_swap_chain(swap_chain);
 	}
+
+	client.close();
+	server.close();
 
 	return 0;
 }

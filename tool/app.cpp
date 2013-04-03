@@ -3,6 +3,8 @@
 
 #include <memory.h>
 
+#include "socket.h"
+
 Application::Application(const char* title, int width, int height, bool fullscreen) :
 	running(false), title(title), width(width), height(height), fullscreen(fullscreen) {
 	memset(keysPressed, 0, sizeof(keysPressed));
@@ -12,23 +14,20 @@ Application::Application(const char* title, int width, int height, bool fullscre
 int Application::run(Game& game) {
 	initialize();
 
-	char window_id[32+1];
-	char width_str[32+1];
-	char height_str[32+1];
-
-	snprintf(window_id, 32, "%d", (int)window);
-	snprintf(width_str, 32, "%d", width);
-	snprintf(height_str, 32, "%d", height);
-
 	const char* const args[] = {
 			"build/engine/engine",
-			"--window-id", window_id,
-			"--width", width_str,
-			"--height", height_str,
+			"--port", "9090",
 			NULL
 	};
 
 	execute_program(args, NULL, NULL);
+
+	Socket sock;
+	sock.connect("127.0.0.1", 9090);
+
+	char buffer[1024];
+	snprintf(buffer, sizeof(buffer), "{\"window\": %d, \"width\": %d, \"height\": %d}", (int)window, width, height);
+	sock.send(buffer, strlen(buffer));
 
 	game.initialize();
 
