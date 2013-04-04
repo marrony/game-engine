@@ -19,6 +19,9 @@ int close_socket(int sock);
 int send_socket(int sock, const void* buffer, size_t size);
 int recv_socket(int sock, void* buffer, size_t size);
 
+bool has_data_socket(int sock);
+int set_non_blocking_socket(int sock);
+
 class Socket {
 	int sock;
 public:

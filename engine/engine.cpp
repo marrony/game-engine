@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
 	Value* width = json_get_attribute(json.value, "width");
 	Value* height = json_get_attribute(json.value, "height");
 
-	SwapChain swap_chain = create_swap_chain(window->integer, width->integer, height->integer);
+	SwapChain swap_chain = create_swap_chain((WindowID)window->integer, width->integer, height->integer);
 
 	json_free(json);
 

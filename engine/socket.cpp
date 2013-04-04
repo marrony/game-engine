@@ -9,12 +9,16 @@
 #ifdef WIN32
 #include <windows.h>
 #include <winsock2.h>
+typedef int socklen_t;
 #else
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #endif
+
+#include <sys/unistd.h>
+#include <sys/fcntl.h>
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -95,11 +99,46 @@ int close_socket(int sock) {
 }
 
 int send_socket(int sock, const void* buffer, size_t size) {
-	return send(sock, buffer, size, 0);
+#ifdef WIN32
+	const char* ptr = (const char*)buffer;
+#else
+	const void* ptr = buffer;
+#endif
+	return send(sock, ptr, size, 0);
 }
 
 int recv_socket(int sock, void* buffer, size_t size) {
-	return recv(sock, buffer, size, 0);
+#ifdef WIN32
+	char* ptr = (char*)buffer;
+#else
+	void* ptr = buffer;
+#endif
+	return recv(sock, ptr, size, 0);
+}
+
+bool has_data_socket(int sock) {
+	fd_set rd_set;
+
+	FD_ZERO(&rd_set);
+	FD_SET(sock, &rd_set);
+
+	struct timeval time;
+	time.tv_sec = 0;
+	time.tv_usec = 1;
+
+	if(select(sock+1, &rd_set, NULL, NULL, &time) < 0)
+		return false;
+
+	return FD_ISSET(sock, &rd_set);
+}
+
+int set_non_blocking_socket(int sock) {
+#ifdef WIN32
+	u_long mode = 1;
+	return ioctlsocket(sock, FIONBIO, &mode);
+#else
+	return fcntl(sock, F_SETFL, O_NONBLOCK);
+#endif
 }
 
 Socket::Socket(int sock) : sock(sock) {}

@@ -6,12 +6,17 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
 if(UNIX)
 find_package(X11 REQUIRED)
+set(LIBRARIES ${X11_LIBRARIES})
 endif(UNIX)
+
+if(WIN32)
+set(LIBRARIES ws2_32)
+endif(WIN32)
 
 add_subdirectory(engine)
 include_directories(engine)
 
 add_executable(tool tool/main.cpp tool/app.cpp tool/app_win32.cpp tool/app_x11.cpp tool/exec.cpp)
-target_link_libraries(tool engine_static socket_static ${X11_LIBRARIES})
+target_link_libraries(tool engine_static socket_static ${LIBRARIES})
 
 #install(TARGETS prog DESTINATION bin)
