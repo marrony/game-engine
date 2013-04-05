@@ -46,8 +46,10 @@ public:
 	bool connect(const char* host, short port);
 	bool close();
 
-	int send(const void* buffer, size_t size);
+	int send(const void* buffer, size_t size) const;
 	int recv(void* buffer, size_t size);
+
+	bool has_data() const;
 };
 
 class ServerSocket {

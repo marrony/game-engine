@@ -139,12 +139,16 @@ bool Socket::close() {
 	return true;
 }
 
-int Socket::send(const void* buffer, size_t size) {
+int Socket::send(const void* buffer, size_t size) const {
 	return socket_send(sock, buffer, size);
 }
 
 int Socket::recv(void* buffer, size_t size) {
 	return socket_recv(sock, buffer, size);
+}
+
+bool Socket::has_data() const {
+	return socket_has_data(sock);
 }
 
 ServerSocket::ServerSocket(short port) {
