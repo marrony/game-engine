@@ -8,19 +8,35 @@
 #ifndef SOCKET_H_
 #define SOCKET_H_
 
+#ifdef WIN32
+#include <windows.h>
+#include <winsock2.h>
+typedef int socklen_t;
+#else
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#endif
+
+#include <sys/unistd.h>
+#include <sys/fcntl.h>
+
+#include <stdlib.h>
+#include <unistd.h>
 #include <stddef.h>
 
-int create_server_socket(short port);
-int accept_socket(int serversock);
+int socket_create_server(short port);
+int socket_accept(int serversock);
 
-int connect_socket(const char* host, short port);
-int close_socket(int sock);
+int socket_connect(const char* host, short port);
+int socket_close(int sock);
 
-int send_socket(int sock, const void* buffer, size_t size);
-int recv_socket(int sock, void* buffer, size_t size);
+int socket_send(int sock, const void* buffer, size_t size);
+int socket_recv(int sock, void* buffer, size_t size);
 
-bool has_data_socket(int sock);
-int set_non_blocking_socket(int sock);
+bool socket_has_data(int sock);
+int socket_set_non_blocking(int sock);
 
 class Socket {
 	int sock;
