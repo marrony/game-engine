@@ -70,7 +70,7 @@ int socket_connect(const char* host, short port) {
 	addr.sin_addr.s_addr = inet_addr(host);
 
 	if(connect(sock, (const struct sockaddr*)&addr, sizeof(addr)) < 0) {
-		close(sock);
+		closesocket(sock);
 		return -1;
 	}
 
@@ -109,7 +109,7 @@ bool socket_has_data(int sock) {
 	time.tv_sec = 0;
 	time.tv_usec = 1;
 
-	if(select(sock+1, &rd_set, NULL, NULL, &time) < 0)
+	if(select(sock+1, &rd_set, NULL, NULL, &time) <= 0)
 		return false;
 
 	return FD_ISSET(sock, &rd_set);

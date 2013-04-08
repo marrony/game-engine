@@ -27,13 +27,20 @@ int main(int argc, char* argv[]) {
 	int port = get_argument(argc, argv, "--port");
 
 	ServerSocket server(port < 0 ? 9090 : port);
+
+	fprintf(stderr, "waint for connection\n");
+	fflush(stderr);
+
 	Socket client = server.accept();
+
+	fprintf(stderr, "connected: %d\n", *(int*)&client);
+	fflush(stderr);
 
 	char buffer[1024];
 	int nbytes = client.recv(buffer, sizeof(buffer));
 	buffer[nbytes]= 0;
 
-	fprintf(stderr, "%s", buffer);
+	fprintf(stderr, "%s\n", buffer);
 	fflush(stderr);
 
 	Json json = json_parse(buffer, nbytes);
@@ -41,21 +48,26 @@ int main(int argc, char* argv[]) {
 	Value* width = json_get_attribute(json.value, "width");
 	Value* height = json_get_attribute(json.value, "height");
 
-	SwapChain swap_chain = create_swap_chain((WindowID)window->integer, width->integer, height->integer);
+	SwapChain swap_chain = swap_chain_create((WindowID)window->integer, width->integer, height->integer);
 
 	json_free(json);
 
 	bool running = true;
 	while(running) {
+		swap_chain_process_events(swap_chain);
+
 		if(client.has_data()) {
 			int nbytes = client.recv(buffer, sizeof(buffer));
+
+			fprintf(stderr, "bytes read: %d\n", nbytes);
+			fflush(stderr);
 
 			if(nbytes < 0)
 				running = false;
 			else if(nbytes > 0) {
 				buffer[nbytes]= 0;
 
-				fprintf(stderr, "bytes read: %d\ndata read: %s\n", nbytes, buffer);
+				fprintf(stderr, "data read: %s\n", buffer);
 				fflush(stderr);
 
 				json = json_parse(buffer, nbytes);
@@ -92,13 +104,16 @@ int main(int argc, char* argv[]) {
 		glVertex3f(.75, .75, -1.0);
 		glEnd();
 
-		swap_swap_chain(swap_chain);
+		swap_chain_swap_buffers(swap_chain);
 	}
 
-	destroy_swap_chain(swap_chain);
+	swap_chain_destroy(swap_chain);
 
 	fprintf(stderr, "finish engine\n");
 	fflush(stderr);
+
+	snprintf(buffer, sizeof(buffer), "{\"type\": \"finish\"}");
+	client.send(buffer, strlen(buffer));
 
 	client.close();
 	server.close();

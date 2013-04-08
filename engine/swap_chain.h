@@ -30,8 +30,9 @@ struct SwapChain {
 #endif
 };
 
-SwapChain create_swap_chain(WindowID handle, int width, int height);
-void destroy_swap_chain(SwapChain& swap_chain);
-void swap_swap_chain(SwapChain& swap_chain);
+SwapChain swap_chain_create(WindowID handle, int width, int height);
+void swap_chain_destroy(SwapChain& swap_chain);
+void swap_chain_swap_buffers(SwapChain& swap_chain);
+void swap_chain_process_events(SwapChain& swap_chain);
 
 #endif /* SWAP_CHAIN_H_ */

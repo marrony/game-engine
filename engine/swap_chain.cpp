@@ -7,11 +7,20 @@
 
 #include "swap_chain.h"
 
+#ifdef WIN32
+#include <windows.h>
+#include <GL/gl.h>
+//#include <GL/glext.h>
+#else
+#include <GL/gl.h>
+#include <GL/glx.h>
+#endif
+
 #include <stdio.h>
 
 #ifdef WIN32
 
-SwapChain create_swap_chain(WindowID handle, int width, int height) {
+SwapChain swap_chain_create(WindowID handle, int width, int height) {
 	SwapChain swap_chain;
 
 	swap_chain.window = handle;
@@ -41,19 +50,22 @@ SwapChain create_swap_chain(WindowID handle, int width, int height) {
 	return swap_chain;
 }
 
-void destroy_swap_chain(SwapChain& swap_chain) {
+void swap_chain_destroy(SwapChain& swap_chain) {
 	wglMakeCurrent(swap_chain.hdc, NULL);
 	wglDeleteContext(swap_chain.hglrc);
 	ReleaseDC(swap_chain.window, swap_chain.hdc);
 }
 
-void swap_swap_chain(SwapChain& swap_chain) {
+void swap_chain_swap_buffers(SwapChain& swap_chain) {
 	SwapBuffers(swap_chain.hdc);
+}
+
+void swap_chain_process_events(SwapChain& swap_chain) {
 }
 
 #else
 
-SwapChain create_swap_chain(WindowID handle, int width, int height) {
+SwapChain swap_chain_create(WindowID handle, int width, int height) {
 	SwapChain swap_chain;
 
 	GLint att[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
@@ -68,7 +80,7 @@ SwapChain create_swap_chain(WindowID handle, int width, int height) {
 	Colormap cmap = XCreateColormap(swap_chain.display, root, swap_chain.vi->visual, AllocNone);
 	XSetWindowAttributes swa;
 	swa.colormap = cmap;
-	swa.event_mask = ExposureMask | KeyPressMask | KeyReleaseMask | StructureNotifyMask;
+	swa.event_mask = ExposureMask;// | KeyPressMask | KeyReleaseMask | StructureNotifyMask;
 
 	swap_chain.window = XCreateWindow(swap_chain.display, swap_chain.parent, 0, 0, width, height, 0, swap_chain.vi->depth, InputOutput, swap_chain.vi->visual, CWColormap | CWEventMask, &swa);
 
@@ -81,14 +93,20 @@ SwapChain create_swap_chain(WindowID handle, int width, int height) {
 	return swap_chain;
 }
 
-void destroy_swap_chain(SwapChain& swap_chain) {
+void swap_chain_destroy(SwapChain& swap_chain) {
 	glXMakeCurrent(swap_chain.display, None, NULL);
 	glXDestroyContext(swap_chain.display, swap_chain.glc);
 	XCloseDisplay(swap_chain.display);
 }
 
-void swap_swap_chain(SwapChain& swap_chain) {
+void swap_chain_swap_buffers(SwapChain& swap_chain) {
 	glXSwapBuffers(swap_chain.display, swap_chain.window);
+}
+
+void swap_chain_process_events(SwapChain& swap_chain) {
+	XEvent event;
+	while(XQLength(swap_chain.display) > 0)
+		XNextEvent(swap_chain.display, &event);
 }
 
 #endif //WIN32

@@ -4,6 +4,7 @@
 #include <memory.h>
 
 #include "socket.h"
+#include "json.h"
 
 Application::Application(const char* title, int width, int height, bool fullscreen) :
 	running(false), title(title), width(width), height(height), fullscreen(fullscreen) {
@@ -23,7 +24,10 @@ int Application::run(Game& game) {
 	execute_program(args, NULL, NULL);
 
 	Socket sock;
-	sock.connect("127.0.0.1", 9090);
+	while(!sock.connect("127.0.0.1", 9090)) {
+		fprintf(stderr, "trying again\n");
+		fflush(stderr);
+	}
 
 	char buffer[1024];
 	snprintf(buffer, sizeof(buffer), "{\"window\": %d, \"width\": %d, \"height\": %d}", (int)window, width, height);
@@ -40,6 +44,24 @@ int Application::run(Game& game) {
 
 	snprintf(buffer, sizeof(buffer), "{\"type\": \"finish\"}");
 	sock.send(buffer, strlen(buffer));
+
+	fprintf(stderr, "waiting a response\n");
+	fflush(stderr);
+
+	int nbytes = sock.recv(buffer, sizeof(buffer));
+	if(nbytes > 0) {
+		buffer[nbytes] = 0;
+
+		Json json = json_parse(buffer, nbytes);
+
+		Value* type = json_get_attribute(json.value, "type");
+		if(type && !strcmp("finish", type->string)) {
+			fprintf(stderr, "close ok\n");
+			fflush(stderr);
+		}
+
+		json_free(json);
+	}
 
 	game.finalize();
 
