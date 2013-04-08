@@ -38,7 +38,13 @@ int Application::run(Game& game) {
 		swapBuffers();
 	}
 
+	snprintf(buffer, sizeof(buffer), "{\"type\": \"finish\"}");
+	sock.send(buffer, strlen(buffer));
+
 	game.finalize();
+
+	sock.close();
+
 	finalize();
 
 	return 0;

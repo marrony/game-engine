@@ -45,7 +45,33 @@ int main(int argc, char* argv[]) {
 
 	json_free(json);
 
-	while(true) {
+	bool running = true;
+	while(running) {
+		if(client.has_data()) {
+			int nbytes = client.recv(buffer, sizeof(buffer));
+
+			if(nbytes < 0)
+				running = false;
+			else if(nbytes > 0) {
+				buffer[nbytes]= 0;
+
+				fprintf(stderr, "bytes read: %d\ndata read: %s\n", nbytes, buffer);
+				fflush(stderr);
+
+				json = json_parse(buffer, nbytes);
+
+				Value* type = json_get_attribute(json.value, "type");
+				if(type && !strcmp("finish", type->string)) {
+					running = false;
+
+					fprintf(stderr, "type: %s\n", type->string);
+					fflush(stderr);
+				}
+
+				json_free(json);
+			}
+		}
+
 		glClearColor(1.0, 1.0, 1.0, 1.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -68,6 +94,11 @@ int main(int argc, char* argv[]) {
 
 		swap_swap_chain(swap_chain);
 	}
+
+	destroy_swap_chain(swap_chain);
+
+	fprintf(stderr, "finish engine\n");
+	fflush(stderr);
 
 	client.close();
 	server.close();
