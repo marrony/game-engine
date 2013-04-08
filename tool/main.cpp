@@ -6,6 +6,7 @@
 #include <stdint.h>
 
 #include "json.h"
+#include "stream.h"
 
 struct Mesh {
 	uint16_t index_offset;
@@ -103,6 +104,19 @@ public:
 };
 
 int main(int argc, char* argv[]) {
+	FileStream stream;
+
+	create_file_stream(&stream, "test.json");
+	while(true) {
+		if(stream.cursor == stream.end &&
+				stream.refill(&stream) != NoError)
+			break;
+
+		printf("%c", stream.cursor++);
+	}
+
+	stream.destroy(&stream);
+
 	Application app("my x11/win32 window", 600, 600, true);
 	Game2 game(app);
 	return app.run(game);

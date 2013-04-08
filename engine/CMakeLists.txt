@@ -14,6 +14,7 @@ endif()
 add_library(socket_static STATIC socket.cpp)
 add_library(json_static STATIC json.cpp)
 add_library(engine_static STATIC swap_chain.cpp)
+add_library(stream_static STATIC stream.cpp)
 
 add_executable(engine engine.cpp)
 target_link_libraries(engine engine_static json_static socket_static ${OPENGL_LIBRARIES} ${LIBRARIES})
