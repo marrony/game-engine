@@ -32,6 +32,143 @@ static bool is_number(int ch) {
 	return ch == '+' || ch == '-' || isdigit(ch);
 }
 
+static Token json_next_token(const char* data, int data_lenght, int& position) {
+
+	int begin = position;
+	int old_begin = begin;
+
+	int type = TP_INVALID;
+	int start = 0;
+	int end = 0;
+
+	while(begin < data_lenght) {
+		if(is_number(data[begin])) {
+			begin++;
+
+			while(begin < data_lenght && isdigit(data[begin]))
+				begin++;
+
+			type = TP_INT;
+
+			if(data[begin] == '.') {
+				begin++;
+
+				while(begin < data_lenght && isdigit(data[begin]))
+					begin++;
+
+				type = TP_NUMBER;
+			}
+
+			if(data[begin] == 'e' || data[begin] == 'E') {
+				begin++;
+
+				if(data[begin] == '-' || data[begin] == '+')
+					begin++;
+
+				while(begin < data_lenght && isdigit(data[begin]))
+					begin++;
+
+				type = TP_NUMBER;
+			}
+
+			//insert_token(tokens, count, capacity, old_begin, begin, type);
+			start = old_begin;
+			end = begin;
+			break;
+		} else if(data[begin] == '\"') {
+			begin++;
+			while(begin < data_lenght) {
+				char ch = data[begin++];
+
+				if(ch == '\\') {
+					if(begin < data_lenght && (data[begin] == '\"' || data[begin] == '\\' || data[begin] == '/' ||
+						data[begin] == 'b' || data[begin] == 'f' || data[begin] == 'n' ||
+						data[begin] == 'r' || data[begin] == 't'))
+						begin++;
+				} else if(ch == '\"')
+					break;
+			}
+
+			//insert_token(tokens, count, capacity, old_begin+1, begin-1, TP_STRING);
+			type = TP_STRING;
+			start = old_begin+1;
+			end = begin-1;
+			break;
+		} else if(data[begin] == ',') {
+			begin++;
+			//insert_token(tokens, count, capacity, old_begin, begin, ',');
+			type = ',';
+			start = old_begin+1;
+			end = begin-1;
+			break;
+		} else if(data[begin] == '{') {
+			begin++;
+			//insert_token(tokens, count, capacity, old_begin, begin, '{');
+			type = '{';
+			start = old_begin+1;
+			end = begin-1;
+			break;
+		} else if(data[begin] == '}') {
+			begin++;
+			//insert_token(tokens, count, capacity, old_begin, begin, '}');
+			type = '}';
+			start = old_begin+1;
+			end = begin-1;
+			break;
+		} else if(data[begin] == '[') {
+			begin++;
+			//insert_token(tokens, count, capacity, old_begin, begin, '[');
+			type = '[';
+			start = old_begin+1;
+			end = begin-1;
+			break;
+		} else if(data[begin] == ']') {
+			begin++;
+			//insert_token(tokens, count, capacity, old_begin, begin, ']');
+			type = ']';
+			start = old_begin+1;
+			end = begin-1;
+			break;
+		} else if(data[begin] == ':') {
+			begin++;
+			//insert_token(tokens, count, capacity, old_begin, begin, ':');
+			type = ':';
+			start = old_begin+1;
+			end = begin-1;
+			break;
+		} else if(begin+4 < data_lenght && data[begin] == 't' && data[begin+1] == 'r' && data[begin+2] == 'u' && data[begin+3] == 'e') {
+			begin += 4;
+			//insert_token(tokens, count, capacity, old_begin, begin, TP_TRUE);
+			type = TP_TRUE;
+			start = old_begin+1;
+			end = begin-1;
+			break;
+		} else if(begin+5 < data_lenght && data[begin] == 'f' && data[begin+1] == 'a' && data[begin+2] == 'l' && data[begin+3] == 's' && data[begin+4] == 'e') {
+			begin += 5;
+			//insert_token(tokens, count, capacity, old_begin, begin, TP_FALSE);
+			type = TP_FALSE;
+			start = old_begin+1;
+			end = begin-1;
+			break;
+		} else if(begin+4 < data_lenght && data[begin] == 'n' && data[begin+1] == 'u' && data[begin+2] == 'l' && data[begin+3] == 'l') {
+			begin += 4;
+			//insert_token(tokens, count, capacity, old_begin, begin, TP_NULL);
+			type = TP_NULL;
+			start = old_begin+1;
+			end = begin-1;
+			break;
+		} else {
+			begin++;
+		}
+		old_begin = begin;
+	}
+
+	position = begin;
+
+	Token token = {type, start, end};
+	return token;
+}
+
 void json_tokenize(const char* data, int data_lenght, Token*& tokens, int& count) {
 	int old_begin = 0;
 	int begin = 0;
@@ -134,18 +271,18 @@ static bool is_value(Token& token) {
 			type == '{';
 }
 
-static Array parse_array(const char* data, int data_lenght, int& begin, Token* tokens, int count);
-static Object parse_object(const char* data, int data_lenght, int& begin, Token* tokens, int count);
+static Array parse_array(const char* data, int data_lenght, int& begin);
+static Object parse_object(const char* data, int data_lenght, int& begin);
 
-static void parse_value(const char* data, int data_lenght, Value& value, int& begin, Token* tokens, int count) {
-	switch(tokens[begin].token) {
+static void parse_value(const char* data, int data_lenght, const Token& token, Value& value, int& begin) {
+	switch(token.token) {
 	case TP_STRING: {
-		int string_size = tokens[begin].end - tokens[begin].start;
+		int string_size = token.end - token.start;
 		value.type = TP_STRING;
 		value.string = (char*)malloc(string_size+1);
 
-		int end = tokens[begin].start + string_size;
-		int src = tokens[begin].start;
+		int end = token.start + string_size;
+		int src = token.start;
 		int dst = 0;
 		while (src < end) {
 			if(data[src] == '\\') {
@@ -175,105 +312,86 @@ static void parse_value(const char* data, int data_lenght, Value& value, int& be
 		}
 		value.string[dst] = 0;
 
-		begin++;
 		break;
 	}
 	case TP_INT:
 		value.type = TP_INT;
-		value.integer = atoi(data+tokens[begin].start);
-		begin++;
+		value.integer = atoi(data+token.start);
 		break;
 	case TP_NUMBER:
 		value.type = TP_NUMBER;
-		value.number = atof(data+tokens[begin].start);
-		begin++;
+		value.number = atof(data+token.start);
 		break;
 	case TP_TRUE:
 		value.type = TP_TRUE;
-		begin++;
 		break;
 	case TP_FALSE:
 		value.type = TP_FALSE;
-		begin++;
 		break;
 	case TP_NULL:
 		value.type = TP_NULL;
-		begin++;
 		break;
 	case '[':
 		value.type = TP_ARRAY;
-		value.array = parse_array(data, data_lenght, begin, tokens, count);
+		value.array = parse_array(data, data_lenght, begin);
 		break;
 	case '{':
 		value.type = TP_OBJECT;
-		value.object = parse_object(data, data_lenght, begin, tokens, count);
+		value.object = parse_object(data, data_lenght, begin);
 		break;
 	}
 }
 
-static Array parse_array(const char* data, int data_lenght, int& begin, Token* tokens, int count) {
+static Array parse_array(const char* data, int data_lenght, int& begin) {
 	Array array = {0};
 
-	begin++;
+	Token token;
 
-	while(begin < count) {
-		if(!is_value(tokens[begin])) break;
-
+	while(is_value(token = json_next_token(data, data_lenght, begin))) {
 		int index = array.size++;
 		array.values = (Value*)realloc(array.values, sizeof(Value) * array.size);
 
-		parse_value(data, data_lenght, array.values[index], begin, tokens, count);
+		parse_value(data, data_lenght, token, array.values[index], begin);
 
-		if(begin < count && tokens[begin].token != ',')
+		if(begin < data_lenght && (token = json_next_token(data, data_lenght, begin)).token != ',')
 			break;
-
-		begin++;
 	}
 
-	if(tokens[begin].token != ']') {
+	if(token.token != ']') {
 		fprintf(stderr, "parsing error, expected ]");
 		return array;
 	}
 
-	begin++;
-
 	return array;
 }
 
-static Object parse_object(const char* data, int data_lenght, int& begin, Token* tokens, int count) {
+static Object parse_object(const char* data, int data_lenght, int& begin) {
 	Object object = {0};
 
-	begin++;
+	Token token;
 
-	while(begin < count) {
-		if(tokens[begin].token != TP_STRING) break;
-
+	while((token = json_next_token(data, data_lenght, begin)).token == TP_STRING) {
 		int index = object.size++;
 		object.fields = (Pair*)realloc(object.fields, sizeof(Pair) * object.size);
 
 		Value field_name;
-		parse_value(data, data_lenght, field_name, begin, tokens, count);
+		parse_value(data, data_lenght, token, field_name, begin);
 		object.fields[index].name = field_name.string;
 
-		if(begin < count && tokens[begin].token != ':') break;
-		begin++;
+		if(begin < data_lenght && (token = json_next_token(data, data_lenght, begin)).token != ':') break;
 
-		if(begin < count && !is_value(tokens[begin])) break;
+		if(begin < data_lenght && !is_value(token = json_next_token(data, data_lenght, begin))) break;
 
-		parse_value(data, data_lenght, object.fields[index].value, begin, tokens, count);
+		parse_value(data, data_lenght, token, object.fields[index].value, begin);
 
-		if(begin < count && tokens[begin].token != ',')
+		if(begin < data_lenght && (token = json_next_token(data, data_lenght, begin)).token != ',')
 			break;
-
-		begin++;
 	}
 
-	if(tokens[begin].token != '}') {
+	if(token.token != '}') {
 		fprintf(stderr, "parsing error, expected }");
 		return object;
 	}
-
-	begin++;
 
 	return object;
 }
@@ -283,25 +401,33 @@ Json json_parse(const char* data, int data_lenght, Token* tokens, int count) {
 
 	int begin = 0;
 
+	int position = 0;
+	Token token = json_next_token(data, data_lenght, position);
+
 	if(tokens[begin].token == '[') {
 		json.value.type = TP_ARRAY;
-		json.value.array = parse_array(data, data_lenght, begin, tokens, count);
+		json.value.array = parse_array(data, data_lenght, begin);
 	} else if(tokens[begin].token == '{') {
 		json.value.type = TP_OBJECT;
-		json.value.object = parse_object(data, data_lenght, begin, tokens, count);
+		json.value.object = parse_object(data, data_lenght, begin);
 	}
 
 	return json;
 }
 
 Json json_parse(const char* data, int data_lenght) {
-	Token* tokens = 0;
-	int count = 0;
+	Json json = {{TP_INVALID, 0}};
 
-	json_tokenize(data, data_lenght, tokens, count);
-	Json json = json_parse(data, data_lenght, tokens, count);
+	int begin = 0;
+	Token token = json_next_token(data, data_lenght, begin);
 
-	free(tokens);
+	if(token.token == '[') {
+		json.value.type = TP_ARRAY;
+		json.value.array = parse_array(data, data_lenght, begin);
+	} else if(token.token == '{') {
+		json.value.type = TP_OBJECT;
+		json.value.object = parse_object(data, data_lenght, begin);
+	}
 
 	return json;
 }
