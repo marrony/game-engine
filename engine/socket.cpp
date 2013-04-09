@@ -5,6 +5,7 @@
  *      Author: marrony
  */
 #include "socket.h"
+#include <errno.h>
 
 #ifndef WIN32
 static int closesocket(int sock) {
@@ -81,22 +82,58 @@ int socket_close(int sock) {
 	return closesocket(sock);
 }
 
-int socket_send(int sock, const void* buffer, size_t size) {
-#ifdef WIN32
+int socket_send(int sock, const void* buffer, size_t size, size_t* bytes_send) {
 	const char* ptr = (const char*)buffer;
-#else
-	const void* ptr = buffer;
-#endif
-	return send(sock, ptr, size, 0);
+
+	size_t total = 0;
+	size_t left = size;
+
+	int nbytes;
+	while(total < size) {
+		nbytes = send(sock, ptr+total, left, 0);
+
+		if(nbytes == -1) {
+			if(errno == EINTR)
+				continue;
+
+			break;
+		}
+
+		total += nbytes;
+		left -= nbytes;
+	}
+
+	if(bytes_send)
+		*bytes_send = total;
+
+	return nbytes == -1 ? -1 : 0;
 }
 
-int socket_recv(int sock, void* buffer, size_t size) {
-#ifdef WIN32
+int socket_recv(int sock, void* buffer, size_t size, size_t* bytes_recv) {
 	char* ptr = (char*)buffer;
-#else
-	void* ptr = buffer;
-#endif
-	return recv(sock, ptr, size, 0);
+
+	size_t total = 0;
+	size_t left = size;
+
+	int nbytes;
+	while(total < size) {
+		nbytes = recv(sock, ptr+total, left, 0);
+
+		if(nbytes == -1) {
+			if(errno == EINTR)
+				continue;
+
+			break;
+		}
+
+		total += nbytes;
+		left -= nbytes;
+	}
+
+	if(bytes_recv)
+		*bytes_recv = total;
+
+	return nbytes == -1 ? -1 : 0;
 }
 
 bool socket_has_data(int sock) {
@@ -139,12 +176,12 @@ bool Socket::close() {
 	return true;
 }
 
-int Socket::send(const void* buffer, size_t size) const {
-	return socket_send(sock, buffer, size);
+int Socket::send(const void* buffer, size_t size, size_t& bytes_send) const {
+	return socket_send(sock, buffer, size, &bytes_send);
 }
 
-int Socket::recv(void* buffer, size_t size) {
-	return socket_recv(sock, buffer, size);
+int Socket::recv(void* buffer, size_t size, size_t& bytes_recv) {
+	return socket_recv(sock, buffer, size, &bytes_recv);
 }
 
 bool Socket::has_data() const {
@@ -161,4 +198,8 @@ bool ServerSocket::close() {
 
 Socket ServerSocket::accept() {
 	return Socket(socket_accept(sock));
+}
+
+bool ServerSocket::can_accept() const {
+	return socket_has_data(sock);
 }

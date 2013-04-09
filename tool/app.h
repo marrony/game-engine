@@ -10,6 +10,8 @@
 #include <GL/glx.h>
 #endif
 
+#include "socket.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -149,6 +151,8 @@ class Application {
 	bool fullscreen;
 
 	bool keysPressed[256];
+
+	Socket sock;
 
 	void onResize(int width, int height);
 	void onKeyUp(AppKeyCode key);

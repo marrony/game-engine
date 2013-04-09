@@ -36,11 +36,16 @@ int main(int argc, char* argv[]) {
 	fprintf(stderr, "connected: %d\n", *(int*)&client);
 	fflush(stderr);
 
-	char buffer[1024];
-	int nbytes = client.recv(buffer, sizeof(buffer));
-	buffer[nbytes]= 0;
 
-	fprintf(stderr, "%s\n", buffer);
+	char buffer[1024];
+	size_t nbytes;
+	uint32_t size;
+
+	client.recv(&size, sizeof(size), nbytes);
+	client.recv(buffer, size, nbytes);
+	buffer[nbytes] = 0;
+
+	fprintf(stderr, "read: %s\n", buffer);
 	fflush(stderr);
 
 	Json json = json_parse(buffer, nbytes);
@@ -52,14 +57,17 @@ int main(int argc, char* argv[]) {
 
 	json_free(json);
 
+	float ang = 0;
+
 	bool running = true;
 	while(running) {
 		swap_chain_process_events(swap_chain);
 
 		if(client.has_data()) {
-			int nbytes = client.recv(buffer, sizeof(buffer));
+			client.recv(&size, sizeof(size), nbytes);
+			client.recv(buffer, size, nbytes);
 
-			fprintf(stderr, "bytes read: %d\n", nbytes);
+			fprintf(stderr, "bytes read: %u\n", nbytes);
 			fflush(stderr);
 
 			if(nbytes < 0)
@@ -73,13 +81,20 @@ int main(int argc, char* argv[]) {
 				json = json_parse(buffer, nbytes);
 
 				Value* type = json_get_attribute(json.value, "type");
-				if(type && !strcmp("finish", type->string)) {
-					running = false;
+				if(type) {
+					if(!strcmp("finish", type->string)) {
+						running = false;
 
-					fprintf(stderr, "type: %s\n", type->string);
-					fflush(stderr);
+						fprintf(stderr, "type: %s\n", type->string);
+						fflush(stderr);
+					} else if(!strcmp("resize", type->string)) {
+						Value* width = json_get_attribute(json.value, "width");
+						Value* height = json_get_attribute(json.value, "height");
+
+						swap_chain_resize(swap_chain, width->integer, height->integer);
+						glViewport(0, 0, width->integer, height->integer);
+					}
 				}
-
 				json_free(json);
 			}
 		}
@@ -94,6 +109,7 @@ int main(int argc, char* argv[]) {
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 		//gluLookAt(0., 0., 10., 0., 0., 0., 0., 1., 0.);
+		glRotatef(ang += 0.02, 0, 0, 1);
 
 		glBegin(GL_TRIANGLES);
 		glColor3f(1, 0, 0);
@@ -113,7 +129,10 @@ int main(int argc, char* argv[]) {
 	fflush(stderr);
 
 	snprintf(buffer, sizeof(buffer), "{\"type\": \"finish\"}");
-	client.send(buffer, strlen(buffer));
+	size = strlen(buffer);
+
+	client.send(&size, sizeof(size), nbytes);
+	client.send(buffer, size, nbytes);
 
 	client.close();
 	server.close();

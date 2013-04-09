@@ -10,6 +10,8 @@
 
 #include <stdlib.h>
 #include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
 
 static StreamError refill_zeros(Stream* stream) {
 	static const char zeros[256] = {0};
@@ -50,9 +52,13 @@ void create_memory_stream(Stream* stream, const char* buffer, size_t size) {
 const int FILE_BUFFER_SIZE = 256;
 
 static StreamError refill_file(FileStream* stream) {
-	if(!eof(stream->fd)) {
-		int nbytes = read(stream->fd, (void*)stream->start, FILE_BUFFER_SIZE);
+	int nbytes;
 
+	do {
+		nbytes = read(stream->fd, (void*)stream->start, FILE_BUFFER_SIZE);
+	} while(nbytes == -1 && errno == EINTR);
+
+	if(nbytes > 0) {
 		stream->cursor = stream->start;
 		stream->end = stream->start + nbytes;
 
@@ -88,11 +94,11 @@ void create_file_stream(FileStream* stream, const char* filename) {
 }
 
 static StreamError refill_socket(SocketStream* stream) {
-	if(socket_has_data(stream->sock)) {
-		int nbytes = socket_recv(stream->sock, (void*)stream->start, FILE_BUFFER_SIZE);
-
+	size_t bytes_recv;
+	if(socket_has_data(stream->sock) &&
+			socket_recv(stream->sock, (void*)stream->start, FILE_BUFFER_SIZE, &bytes_recv) >= 0) {
 		stream->cursor = stream->start;
-		stream->end = stream->start + nbytes;
+		stream->end = stream->start + bytes_recv;
 
 		return stream->error;
 	} else {

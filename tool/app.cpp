@@ -3,7 +3,6 @@
 
 #include <memory.h>
 
-#include "socket.h"
 #include "json.h"
 
 Application::Application(const char* title, int width, int height, bool fullscreen) :
@@ -23,15 +22,20 @@ int Application::run(Game& game) {
 
 	execute_program(args, NULL, NULL);
 
-	Socket sock;
 	while(!sock.connect("127.0.0.1", 9090)) {
 		fprintf(stderr, "trying again\n");
 		fflush(stderr);
 	}
 
 	char buffer[1024];
+	size_t nbytes;
+	uint32_t size;
+
 	snprintf(buffer, sizeof(buffer), "{\"window\": %d, \"width\": %d, \"height\": %d}", (int)window, width, height);
-	sock.send(buffer, strlen(buffer));
+	size = strlen(buffer);
+
+	sock.send(&size, sizeof(size), nbytes);
+	sock.send(buffer, size, nbytes);
 
 	game.initialize();
 
@@ -43,13 +47,16 @@ int Application::run(Game& game) {
 	}
 
 	snprintf(buffer, sizeof(buffer), "{\"type\": \"finish\"}");
-	sock.send(buffer, strlen(buffer));
+	size = strlen(buffer);
+
+	sock.send(&size, sizeof(size), nbytes);
+	sock.send(buffer, size, nbytes);
 
 	fprintf(stderr, "waiting a response\n");
 	fflush(stderr);
 
-	int nbytes = sock.recv(buffer, sizeof(buffer));
-	if(nbytes > 0) {
+	if(sock.recv(&size, sizeof(size), nbytes) >= 0) {
+		sock.recv(buffer, size, nbytes);
 		buffer[nbytes] = 0;
 
 		Json json = json_parse(buffer, nbytes);
@@ -81,7 +88,15 @@ void Application::onResize(int width, int height) {
 		this->width = width;
 		this->height = height;
 
-//		glViewport(0, 0, width, height);
+		char buffer[256];
+		size_t nbytes;
+		uint32_t size;
+
+		snprintf(buffer, sizeof(buffer), "{\"type\": \"resize\", \"width\": %d, \"height\": %d}", width, height);
+		size = strlen(buffer);
+
+		sock.send(&size, sizeof(size), nbytes);
+		sock.send(buffer, size, nbytes);
 	}
 }
 

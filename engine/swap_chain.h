@@ -34,5 +34,6 @@ SwapChain swap_chain_create(WindowID handle, int width, int height);
 void swap_chain_destroy(SwapChain& swap_chain);
 void swap_chain_swap_buffers(SwapChain& swap_chain);
 void swap_chain_process_events(SwapChain& swap_chain);
+void swap_chain_resize(SwapChain& swap_chain, int width, int height);
 
 #endif /* SWAP_CHAIN_H_ */
