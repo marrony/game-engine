@@ -25,5 +25,4 @@ typedef Window WindowID;
 
 const WindowID WINDOW_NULL = (WindowID)-1;
 
-
 #endif /* ENGINE_H_ */

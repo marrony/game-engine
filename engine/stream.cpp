@@ -96,7 +96,7 @@ void create_file_stream(FileStream* stream, const char* filename) {
 static StreamError refill_socket(SocketStream* stream) {
 	size_t bytes_recv;
 	if(socket_has_data(stream->sock) &&
-			socket_recv(stream->sock, (void*)stream->start, FILE_BUFFER_SIZE, &bytes_recv) >= 0) {
+			socket_recv_all(stream->sock, (void*)stream->start, FILE_BUFFER_SIZE, &bytes_recv) >= 0) {
 		stream->cursor = stream->start;
 		stream->end = stream->start + bytes_recv;
 

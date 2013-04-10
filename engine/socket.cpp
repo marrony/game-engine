@@ -82,7 +82,29 @@ int socket_close(int sock) {
 	return closesocket(sock);
 }
 
-int socket_send(int sock, const void* buffer, size_t size, size_t* bytes_send) {
+int socket_send(int sock, const void* buffer, size_t size) {
+	const char* ptr = (const char*)buffer;
+
+	int nbytes;
+	do {
+		nbytes = send(sock, ptr, size, 0);
+	} while(nbytes < 0 && errno == EINTR);
+
+	return nbytes;
+}
+
+int socket_recv(int sock, void* buffer, size_t size) {
+	char* ptr = (char*)buffer;
+
+	int nbytes;
+	do {
+		nbytes = recv(sock, ptr, size, 0);
+	} while(nbytes < 0 && errno == EINTR);
+
+	return nbytes;
+}
+
+int socket_send_all(int sock, const void* buffer, size_t size, size_t* bytes_send) {
 	const char* ptr = (const char*)buffer;
 
 	size_t total = 0;
@@ -90,14 +112,10 @@ int socket_send(int sock, const void* buffer, size_t size, size_t* bytes_send) {
 
 	int nbytes;
 	while(total < size) {
-		nbytes = send(sock, ptr+total, left, 0);
+		nbytes = socket_send(sock, ptr+total, left);
 
-		if(nbytes == -1) {
-			if(errno == EINTR)
-				continue;
-
+		if(nbytes <= 0)
 			break;
-		}
 
 		total += nbytes;
 		left -= nbytes;
@@ -106,10 +124,10 @@ int socket_send(int sock, const void* buffer, size_t size, size_t* bytes_send) {
 	if(bytes_send)
 		*bytes_send = total;
 
-	return nbytes == -1 ? -1 : 0;
+	return nbytes;
 }
 
-int socket_recv(int sock, void* buffer, size_t size, size_t* bytes_recv) {
+int socket_recv_all(int sock, void* buffer, size_t size, size_t* bytes_recv) {
 	char* ptr = (char*)buffer;
 
 	size_t total = 0;
@@ -117,14 +135,10 @@ int socket_recv(int sock, void* buffer, size_t size, size_t* bytes_recv) {
 
 	int nbytes;
 	while(total < size) {
-		nbytes = recv(sock, ptr+total, left, 0);
+		nbytes = socket_recv(sock, ptr+total, left);
 
-		if(nbytes == -1) {
-			if(errno == EINTR)
-				continue;
-
+		if(nbytes <= 0)
 			break;
-		}
 
 		total += nbytes;
 		left -= nbytes;
@@ -133,7 +147,7 @@ int socket_recv(int sock, void* buffer, size_t size, size_t* bytes_recv) {
 	if(bytes_recv)
 		*bytes_recv = total;
 
-	return nbytes == -1 ? -1 : 0;
+	return nbytes;
 }
 
 bool socket_has_data(int sock) {
@@ -176,12 +190,20 @@ bool Socket::close() {
 	return true;
 }
 
-int Socket::send(const void* buffer, size_t size, size_t& bytes_send) const {
-	return socket_send(sock, buffer, size, &bytes_send);
+int Socket::send_all(const void* buffer, size_t size, size_t& bytes_send) const {
+	return socket_send_all(sock, buffer, size, &bytes_send);
 }
 
-int Socket::recv(void* buffer, size_t size, size_t& bytes_recv) {
-	return socket_recv(sock, buffer, size, &bytes_recv);
+int Socket::recv_all(void* buffer, size_t size, size_t& bytes_recv) const {
+	return socket_recv_all(sock, buffer, size, &bytes_recv);
+}
+
+int Socket::send(const void* buffer, size_t size) const {
+	return socket_send(sock, buffer, size);
+}
+
+int Socket::recv(void* buffer, size_t size) const {
+	return socket_recv(sock, buffer, size);
 }
 
 bool Socket::has_data() const {

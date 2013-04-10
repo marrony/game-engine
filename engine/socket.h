@@ -32,8 +32,11 @@ int socket_accept(int serversock);
 int socket_connect(const char* host, short port);
 int socket_close(int sock);
 
-int socket_send(int sock, const void* buffer, size_t size, size_t* bytes_send);
-int socket_recv(int sock, void* buffer, size_t size, size_t* bytes_recv);
+int socket_send(int sock, const void* buffer, size_t size);
+int socket_recv(int sock, void* buffer, size_t size);
+
+int socket_send_all(int sock, const void* buffer, size_t size, size_t* bytes_send);
+int socket_recv_all(int sock, void* buffer, size_t size, size_t* bytes_recv);
 
 bool socket_has_data(int sock);
 int socket_set_non_blocking(int sock);
@@ -46,8 +49,11 @@ public:
 	bool connect(const char* host, short port);
 	bool close();
 
-	int send(const void* buffer, size_t size, size_t& bytes_send) const;
-	int recv(void* buffer, size_t size, size_t& byte_recv);
+	int send_all(const void* buffer, size_t size, size_t& bytes_send) const;
+	int recv_all(void* buffer, size_t size, size_t& byte_recv) const;
+
+	int send(const void* buffer, size_t size) const;
+	int recv(void* buffer, size_t size) const;
 
 	bool has_data() const;
 };

@@ -4,6 +4,7 @@
 #include <memory.h>
 
 #include "json.h"
+#include "protocol.h"
 
 Application::Application(const char* title, int width, int height, bool fullscreen) :
 	running(false), title(title), width(width), height(height), fullscreen(fullscreen) {
@@ -27,15 +28,11 @@ int Application::run(Game& game) {
 		fflush(stderr);
 	}
 
-	char buffer[1024];
+	char buffer[MAX_PROTOCOL_PACKET_SIZE];
 	size_t nbytes;
-	uint32_t size;
 
 	snprintf(buffer, sizeof(buffer), "{\"window\": %d, \"width\": %d, \"height\": %d}", (int)window, width, height);
-	size = strlen(buffer);
-
-	sock.send(&size, sizeof(size), nbytes);
-	sock.send(buffer, size, nbytes);
+	protocol_send_packet(sock, buffer, strlen(buffer));
 
 	game.initialize();
 
@@ -47,16 +44,12 @@ int Application::run(Game& game) {
 	}
 
 	snprintf(buffer, sizeof(buffer), "{\"type\": \"finish\"}");
-	size = strlen(buffer);
-
-	sock.send(&size, sizeof(size), nbytes);
-	sock.send(buffer, size, nbytes);
+	protocol_send_packet(sock, buffer, strlen(buffer));
 
 	fprintf(stderr, "waiting a response\n");
 	fflush(stderr);
 
-	if(sock.recv(&size, sizeof(size), nbytes) >= 0) {
-		sock.recv(buffer, size, nbytes);
+	if(protocol_recv_packet(sock, buffer, sizeof(buffer), nbytes) > 0) {
 		buffer[nbytes] = 0;
 
 		Json json = json_parse(buffer, nbytes);
@@ -88,15 +81,10 @@ void Application::onResize(int width, int height) {
 		this->width = width;
 		this->height = height;
 
-		char buffer[256];
-		size_t nbytes;
-		uint32_t size;
+		char buffer[MAX_PROTOCOL_PACKET_SIZE];
 
 		snprintf(buffer, sizeof(buffer), "{\"type\": \"resize\", \"width\": %d, \"height\": %d}", width, height);
-		size = strlen(buffer);
-
-		sock.send(&size, sizeof(size), nbytes);
-		sock.send(buffer, size, nbytes);
+		protocol_send_packet(sock, buffer, strlen(buffer));
 	}
 }
 

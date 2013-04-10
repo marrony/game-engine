@@ -9,6 +9,7 @@
 #include "swap_chain.h"
 #include "socket.h"
 #include "json.h"
+#include "protocol.h"
 
 #include <cstring>
 #include <stdlib.h>
@@ -36,13 +37,10 @@ int main(int argc, char* argv[]) {
 	fprintf(stderr, "connected: %d\n", *(int*)&client);
 	fflush(stderr);
 
-
-	char buffer[1024];
+	char buffer[MAX_PROTOCOL_PACKET_SIZE];
 	size_t nbytes;
-	uint32_t size;
 
-	client.recv(&size, sizeof(size), nbytes);
-	client.recv(buffer, size, nbytes);
+	protocol_recv_packet(client, buffer, sizeof(buffer), nbytes);
 	buffer[nbytes] = 0;
 
 	fprintf(stderr, "read: %s\n", buffer);
@@ -64,16 +62,13 @@ int main(int argc, char* argv[]) {
 		swap_chain_process_events(swap_chain);
 
 		if(client.has_data()) {
-			client.recv(&size, sizeof(size), nbytes);
-			client.recv(buffer, size, nbytes);
-
-			fprintf(stderr, "bytes read: %u\n", nbytes);
-			fflush(stderr);
-
-			if(nbytes < 0)
+			if(protocol_recv_packet(client, buffer, sizeof(buffer), nbytes) <= 0)
 				running = false;
 			else if(nbytes > 0) {
-				buffer[nbytes]= 0;
+				buffer[nbytes] = 0;
+
+				fprintf(stderr, "bytes read: %u\n", nbytes);
+				fflush(stderr);
 
 				fprintf(stderr, "data read: %s\n", buffer);
 				fflush(stderr);
@@ -129,10 +124,7 @@ int main(int argc, char* argv[]) {
 	fflush(stderr);
 
 	snprintf(buffer, sizeof(buffer), "{\"type\": \"finish\"}");
-	size = strlen(buffer);
-
-	client.send(&size, sizeof(size), nbytes);
-	client.send(buffer, size, nbytes);
+	protocol_send_packet(client, buffer, strlen(buffer));
 
 	client.close();
 	server.close();
