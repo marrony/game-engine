@@ -2,13 +2,13 @@
 
 #ifndef WIN32
 
-void Application::initializeVariables() {
+void Application::initialize_variables() {
 	display = 0;
 	window = 0;
 	WM_DELETE_MESSAGE = 0;
 }
 
-void Application::swapBuffers() {
+void Application::swap_buffers() {
 //	glXSwapBuffers(display, window);
 }
 
@@ -36,7 +36,7 @@ void Application::finalize() {
 	XDestroyWindow(display, window);
 }
 
-static AppKeyCode getAppKeyCode(KeySym keysym) {
+static AppKeyCode get_app_keycode(KeySym keysym) {
 	if (keysym >= XK_A && keysym <= XK_Z)
 		return (AppKeyCode) (KEY_A + (keysym - XK_A));
 
@@ -90,7 +90,7 @@ static AppKeyCode getAppKeyCode(KeySym keysym) {
 	return KEY_NONE;
 }
 
-void Application::processEvents() {
+void Application::process_events() {
 	XEvent event;
 	XNextEvent(display, &event);
 
@@ -101,11 +101,11 @@ void Application::processEvents() {
 		break;
 
 	case KeyRelease:
-		onKeyUp(getAppKeyCode(XLookupKeysym(&event.xkey, 0)));
+		onKeyUp(get_app_keycode(XLookupKeysym(&event.xkey, 0)));
 		break;
 
 	case KeyPress:
-		onKeyDown(getAppKeyCode(XLookupKeysym(&event.xkey, 0)));
+		onKeyDown(get_app_keycode(XLookupKeysym(&event.xkey, 0)));
 		break;
 
 	case ConfigureNotify:

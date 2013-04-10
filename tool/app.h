@@ -125,14 +125,6 @@ enum AppKeyCode {
 	KEY_PAUSE,
 };
 
-class Game {
-public:
-	virtual ~Game() {}
-	virtual void initialize() = 0;
-	virtual void finalize() = 0;
-	virtual void doFrame() = 0;
-};
-
 class Application {
 #ifdef WIN32
 	HWND window;
@@ -150,27 +142,27 @@ class Application {
 	int height;
 	bool fullscreen;
 
-	bool keysPressed[256];
+	bool keys_pressed[256];
 
 	Socket sock;
 
-	void onResize(int width, int height);
-	void onKeyUp(AppKeyCode key);
-	void onKeyDown(AppKeyCode key);
+	void on_resize(int width, int height);
+	void on_key_up(AppKeyCode key);
+	void on_key_down(AppKeyCode key);
 
 	void initialize();
 	void finalize();
-	void processEvents();
-	void swapBuffers();
+	void process_events();
+	void swap_buffers();
 
-	void initializeVariables();
+	void initialize_variables();
 public:
 	Application(const char* title, int width, int height, bool fullscreen);
 
-	int run(Game& game);
-	void stopMainLoop();
+	int run();
+	void stop_main_loop();
 
-	bool isKeyPressed(AppKeyCode key) const;
+	bool is_key_pressed(AppKeyCode key) const;
 };
 
 #endif //APP_H

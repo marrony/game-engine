@@ -9,7 +9,6 @@
 #define JSON_H_
 
 #include <stdint.h>
-#include <stdio.h>
 
 enum Type {
 	TP_INVALID,
@@ -74,8 +73,5 @@ void json_set_attribute(Value& object, const char* attribute, const Value& value
 
 Value* json_get_at(const Value& array, int index);
 void json_set_at(Value& array, int index, const Value& value);
-
-Json json_read(FILE* file);
-void json_write(FILE* file, const Json& json);
 
 #endif /* JSON_H_ */

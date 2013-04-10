@@ -2,11 +2,11 @@
 
 #ifdef WIN32
 
-void Application::initializeVariables() {
+void Application::initialize_variables() {
 	window = 0;
 }
 
-void Application::swapBuffers() {
+void Application::swap_buffers() {
 //	SwapBuffers(hdc);
 }
 
@@ -53,7 +53,7 @@ void Application::finalize() {
 //	ReleaseDC(hwnd, hdc);
 }
 
-static AppKeyCode getAppKeyCode(WPARAM wParam) {
+static AppKeyCode get_app_keycode(WPARAM wParam) {
 	if(wParam >= 0x30 && wParam <= 0x39)
 	return (AppKeyCode)(KEY_0 + (wParam - 0x30));
 
@@ -113,22 +113,22 @@ LRESULT CALLBACK Application::MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 		return 0;
 
 	case WM_KEYUP:
-		app->onKeyUp(getAppKeyCode(wParam));
+		app->on_key_up(get_app_keycode(wParam));
 		return 0;
 
 	case WM_KEYDOWN:
-		app->onKeyDown(getAppKeyCode(wParam));
+		app->on_key_down(get_app_keycode(wParam));
 		return 0;
 
 	case WM_SIZE:
-		app->onResize(LOWORD(lParam), HIWORD(lParam));
+		app->on_resize(LOWORD(lParam), HIWORD(lParam));
 		return 0;
 	}
 
 	return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
-void Application::processEvents() {
+void Application::process_events() {
 	MSG msg;
 
 	if(PeekMessage(&msg, (HWND)NULL, 0, 0, PM_REMOVE) != 0) {

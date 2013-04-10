@@ -6,8 +6,9 @@
  */
 
 #include "json.h"
+#include "json_io.h"
 
-#include <stdlib.h>
+#include <cstdlib>
 #include <cstring>
 #include <cctype>
 #include <algorithm>

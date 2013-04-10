@@ -1,18 +1,17 @@
 #include "app.h"
 #include "exec.h"
-
-#include <memory.h>
-
 #include "json.h"
 #include "protocol.h"
 
+#include <memory.h>
+
 Application::Application(const char* title, int width, int height, bool fullscreen) :
 	running(false), title(title), width(width), height(height), fullscreen(fullscreen) {
-	memset(keysPressed, 0, sizeof(keysPressed));
-	initializeVariables();
+	memset(keys_pressed, 0, sizeof(keys_pressed));
+	initialize_variables();
 }
 
-int Application::run(Game& game) {
+int Application::run() {
 	initialize();
 
 	const char* const args[] = {
@@ -34,13 +33,9 @@ int Application::run(Game& game) {
 	snprintf(buffer, sizeof(buffer), "{\"window\": %d, \"width\": %d, \"height\": %d}", (int)window, width, height);
 	protocol_send_packet(sock, buffer, strlen(buffer));
 
-	game.initialize();
-
 	running = true;
 	while (running) {
-		processEvents();
-		game.doFrame();
-		swapBuffers();
+		process_events();
 	}
 
 	snprintf(buffer, sizeof(buffer), "{\"type\": \"finish\"}");
@@ -63,8 +58,6 @@ int Application::run(Game& game) {
 		json_free(json);
 	}
 
-	game.finalize();
-
 	sock.close();
 
 	finalize();
@@ -72,11 +65,11 @@ int Application::run(Game& game) {
 	return 0;
 }
 
-void Application::stopMainLoop() {
+void Application::stop_main_loop() {
 	running = false;
 }
 
-void Application::onResize(int width, int height) {
+void Application::on_resize(int width, int height) {
 	if (this->width != width || this->height != height) {
 		this->width = width;
 		this->height = height;
@@ -88,23 +81,23 @@ void Application::onResize(int width, int height) {
 	}
 }
 
-void Application::onKeyUp(AppKeyCode key) {
+void Application::on_key_up(AppKeyCode key) {
 	if (key == KEY_NONE)
 		return;
 
-	keysPressed[key] = false;
+	keys_pressed[key] = false;
 }
 
-void Application::onKeyDown(AppKeyCode key) {
+void Application::on_key_down(AppKeyCode key) {
 	if (key == KEY_NONE)
 		return;
 
-	keysPressed[key] = true;
+	keys_pressed[key] = true;
 }
 
-bool Application::isKeyPressed(AppKeyCode key) const {
+bool Application::is_key_pressed(AppKeyCode key) const {
 	if (key == KEY_NONE)
 		return false;
 
-	return keysPressed[key];
+	return keys_pressed[key];
 }
