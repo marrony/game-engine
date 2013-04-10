@@ -6,6 +6,9 @@
  */
 #include "protocol.h"
 
+#include <stddef.h>
+#include <stdint.h>
+
 int protocol_send_packet(Socket socket, const void* packet, size_t size) {
 	size_t nbytes;
 

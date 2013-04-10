@@ -8,6 +8,9 @@
 #ifndef MESH_H_
 #define MESH_H_
 
+#include <stddef.h>
+#include <stdint.h>
+
 struct Mesh {
 	uint16_t vertex_offset;
 	uint16_t color_offset;
