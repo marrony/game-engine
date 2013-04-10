@@ -27,32 +27,23 @@ int Application::run() {
 		fflush(stderr);
 	}
 
-	char buffer[MAX_PROTOCOL_PACKET_SIZE];
-	size_t nbytes;
-
-	snprintf(buffer, sizeof(buffer), "{\"window\": %d, \"width\": %d, \"height\": %d}", (int)window, width, height);
-	protocol_send_packet(sock, buffer, strlen(buffer));
-
-	snprintf(buffer, sizeof(buffer), "{\"type\": \"load-mesh\", \"mesh\": \"%s\"}", "quad.mesh");
-	protocol_send_packet(sock, buffer, strlen(buffer));
+	protocol_send_window_message(sock, (intptr_t)window, width, height);
+	protocol_send_load_mesh_message(sock, "quad.mesh");
 
 	running = true;
 	while (running) {
 		process_events();
 	}
 
-	snprintf(buffer, sizeof(buffer), "{\"type\": \"finish\"}");
-	protocol_send_packet(sock, buffer, strlen(buffer));
+	protocol_send_finish_message(sock);
 
 	fprintf(stderr, "waiting a response\n");
 	fflush(stderr);
 
-	if(protocol_recv_packet(sock, buffer, sizeof(buffer), nbytes) > 0) {
-		buffer[nbytes] = 0;
-
-		Json json = json_parse(buffer, nbytes);
-
+	Json json;
+	if(protocol_recv_message(sock, json)) {
 		Value* type = json_get_attribute(json.value, "type");
+
 		if(type && !strcmp("finish", type->string)) {
 			fprintf(stderr, "close ok\n");
 			fflush(stderr);
@@ -77,10 +68,7 @@ void Application::on_resize(int width, int height) {
 		this->width = width;
 		this->height = height;
 
-		char buffer[MAX_PROTOCOL_PACKET_SIZE];
-
-		snprintf(buffer, sizeof(buffer), "{\"type\": \"resize\", \"width\": %d, \"height\": %d}", width, height);
-		protocol_send_packet(sock, buffer, strlen(buffer));
+		protocol_send_resize_message(sock, width, height);
 	}
 }
 

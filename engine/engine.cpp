@@ -40,22 +40,16 @@ int main(int argc, char* argv[]) {
 	fprintf(stderr, "connected: %d\n", *(int*)&client);
 	fflush(stderr);
 
-	char buffer[MAX_PROTOCOL_PACKET_SIZE] = {0};
 	Mesh* mesh = 0;
-	size_t nbytes;
 
-	protocol_recv_packet(client, buffer, sizeof(buffer), nbytes);
-	buffer[nbytes] = 0;
+	Json json;
+	protocol_recv_message(client, json);
 
-	fprintf(stderr, "read: %s\n", buffer);
-	fflush(stderr);
-
-	Json json = json_parse(buffer, nbytes);
 	Value* window = json_get_attribute(json.value, "window");
 	Value* width = json_get_attribute(json.value, "width");
 	Value* height = json_get_attribute(json.value, "height");
 
-	SwapChain swap_chain = swap_chain_create((WindowID)window->integer, width->integer, height->integer);
+	SwapChain swap_chain = swap_chain_create((WindowID)(intptr_t)window->integer, width->integer, height->integer);
 
 	json_free(json);
 
@@ -66,17 +60,11 @@ int main(int argc, char* argv[]) {
 		swap_chain_process_events(swap_chain);
 
 		if(client.has_data()) {
-			if(protocol_recv_packet(client, buffer, sizeof(buffer), nbytes) <= 0)
+			if(!protocol_recv_message(client, json))
 				running = false;
-			else if(nbytes > 0) {
-				buffer[nbytes] = 0;
-
-				fprintf(stderr, "data read: %s\n", buffer);
-				fflush(stderr);
-
-				json = json_parse(buffer, nbytes);
-
+			else {
 				Value* type = json_get_attribute(json.value, "type");
+
 				if(type) {
 					if(!strcmp("finish", type->string)) {
 						running = false;
@@ -129,8 +117,7 @@ int main(int argc, char* argv[]) {
 	fprintf(stderr, "finish engine\n");
 	fflush(stderr);
 
-	snprintf(buffer, sizeof(buffer), "{\"type\": \"finish\"}");
-	protocol_send_packet(client, buffer, strlen(buffer));
+	protocol_send_finish_message(client);
 
 	free(mesh);
 	client.close();
