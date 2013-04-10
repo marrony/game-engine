@@ -10,10 +10,13 @@
 #include "socket.h"
 #include "json.h"
 #include "protocol.h"
+#include "mesh.h"
+#include "mesh_io.h"
 
 #include <cstring>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/stat.h>
 
 int get_argument(int argc, char* argv[], const char* arg_name) {
 	for(int i = 0; i < argc; i++) {
@@ -37,7 +40,8 @@ int main(int argc, char* argv[]) {
 	fprintf(stderr, "connected: %d\n", *(int*)&client);
 	fflush(stderr);
 
-	char buffer[MAX_PROTOCOL_PACKET_SIZE];
+	char buffer[MAX_PROTOCOL_PACKET_SIZE] = {0};
+	Mesh* mesh = 0;
 	size_t nbytes;
 
 	protocol_recv_packet(client, buffer, sizeof(buffer), nbytes);
@@ -67,9 +71,6 @@ int main(int argc, char* argv[]) {
 			else if(nbytes > 0) {
 				buffer[nbytes] = 0;
 
-				fprintf(stderr, "bytes read: %u\n", nbytes);
-				fflush(stderr);
-
 				fprintf(stderr, "data read: %s\n", buffer);
 				fflush(stderr);
 
@@ -88,8 +89,13 @@ int main(int argc, char* argv[]) {
 
 						swap_chain_resize(swap_chain, width->integer, height->integer);
 						glViewport(0, 0, width->integer, height->integer);
+					} else if(!strcmp("load-mesh", type->string)) {
+						Value* _mesh = json_get_attribute(json.value, "mesh");
+
+						mesh = mesh_read(_mesh->string);
 					}
 				}
+
 				json_free(json);
 			}
 		}
@@ -106,14 +112,14 @@ int main(int argc, char* argv[]) {
 		//gluLookAt(0., 0., 10., 0., 0., 0., 0., 1., 0.);
 		glRotatef(ang += 0.02, 0, 0, 1);
 
-		glBegin(GL_TRIANGLES);
-		glColor3f(1, 0, 0);
-		glVertex3f(-.75, -.75, -1.0);
-		glColor3f(0, 1, 0);
-		glVertex3f(.75, -.75, -1.0);
-		glColor3f(0, 0, 1);
-		glVertex3f(.75, .75, -1.0);
-		glEnd();
+		if(mesh) {
+			glEnableClientState(GL_VERTEX_ARRAY);
+			glEnableClientState(GL_COLOR_ARRAY);
+
+			glVertexPointer(3, GL_FLOAT, 0, mesh->vertex_pointer());
+			glColorPointer(3, GL_FLOAT, 0, mesh->color_pointer());
+			glDrawElements(GL_TRIANGLES, mesh->index_count, GL_UNSIGNED_SHORT, mesh->index_pointer());
+		}
 
 		swap_chain_swap_buffers(swap_chain);
 	}
@@ -126,6 +132,7 @@ int main(int argc, char* argv[]) {
 	snprintf(buffer, sizeof(buffer), "{\"type\": \"finish\"}");
 	protocol_send_packet(client, buffer, strlen(buffer));
 
+	free(mesh);
 	client.close();
 	server.close();
 

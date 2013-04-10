@@ -33,6 +33,9 @@ int Application::run() {
 	snprintf(buffer, sizeof(buffer), "{\"window\": %d, \"width\": %d, \"height\": %d}", (int)window, width, height);
 	protocol_send_packet(sock, buffer, strlen(buffer));
 
+	snprintf(buffer, sizeof(buffer), "{\"type\": \"load-mesh\", \"mesh\": \"%s\"}", "quad.mesh");
+	protocol_send_packet(sock, buffer, strlen(buffer));
+
 	running = true;
 	while (running) {
 		process_events();

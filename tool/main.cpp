@@ -1,6 +1,9 @@
 #include "app.h"
 
-#if 0
+#include "mesh.h"
+#include "mesh_io.h"
+#include <string.h>
+
 Mesh* create_mesh() {
 	static const float vertices[] = {
 			-.75, -.75, -1.0,
@@ -27,7 +30,6 @@ Mesh* create_mesh() {
 	int size = vertex_size + color_size + index_size;
 	Mesh* mesh = (Mesh*)malloc(sizeof(Mesh) + size);
 
-	mesh->index_offset = 0;
 	mesh->vertex_offset = index_size;
 	mesh->color_offset = index_size + vertex_size;
 	mesh->vertex_count = vertex_size / sizeof(float) / 3;
@@ -44,26 +46,11 @@ void destroy_mesh(Mesh* mesh) {
 	free(mesh);
 }
 
-//		glClearColor(1.0, 1.0, 1.0, 1.0);
-//		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-//
-//		glMatrixMode(GL_PROJECTION);
-//		glLoadIdentity();
-//		glOrtho(-1., 1., -1., 1., 1., 20.);
-//
-//		glMatrixMode(GL_MODELVIEW);
-//		glLoadIdentity();
-//		//gluLookAt(0., 0., 10., 0., 0., 0., 0., 1., 0.);
-//
-//		glEnableClientState(GL_VERTEX_ARRAY);
-//		glEnableClientState(GL_COLOR_ARRAY);
-//
-//		glVertexPointer(3, GL_FLOAT, 0, mesh->vertex_pointer());
-//		glColorPointer(3, GL_FLOAT, 0, mesh->color_pointer());
-//		glDrawElements(GL_TRIANGLES, mesh->index_count, GL_UNSIGNED_SHORT, mesh->index_pointer());
-#endif
-
 int main(int argc, char* argv[]) {
+	Mesh* mesh = create_mesh();
+	mesh_write("quad.mesh", mesh);
+	destroy_mesh(mesh);
+
 	Application app("my x11/win32 window", 600, 600, true);
 	return app.run();
 }

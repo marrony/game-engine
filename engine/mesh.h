@@ -9,7 +9,6 @@
 #define MESH_H_
 
 struct Mesh {
-	uint16_t index_offset;
 	uint16_t vertex_offset;
 	uint16_t color_offset;
 	uint16_t vertex_count;
@@ -17,7 +16,7 @@ struct Mesh {
 	uint8_t data[0];
 
 	unsigned short* index_pointer() const {
-		return (unsigned short*)(data + index_offset);
+		return (unsigned short*)data;
 	}
 
 	float* vertex_pointer() const {
@@ -26,6 +25,10 @@ struct Mesh {
 
 	float* color_pointer() const {
 		return (float*)(data + color_offset);
+	}
+
+	uint32_t sizeof_mesh() const {
+		return sizeof(Mesh) + vertex_count*sizeof(float)*3*2 + index_count*sizeof(uint16_t);
 	}
 };
 

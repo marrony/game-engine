@@ -101,15 +101,15 @@ void Application::process_events() {
 		break;
 
 	case KeyRelease:
-		onKeyUp(get_app_keycode(XLookupKeysym(&event.xkey, 0)));
+		on_key_up(get_app_keycode(XLookupKeysym(&event.xkey, 0)));
 		break;
 
 	case KeyPress:
-		onKeyDown(get_app_keycode(XLookupKeysym(&event.xkey, 0)));
+		on_key_down(get_app_keycode(XLookupKeysym(&event.xkey, 0)));
 		break;
 
 	case ConfigureNotify:
-		onResize(event.xconfigure.width, event.xconfigure.height);
+		on_resize(event.xconfigure.width, event.xconfigure.height);
 		break;
 	}
 
