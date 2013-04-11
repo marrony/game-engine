@@ -51,18 +51,10 @@ struct Pair {
 	Value value;
 };
 
-struct Token {
-	int8_t token;
-	int16_t start;
-	int16_t end;
-};
-
 struct Json {
 	Value value;
 };
 
-void json_tokenize(const char* data, int data_lenght, Token*& tokens, int& count);
-Json json_parse(const char* data, int data_lenght, Token* tokens, int count);
 Json json_parse(const char* data, int data_lenght);
 void json_free(Json& json);
 

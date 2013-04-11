@@ -14,19 +14,11 @@
 #include <algorithm>
 #include <sys/stat.h>
 
-static void insert_token(Token*& tokens, int& count, int& capacity, int start, int end, int type) {
-	if(count >= capacity) {
-		capacity = (capacity * 3) / 2;
-
-		tokens = (Token*)realloc(tokens, capacity * sizeof(Token));
-	}
-
-	Token* tok = &tokens[count++];
-
-	tok->token = type;
-	tok->start = start;
-	tok->end = end;
-}
+struct Token {
+	int8_t token;
+	int16_t start;
+	int16_t end;
+};
 
 static bool is_number(int ch) {
 	return ch == '+' || ch == '-' || isdigit(ch);
@@ -169,95 +161,6 @@ static Token json_next_token(const char* data, int data_lenght, int& position) {
 	return token;
 }
 
-void json_tokenize(const char* data, int data_lenght, Token*& tokens, int& count) {
-	int old_begin = 0;
-	int begin = 0;
-
-	int capacity = data_lenght / 2;
-
-	count = 0;
-	tokens = (Token*)malloc(capacity * sizeof(Token));
-
-	while(begin < data_lenght) {
-		if(is_number(data[begin])) {
-			begin++;
-
-			while(begin < data_lenght && isdigit(data[begin]))
-				begin++;
-
-			int type = TP_INT;
-
-			if(data[begin] == '.') {
-				begin++;
-
-				while(begin < data_lenght && isdigit(data[begin]))
-					begin++;
-
-				type = TP_NUMBER;
-			}
-
-			if(data[begin] == 'e' || data[begin] == 'E') {
-				begin++;
-
-				if(data[begin] == '-' || data[begin] == '+')
-					begin++;
-
-				while(begin < data_lenght && isdigit(data[begin]))
-					begin++;
-
-				type = TP_NUMBER;
-			}
-
-			insert_token(tokens, count, capacity, old_begin, begin, type);
-		} else if(data[begin] == '\"') {
-			begin++;
-			while(begin < data_lenght) {
-				char ch = data[begin++];
-
-				if(ch == '\\') {
-					if(begin < data_lenght && (data[begin] == '\"' || data[begin] == '\\' || data[begin] == '/' ||
-						data[begin] == 'b' || data[begin] == 'f' || data[begin] == 'n' ||
-						data[begin] == 'r' || data[begin] == 't'))
-						begin++;
-				} else if(ch == '\"')
-					break;
-			}
-
-			insert_token(tokens, count, capacity, old_begin+1, begin-1, TP_STRING);
-		} else if(data[begin] == ',') {
-			begin++;
-			insert_token(tokens, count, capacity, old_begin, begin, ',');
-		} else if(data[begin] == '{') {
-			begin++;
-			insert_token(tokens, count, capacity, old_begin, begin, '{');
-		} else if(data[begin] == '}') {
-			begin++;
-			insert_token(tokens, count, capacity, old_begin, begin, '}');
-		} else if(data[begin] == '[') {
-			begin++;
-			insert_token(tokens, count, capacity, old_begin, begin, '[');
-		} else if(data[begin] == ']') {
-			begin++;
-			insert_token(tokens, count, capacity, old_begin, begin, ']');
-		} else if(data[begin] == ':') {
-			begin++;
-			insert_token(tokens, count, capacity, old_begin, begin, ':');
-		} else if(begin+4 < data_lenght && data[begin] == 't' && data[begin+1] == 'r' && data[begin+2] == 'u' && data[begin+3] == 'e') {
-			begin += 4;
-			insert_token(tokens, count, capacity, old_begin, begin, TP_TRUE);
-		} else if(begin+5 < data_lenght && data[begin] == 'f' && data[begin+1] == 'a' && data[begin+2] == 'l' && data[begin+3] == 's' && data[begin+4] == 'e') {
-			begin += 5;
-			insert_token(tokens, count, capacity, old_begin, begin, TP_FALSE);
-		} else if(begin+4 < data_lenght && data[begin] == 'n' && data[begin+1] == 'u' && data[begin+2] == 'l' && data[begin+3] == 'l') {
-			begin += 4;
-			insert_token(tokens, count, capacity, old_begin, begin, TP_NULL);
-		} else {
-			begin++;
-		}
-		old_begin = begin;
-	}
-}
-
 static bool is_value(Token& token) {
 	char type = token.token;
 
@@ -394,25 +297,6 @@ static Object parse_object(const char* data, int data_lenght, int& begin) {
 	}
 
 	return object;
-}
-
-Json json_parse(const char* data, int data_lenght, Token* tokens, int count) {
-	Json json = {{TP_INVALID, 0}};
-
-	int begin = 0;
-
-	int position = 0;
-	Token token = json_next_token(data, data_lenght, position);
-
-	if(tokens[begin].token == '[') {
-		json.value.type = TP_ARRAY;
-		json.value.array = parse_array(data, data_lenght, begin);
-	} else if(tokens[begin].token == '{') {
-		json.value.type = TP_OBJECT;
-		json.value.object = parse_object(data, data_lenght, begin);
-	}
-
-	return json;
 }
 
 Json json_parse(const char* data, int data_lenght) {
