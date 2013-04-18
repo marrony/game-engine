@@ -107,48 +107,48 @@ WorkItem sound_update_task() {
 	return item;
 }
 
-void do_tasks(TaskManager* _tasks) {
-	TaskId done = _tasks->add_empty();
+void do_tasks(TaskManager* task_manager) {
+	TaskId done = task_manager->begin_add_empty();
 
 	/*sound*/ {
-		TaskId sound = _tasks->begin_add(sound_update_task());
-		_tasks->add_child(done, sound);
-		_tasks->finish_add(sound);
+		TaskId sound = task_manager->begin_add(sound_update_task());
+		task_manager->add_child(done, sound);
+		task_manager->finish_add(sound);
 	} /*sound*/
 
 	/*gui_scene*/ {
-		TaskId gui_scene = _tasks->add_empty();
+		TaskId gui_scene = task_manager->begin_add_empty();
 
 		/*gui*/ {
-			TaskId gui = _tasks->begin_add(gui_task());
-			_tasks->add_child(gui_scene, gui);
-			_tasks->finish_add(gui);
+			TaskId gui = task_manager->begin_add(gui_task());
+			task_manager->add_child(gui_scene, gui);
+			task_manager->finish_add(gui);
 		} /*gui*/
 
 		/*animation*/ {
-			TaskId animation = _tasks->begin_add(animation_task());
+			TaskId animation = task_manager->begin_add(animation_task());
 
 			/*scene_graph*/ {
-				TaskId scene_graph = _tasks->begin_add(scene_graph_task(), animation);
-				_tasks->add_child(gui_scene, scene_graph);
-				_tasks->finish_add(scene_graph);
+				TaskId scene_graph = task_manager->begin_add(scene_graph_task(), animation);
+				task_manager->add_child(gui_scene, scene_graph);
+				task_manager->finish_add(scene_graph);
 			} /*scene_graph*/
 
-			_tasks->finish_add(animation);
+			task_manager->finish_add(animation);
 		} /*animation*/
 
 		/*render*/ {
-			TaskId render = _tasks->begin_add(render_task(), gui_scene);
-			_tasks->add_child(done, render);
-			_tasks->finish_add(render);
+			TaskId render = task_manager->begin_add(render_task(), gui_scene);
+			task_manager->add_child(done, render);
+			task_manager->finish_add(render);
 		} /*render*/
 
-		_tasks->finish_add(gui_scene);
+		task_manager->finish_add(gui_scene);
 	} /*gui_scene*/
 
-	_tasks->finish_add(done);
+	task_manager->finish_add(done);
 
-	_tasks->wait(done);
+	task_manager->wait(done);
 }
 
 pthread_t ids[2];
@@ -211,7 +211,7 @@ WorkItem test_task() {
 	return item;
 }
 
-TaskManager tasks;
+TaskManager* task_manager;
 
 void inifinity_function(TaskId task_id, WorkItem& item) {
 	fprintf(stdout, "inifinity_function(%d) %lx\n", task_id, pthread_self());
@@ -219,10 +219,10 @@ void inifinity_function(TaskId task_id, WorkItem& item) {
 
 	usleep(10000);
 
-	TaskId test = tasks.begin_add(test_task());
-	tasks.finish_add(test);
+	TaskId test = task_manager->begin_add(test_task());
+	task_manager->finish_add(test);
 
-	tasks.wait_scheduling(test);
+	task_manager->wait_scheduling(test);
 }
 
 WorkItem inifinity_task() {
@@ -231,6 +231,8 @@ WorkItem inifinity_task() {
 }
 
 int main(int argc, char* argv[]) {
+	task_manager = new TaskManager(32);
+
 	fprintf(stdout, "main thread: %lx\n", pthread_self());
 	fflush(stdout);
 
@@ -238,7 +240,7 @@ int main(int argc, char* argv[]) {
 //		TaskId infinity = tasks.begin_add(inifinity_task());
 //		tasks.finish_add(infinity);
 
-		do_tasks(&tasks);
+		do_tasks(task_manager);
 
 //		tasks.wait(infinity);
 
