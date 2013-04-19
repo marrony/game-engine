@@ -71,6 +71,8 @@ void swap_chain_resize(SwapChain& swap_chain, int width, int height) {
 SwapChain swap_chain_create(WindowID handle, int width, int height) {
 	SwapChain swap_chain;
 
+	XInitThreads();
+
 	GLint att[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
 
 	swap_chain.parent = handle;
@@ -97,24 +99,32 @@ SwapChain swap_chain_create(WindowID handle, int width, int height) {
 }
 
 void swap_chain_destroy(SwapChain& swap_chain) {
+	//XLockDisplay(swap_chain.display);
 	glXMakeCurrent(swap_chain.display, None, NULL);
 	glXDestroyContext(swap_chain.display, swap_chain.glc);
 	XCloseDisplay(swap_chain.display);
+	//XUnlockDisplay(swap_chain.display);
 }
 
 void swap_chain_swap_buffers(SwapChain& swap_chain) {
+	//XLockDisplay(swap_chain.display);
 	glXSwapBuffers(swap_chain.display, swap_chain.window);
+	//XUnlockDisplay(swap_chain.display);
 }
 
 void swap_chain_process_events(SwapChain& swap_chain) {
+	//XLockDisplay(swap_chain.display);
 	XEvent event;
 	while(XQLength(swap_chain.display) > 0)
 		XNextEvent(swap_chain.display, &event);
+	//XUnlockDisplay(swap_chain.display);
 }
 
 void swap_chain_resize(SwapChain& swap_chain, int width, int height) {
+	//XLockDisplay(swap_chain.display);
 	XMoveResizeWindow(swap_chain.display, swap_chain.window, 0, 0, width, height);
 	//XResizeWindow(swap_chain.display, swap_chain.window, width, height);
+	//XUnlockDisplay(swap_chain.display);
 }
 
 #endif //WIN32
