@@ -106,40 +106,31 @@ WorkItem sound_update_task() {
 void do_tasks(TaskManager* task_manager) {
 	TaskId done = task_manager->begin_add_empty();
 
-	/*sound*/ {
-		TaskId sound = task_manager->begin_add(sound_update_task());
-		task_manager->add_child(done, sound);
-		task_manager->finish_add(sound);
-	} /*sound*/
+	TaskId animation = task_manager->add(animation_task());
+	TaskId gui = task_manager->add(gui_task());
+	TaskId sound = task_manager->add(sound_update_task());
+
+	task_manager->add_child(done, sound);
 
 	/*gui_scene*/ {
 		TaskId gui_scene = task_manager->begin_add_empty();
 
-		/*gui*/ {
-			TaskId gui = task_manager->begin_add(gui_task());
-			task_manager->add_child(gui_scene, gui);
-			task_manager->finish_add(gui);
-		} /*gui*/
+		/*scene_graph*/ {
+			TaskId scene_graph = task_manager->add(scene_graph_task(), animation);
 
-		/*animation*/ {
-			TaskId animation = task_manager->begin_add(animation_task());
+			task_manager->add_child(gui_scene, scene_graph);
+		} /*scene_graph*/
 
-			/*scene_graph*/ {
-				TaskId scene_graph = task_manager->begin_add(scene_graph_task(), animation);
-				task_manager->add_child(gui_scene, scene_graph);
-				task_manager->finish_add(scene_graph);
-			} /*scene_graph*/
-
-			task_manager->finish_add(animation);
-		} /*animation*/
-
-		/*render*/ {
-			TaskId render = task_manager->begin_add(render_task(), gui_scene);
-			task_manager->add_child(done, render);
-			task_manager->finish_add(render);
-		} /*render*/
+		task_manager->add_child(gui_scene, gui);
 
 		task_manager->finish_add(gui_scene);
+
+		/*render*/ {
+			TaskId render = task_manager->add(render_task(), gui_scene);
+
+			task_manager->add_child(done, render);
+		} /*render*/
+
 	} /*gui_scene*/
 
 	task_manager->finish_add(done);

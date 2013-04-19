@@ -66,8 +66,10 @@ public:
 	TaskManager(int max_tasks);
 	~TaskManager();
 
+	TaskId add(size_t count, const WorkItem* items, TaskId dependency = INVALID_ID);
+	TaskId add(const WorkItem& item, TaskId dependency = INVALID_ID);
+
 	TaskId begin_add_empty(TaskId dependency = INVALID_ID);
-	TaskId begin_add(size_t count, const WorkItem* items);
 	TaskId begin_add(const WorkItem& work, TaskId dependency = INVALID_ID);
 
 	void add_child(TaskId parent_id, TaskId child_id);
