@@ -1,0 +1,17 @@
+patch GNUmakefile
+
+install:
+	install -d $(prefix)/$(target)/bin
+	install -d $(prefix)/$(target)/lib
+	install -d $(prefix)/$(target)/include
+	install pthreadGC$(DLL_VER).dll $(prefix)/$(target)/bin/pthreadGC$(DLL_VER).dll
+	install pthreadGC$(DLL_VER).dll $(prefix)/$(target)/lib/libpthread.a
+	install pthread.h sched.h semaphore.h $(prefix)/$(target)/include
+
+compile
+
+sudo make clean GC CROSS=x86_64-w64-mingw32- prefix=/usr target=x86_64-w64-mingw32 -f GNUmakefile
+sudo make install CROSS=x86_64-w64-mingw32- prefix=/usr target=x86_64-w64-mingw32 -f GNUmakefile
+
+sudo make clean GC CROSS=i686-w64-mingw32- prefix=/usr target=i686-w64-mingw32 -f GNUmakefile
+sudo make install CROSS=i686-w64-mingw32- prefix=/usr target=i686-w64-mingw32 -f GNUmakefile
