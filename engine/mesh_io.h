@@ -21,6 +21,7 @@ static inline Mesh* mesh_read(const char* filename) {
 
 	Mesh* mesh = (Mesh*)malloc(st.st_size);
 	fread(mesh, st.st_size, 1, fp);
+	fclose(fp);
 
 	return mesh;
 }

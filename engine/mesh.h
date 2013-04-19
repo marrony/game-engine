@@ -35,4 +35,8 @@ struct Mesh {
 	}
 };
 
+void mesh_destroy(Mesh* mesh) {
+	free(mesh);
+}
+
 #endif /* MESH_H_ */

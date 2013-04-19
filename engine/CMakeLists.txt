@@ -21,4 +21,5 @@ add_executable(engine engine.cpp)
 target_link_libraries(
     engine engine_static json_static socket_static protocol_static
     ${OPENGL_LIBRARIES} ${LIBRARIES}
+    ${CMAKE_THREAD_LIBS_INIT}
 )

@@ -43,10 +43,6 @@ Mesh* create_mesh() {
 	return mesh;
 }
 
-void destroy_mesh(Mesh* mesh) {
-	free(mesh);
-}
-
 void animation_function(TaskId task_id, WorkItem& item) {
 	fprintf(stdout, "animation_function(%d) %lx\n", task_id, pthread_self());
 	fflush(stdout);
@@ -222,7 +218,7 @@ void inifinity_function(TaskId task_id, WorkItem& item) {
 	TaskId test = task_manager->begin_add(test_task());
 	task_manager->finish_add(test);
 
-	task_manager->wait_scheduling(test);
+	task_manager->wait(test);
 }
 
 WorkItem inifinity_task() {
@@ -231,31 +227,10 @@ WorkItem inifinity_task() {
 }
 
 int main(int argc, char* argv[]) {
-	task_manager = new TaskManager(32);
+	Mesh* mesh = create_mesh();
+	mesh_write("quad.mesh", mesh);
+	mesh_destroy(mesh);
 
-	fprintf(stdout, "main thread: %lx\n", pthread_self());
-	fflush(stdout);
-
-	for(int i = 0; i < 100000; i++) {
-//		TaskId infinity = tasks.begin_add(inifinity_task());
-//		tasks.finish_add(infinity);
-
-		do_tasks(task_manager);
-
-//		tasks.wait(infinity);
-
-		fprintf(stdout, "finish: %d\n", i);
-		fflush(stdout);
-	}
-
-	fprintf(stdout, "finished\n");
-
-	return 0;
-
-//	Mesh* mesh = create_mesh();
-//	mesh_write("quad.mesh", mesh);
-//	destroy_mesh(mesh);
-//
-//	Application app("my x11/win32 window", 600, 600, true);
-//	return app.run();
+	Application app("my x11/win32 window", 600, 600, true);
+	return app.run();
 }

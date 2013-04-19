@@ -14,13 +14,13 @@ Application::Application(const char* title, int width, int height, bool fullscre
 int Application::run() {
 	initialize();
 
-//	const char* const args[] = {
-//			"build/engine/engine",
-//			"--port", "9090",
-//			NULL
-//	};
-//
-//	execute_program(args, NULL, NULL);
+	const char* const args[] = {
+			"build/engine/engine",
+			"--port", "9090",
+			NULL
+	};
+
+	execute_program(args, NULL, NULL);
 
 	while(!sock.connect("127.0.0.1", 9090)) {
 		fprintf(stderr, "trying again\n");

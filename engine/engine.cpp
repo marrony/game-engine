@@ -12,82 +12,23 @@
 #include "protocol.h"
 #include "mesh.h"
 #include "mesh_io.h"
+#include "task.h"
 
 #include <cstring>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/stat.h>
 
-int get_argument(int argc, char* argv[], const char* arg_name) {
-	for(int i = 0; i < argc; i++) {
-		if(!strcmp(arg_name, argv[i]) && i+1 < argc)
-			return atoi(argv[i+1]);
-	}
+class Engine {
+	TaskManager task_manager;
+	ServerSocket server;
+	Socket client;
+	SwapChain swap_chain;
+	Mesh* mesh;
+	float ang;
+	bool running;
 
-	return -1;
-}
-
-int main(int argc, char* argv[]) {
-	int port = get_argument(argc, argv, "--port");
-
-	ServerSocket server(port < 0 ? 9090 : port);
-
-	fprintf(stderr, "waint for connection\n");
-	fflush(stderr);
-
-	Socket client = server.accept();
-
-	fprintf(stderr, "connected: %d\n", *(int*)&client);
-	fflush(stderr);
-
-	Mesh* mesh = 0;
-
-	Json json;
-	protocol_recv_message(client, json);
-
-	Value* window = json_get_attribute(json.value, "window");
-	Value* width = json_get_attribute(json.value, "width");
-	Value* height = json_get_attribute(json.value, "height");
-
-	SwapChain swap_chain = swap_chain_create((WindowID)(intptr_t)window->integer, width->integer, height->integer);
-
-	json_free(json);
-
-	float ang = 0;
-
-	bool running = true;
-	while(running) {
-		swap_chain_process_events(swap_chain);
-
-		if(client.has_data()) {
-			if(!protocol_recv_message(client, json))
-				running = false;
-			else {
-				Value* type = json_get_attribute(json.value, "type");
-
-				if(type) {
-					if(!strcmp("finish", type->string)) {
-						running = false;
-
-						fprintf(stderr, "type: %s\n", type->string);
-						fflush(stderr);
-					} else if(!strcmp("resize", type->string)) {
-						Value* width = json_get_attribute(json.value, "width");
-						Value* height = json_get_attribute(json.value, "height");
-
-						swap_chain_resize(swap_chain, width->integer, height->integer);
-						glViewport(0, 0, width->integer, height->integer);
-					} else if(!strcmp("load-mesh", type->string)) {
-						Value* _mesh = json_get_attribute(json.value, "mesh");
-
-						mesh = mesh_read(_mesh->string);
-					}
-				}
-
-				json_free(json);
-			}
-		}
-
+	void render() {
 		glClearColor(1.0, 1.0, 1.0, 1.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -112,16 +53,140 @@ int main(int argc, char* argv[]) {
 		swap_chain_swap_buffers(swap_chain);
 	}
 
-	swap_chain_destroy(swap_chain);
+	static void render_function(TaskId task, WorkItem& item) {
+		((Engine*)item.data)->render();
+	}
 
-	fprintf(stderr, "finish engine\n");
-	fflush(stderr);
+	WorkItem render_task() {
+		WorkItem item = {render_function, this};
+		return item;
+	}
 
-	protocol_send_finish_message(client);
+	void update() {
+		swap_chain_process_events(swap_chain);
 
-	free(mesh);
-	client.close();
-	server.close();
+		if(client.has_data()) {
+			Json json;
+
+			if(!protocol_recv_message(client, json))
+				running = false;
+			else {
+				Value* type = json_get_attribute(json.value, "type");
+
+				if(type) {
+					if(!strcmp("finish", type->string)) {
+						running = false;
+
+						fprintf(stderr, "type: %s\n", type->string);
+						fflush(stderr);
+					} else if(!strcmp("resize", type->string)) {
+						Value* width = json_get_attribute(json.value, "width");
+						Value* height = json_get_attribute(json.value, "height");
+
+						fprintf(stderr, "resize %dx%d\n", width->integer, height->integer);
+						fflush(stderr);
+
+						swap_chain_resize(swap_chain, width->integer, height->integer);
+						glViewport(0, 0, width->integer, height->integer);
+					} else if(!strcmp("load-mesh", type->string)) {
+						Value* _mesh = json_get_attribute(json.value, "mesh");
+
+						if(mesh)
+							mesh_destroy(mesh);
+
+						mesh = mesh_read(_mesh->string);
+					}
+				}
+
+				json_free(json);
+			}
+		}
+	}
+
+	static void update_function(TaskId task, WorkItem& item) {
+		((Engine*)item.data)->update();
+	}
+
+	WorkItem update_task() {
+		WorkItem item = {update_function, this};
+		return item;
+	}
+public:
+	Engine() : task_manager(32) {
+		mesh = 0;
+		ang = 0;
+		running = false;
+	}
+
+	void initialize(short port) {
+		server.create(port);
+
+		fprintf(stderr, "waint for connection\n");
+		fflush(stderr);
+
+		client = server.accept();
+
+		fprintf(stderr, "connected: %d\n", *(int*)&client);
+		fflush(stderr);
+
+		Json json;
+		protocol_recv_message(client, json);
+
+		Value* window = json_get_attribute(json.value, "window");
+		Value* width = json_get_attribute(json.value, "width");
+		Value* height = json_get_attribute(json.value, "height");
+
+		swap_chain = swap_chain_create((WindowID)(intptr_t)window->integer, width->integer, height->integer);
+
+		json_free(json);
+	}
+
+	void run() {
+		running = true;
+		while(running) {
+			TaskId update = task_manager.begin_add(update_task());
+			{
+				TaskId render = task_manager.begin_add(render_task(), update);
+				task_manager.finish_add(render);
+			}
+			task_manager.finish_add(update);
+			task_manager.wait(update);
+		}
+	}
+
+	void finalize() {
+		swap_chain_destroy(swap_chain);
+
+		fprintf(stderr, "finish engine\n");
+		fflush(stderr);
+
+		protocol_send_finish_message(client);
+
+		if(mesh)
+			mesh_destroy(mesh);
+
+		client.close();
+		server.close();
+	}
+};
+
+int get_argument(int argc, char* argv[], const char* arg_name) {
+	for(int i = 0; i < argc; i++) {
+		if(!strcmp(arg_name, argv[i]) && i+1 < argc)
+			return atoi(argv[i+1]);
+	}
+
+	return -1;
+}
+
+int main(int argc, char* argv[]) {
+	int port = get_argument(argc, argv, "--port");
+
+	Engine engine;
+
+	engine.initialize(port < 0 ? 9090 : port);
+	engine.run();
+	engine.finalize();
 
 	return 0;
 }

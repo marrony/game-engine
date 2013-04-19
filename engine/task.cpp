@@ -228,24 +228,6 @@ void TaskManager::add_child(TaskId parent_id, TaskId child_id) {
 	pthread_mutex_unlock(&mutex);
 }
 
-void TaskManager::wait_scheduling(TaskId task_id) {
-	while(true) {
-		pthread_mutex_lock(&mutex);
-
-		if(get_task(task_id) == NULL) {
-			pthread_mutex_unlock(&mutex);
-			break;
-		}
-
-		if(work_items.empty())
-			pthread_cond_wait(&task_reconfigure, &mutex);
-		else
-			schedule_task();
-
-		pthread_mutex_unlock(&mutex);
-	}
-}
-
 void TaskManager::wait(TaskId task_id) {
 	while(true) {
 		pthread_mutex_lock(&mutex);

@@ -210,7 +210,10 @@ bool Socket::has_data() const {
 	return socket_has_data(sock);
 }
 
-ServerSocket::ServerSocket(short port) {
+ServerSocket::ServerSocket(int sock) : sock(sock) {
+}
+
+void ServerSocket::create(short port) {
 	sock = socket_create_server(port);
 }
 

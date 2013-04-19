@@ -61,7 +61,9 @@ public:
 class ServerSocket {
 	int sock;
 public:
-	ServerSocket(short port);
+	ServerSocket(int sock = 0);
+
+	void create(short port);
 
 	bool close();
 

@@ -22,6 +22,7 @@ typedef int32_t TaskId;
 
 struct WorkItem {
 	void (*do_task)(TaskId, WorkItem& item);
+	void* data;
 };
 
 struct Task;
@@ -73,7 +74,6 @@ public:
 
 	void finish_add(TaskId task_id);
 
-	void wait_scheduling(TaskId task_id);
 	void wait(TaskId task_id);
 };
 
