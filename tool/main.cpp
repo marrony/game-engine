@@ -217,6 +217,26 @@ WorkItem inifinity_task() {
 	return item;
 }
 
+void test_task_manager() {
+	task_manager = new TaskManager(32);
+
+	fprintf(stdout, "main thread: %lx\n", pthread_self());
+	fflush(stdout);
+
+	for (int i = 0; i < 100000; i++) {
+		TaskId infinity = task_manager->add(inifinity_task());
+
+		do_tasks(task_manager);
+
+		task_manager->wait(infinity);
+
+		fprintf(stdout, "finish: %d\n", i);
+		fflush(stdout);
+	}
+
+	fprintf(stdout, "finished\n");
+}
+
 int main(int argc, char* argv[]) {
 	Mesh* mesh = create_mesh();
 	mesh_write("quad.mesh", mesh);

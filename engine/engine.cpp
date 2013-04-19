@@ -13,6 +13,7 @@
 #include "mesh.h"
 #include "mesh_io.h"
 #include "task.h"
+#include "scene_graph.h"
 
 #include <cstring>
 #include <stdlib.h>
@@ -21,6 +22,7 @@
 
 class Engine {
 	TaskManager task_manager;
+	SceneGraph scene_graph;
 	ServerSocket server;
 	Socket client;
 	SwapChain swap_chain;
@@ -64,6 +66,8 @@ class Engine {
 
 	void update() {
 		swap_chain_process_events(swap_chain);
+
+		scene_graph.update();
 
 		if(client.has_data()) {
 			Json json;
@@ -144,12 +148,8 @@ public:
 	void run() {
 		running = true;
 		while(running) {
-			TaskId update = task_manager.begin_add(update_task());
-			{
-				TaskId render = task_manager.begin_add(render_task(), update);
-				task_manager.finish_add(render);
-			}
-			task_manager.finish_add(update);
+			TaskId update = task_manager.add(update_task());
+			TaskId render = task_manager.add(render_task(), update);
 			task_manager.wait(update);
 		}
 	}
