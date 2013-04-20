@@ -23,7 +23,37 @@
 SwapChain swap_chain_create(WindowID handle, int width, int height) {
 	SwapChain swap_chain;
 
-	swap_chain.window = handle;
+	swap_chain.parent = handle;
+
+	WNDCLASSEX wcx;
+	wcx.cbSize = sizeof(wcx);
+	wcx.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+	wcx.lpfnWndProc = DefWindowProc;
+	wcx.cbClsExtra = 0;
+	wcx.cbWndExtra = 0;
+	wcx.hInstance = GetModuleHandle(NULL);
+	wcx.hIcon = NULL;
+	wcx.hCursor = NULL;
+	wcx.hbrBackground = NULL;
+	wcx.lpszMenuName = NULL;
+	wcx.lpszClassName = "SwapChainClass";
+	wcx.hIconSm = NULL;
+
+	RegisterClassEx(&wcx);
+
+	swap_chain.window = CreateWindowEx(
+			WS_EX_NOPARENTNOTIFY,
+			"SwapChainClass",
+			NULL,
+			WS_CLIPSIBLINGS | WS_CHILD,
+			0,
+			0,
+			width,
+			height,
+			swap_chain.parent,
+			(HMENU) NULL,
+			GetModuleHandle(NULL),
+			(LPVOID)NULL);
 
 	PIXELFORMATDESCRIPTOR pfd = {0};
 
@@ -39,13 +69,15 @@ SwapChain swap_chain_create(WindowID handle, int width, int height) {
 	pfd.cAlphaBits = 32;
 	pfd.iLayerType = PFD_MAIN_PLANE;
 
-	swap_chain.hdc = GetWindowDC(swap_chain.window);
+	swap_chain.hdc = GetDC(swap_chain.window);
 
 	int nPixelFormat = ChoosePixelFormat(swap_chain.hdc, &pfd);
 	BOOL bResult = SetPixelFormat(swap_chain.hdc, nPixelFormat, &pfd);
 
 	swap_chain.hglrc = wglCreateContext(swap_chain.hdc);
 	wglMakeCurrent(swap_chain.hdc, swap_chain.hglrc);
+
+	ShowWindow(swap_chain.window, SW_SHOW);
 
 	return swap_chain;
 }
@@ -54,6 +86,7 @@ void swap_chain_destroy(SwapChain& swap_chain) {
 	wglMakeCurrent(swap_chain.hdc, NULL);
 	wglDeleteContext(swap_chain.hglrc);
 	ReleaseDC(swap_chain.window, swap_chain.hdc);
+	DestroyWindow(swap_chain.window);
 }
 
 void swap_chain_swap_buffers(SwapChain& swap_chain) {
@@ -61,9 +94,22 @@ void swap_chain_swap_buffers(SwapChain& swap_chain) {
 }
 
 void swap_chain_process_events(SwapChain& swap_chain) {
+	MSG msg;
+
+	if(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE) != 0) {
+		if(msg.message == WM_QUIT) {
+			return;
+		}
+
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+	}
 }
 
 void swap_chain_resize(SwapChain& swap_chain, int width, int height) {
+	RECT pr;
+	GetClientRect(swap_chain.parent, &pr);
+	SetWindowPos(swap_chain.window, NULL, 0, 0, pr.right - pr.left, pr.bottom - pr.top, SWP_DEFERERASE | SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOREDRAW | SWP_NOMOVE);
 }
 
 #else

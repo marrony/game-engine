@@ -6,14 +6,10 @@ void Application::initialize_variables() {
 	window = 0;
 }
 
-void Application::swap_buffers() {
-//	SwapBuffers(hdc);
-}
-
 void Application::initialize() {
-	WNDCLASSEX wcx;
+	WNDCLASSEX wcx = {0};
 	wcx.cbSize = sizeof(wcx);
-	wcx.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+	wcx.style = 0;//CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
 	wcx.lpfnWndProc = DefWindowProc;
 	wcx.cbClsExtra = 0;
 	wcx.cbWndExtra = sizeof(Application*);
@@ -30,7 +26,7 @@ void Application::initialize() {
 	window = CreateWindowEx(0,
 			"WindowClass",
 			title,
-			WS_OVERLAPPEDWINDOW,
+			WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
 			CW_USEDEFAULT,
 			CW_USEDEFAULT,
 			width,
@@ -48,9 +44,6 @@ void Application::initialize() {
 
 void Application::finalize() {
 	DestroyWindow(window);
-//	wglMakeCurrent(hdc, NULL);
-//	wglDeleteContext(hglrc);
-//	ReleaseDC(hwnd, hdc);
 }
 
 static AppKeyCode get_app_keycode(WPARAM wParam) {
@@ -108,7 +101,8 @@ LRESULT CALLBACK Application::MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 	Application* app = (Application*) GetWindowLongPtr(hwnd, 0);
 
 	switch(msg) {
-	case WM_CLOSE:
+	case WM_DESTROY:
+		app->stop_main_loop();
 		PostQuitMessage(0);
 		return 0;
 
@@ -131,7 +125,7 @@ LRESULT CALLBACK Application::MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 void Application::process_events() {
 	MSG msg;
 
-	if(PeekMessage(&msg, (HWND)NULL, 0, 0, PM_REMOVE) != 0) {
+	if(GetMessage(&msg, (HWND)NULL, 0, 0) != 0) {
 		if(msg.message == WM_QUIT) {
 			running = false;
 			return;

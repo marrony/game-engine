@@ -30,7 +30,14 @@ class Engine {
 	float ang;
 	bool running;
 
+	int width;
+	int height;
+
 	void render() {
+		//wglMakeCurrent(swap_chain.hdc, swap_chain.hglrc);
+
+		glViewport(0, 0, width, height);
+
 		glClearColor(1.0, 1.0, 1.0, 1.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -84,14 +91,16 @@ class Engine {
 						fprintf(stderr, "type: %s\n", type->string);
 						fflush(stderr);
 					} else if(!strcmp("resize", type->string)) {
-						Value* width = json_get_attribute(json.value, "width");
-						Value* height = json_get_attribute(json.value, "height");
+						Value* width_value = json_get_attribute(json.value, "width");
+						Value* height_value = json_get_attribute(json.value, "height");
 
-						fprintf(stderr, "resize %dx%d\n", width->integer, height->integer);
+						width = width_value->integer;
+						height = height_value->integer;
+
+						fprintf(stderr, "resize %dx%d\n", width, height);
 						fflush(stderr);
 
-						swap_chain_resize(swap_chain, width->integer, height->integer);
-						glViewport(0, 0, width->integer, height->integer);
+						swap_chain_resize(swap_chain, width, height);
 					} else if(!strcmp("load-mesh", type->string)) {
 						Value* _mesh = json_get_attribute(json.value, "mesh");
 
@@ -120,6 +129,9 @@ public:
 		mesh = 0;
 		ang = 0;
 		running = false;
+
+		width = 0;
+		height = 0;
 	}
 
 	void initialize(short port) {
@@ -136,11 +148,13 @@ public:
 		Json json;
 		protocol_recv_message(client, json);
 
-		Value* window = json_get_attribute(json.value, "window");
-		Value* width = json_get_attribute(json.value, "width");
-		Value* height = json_get_attribute(json.value, "height");
+		Value* window_value = json_get_attribute(json.value, "window");
+		Value* width_value = json_get_attribute(json.value, "width");
+		Value* height_value = json_get_attribute(json.value, "height");
 
-		swap_chain = swap_chain_create((WindowID)(intptr_t)window->integer, width->integer, height->integer);
+		width = width_value->integer;
+		height = height_value->integer;
+		swap_chain = swap_chain_create((WindowID)(intptr_t)window_value->integer, width, height);
 
 		json_free(json);
 	}

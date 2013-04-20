@@ -8,10 +8,6 @@ void Application::initialize_variables() {
 	WM_DELETE_MESSAGE = 0;
 }
 
-void Application::swap_buffers() {
-//	glXSwapBuffers(display, window);
-}
-
 void Application::initialize() {
 	display = XOpenDisplay(NULL);
 
@@ -97,7 +93,7 @@ void Application::process_events() {
 	switch (event.type) {
 	case ClientMessage:
 		if (event.xclient.data.l[0] == WM_DELETE_MESSAGE)
-			running = false;
+			stop_main_loop();
 		break;
 
 	case KeyRelease:

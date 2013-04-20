@@ -18,6 +18,7 @@
 
 struct SwapChain {
 #ifdef WIN32
+	HWND parent;
 	HWND window;
 	HDC hdc;
 	HGLRC hglrc;

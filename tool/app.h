@@ -153,7 +153,6 @@ class Application {
 	void initialize();
 	void finalize();
 	void process_events();
-	void swap_buffers();
 
 	void initialize_variables();
 public:
