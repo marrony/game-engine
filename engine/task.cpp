@@ -13,6 +13,7 @@ struct Task {
 	TaskId dependency;
 	WorkItem work_item;
 	uint32_t work_count;
+	pthread_t thread;
 };
 
 bool TaskManager::Comp::operator()(Task* a, Task* b) const {
@@ -40,8 +41,20 @@ void* TaskManager::thread_function(void* ptr) {
 	return NULL;
 }
 
+bool operator==(pthread_t th0, pthread_t th1) {
+	//return pthread_equal(th0, th1);
+	return !memcmp(&th0, &th1, sizeof(pthread_t));
+}
+
+bool operator!=(pthread_t th0, pthread_t th1) {
+	return !(th0 == th1);
+}
+
 void TaskManager::schedule_task() {
-	while(work_items.empty())
+	pthread_t thread = pthread_self();
+
+	while(work_items.empty() ||
+			(work_items[0]->thread != INVALID_THREAD && work_items[0]->thread != thread))
 		pthread_cond_wait(&task_reconfigure, &mutex);
 
 	Task* task = work_items[0];
@@ -111,7 +124,7 @@ void TaskManager::decrement_work_count(Task* task) {
 		finalize_task(task);
 }
 
-TaskId TaskManager::_begin_add(const WorkItem& work, TaskId dependency) {
+TaskId TaskManager::_begin_add(const WorkItem& work, TaskId dependency, pthread_t thread) {
 	if(free_tasks.empty())
 		return INVALID_ID;
 
@@ -127,6 +140,7 @@ TaskId TaskManager::_begin_add(const WorkItem& work, TaskId dependency) {
 	task->parent = INVALID_ID;
 	task->dependency = dependency;
 	task->work_count = 2;
+	task->thread = thread;
 	memcpy(&task->work_item, &work, sizeof(WorkItem));
 
 	open_list.push_back(task);
@@ -190,19 +204,19 @@ TaskManager::~TaskManager() {
 	free(tasks);
 }
 
-TaskId TaskManager::begin_add_empty(TaskId dependency) {
+TaskId TaskManager::begin_add_empty(TaskId dependency, pthread_t thread) {
 	WorkItem work = {empty_function};
-	return begin_add(work, dependency);
+	return begin_add(work, dependency, thread);
 }
 
-TaskId TaskManager::add(size_t count, const WorkItem* items, TaskId dependency) {
+TaskId TaskManager::add(size_t count, const WorkItem* items, TaskId dependency, pthread_t thread) {
 	pthread_mutex_lock(&mutex);
 
 	WorkItem empty_work = {empty_function};
-	TaskId parent = _begin_add(empty_work, dependency);
+	TaskId parent = _begin_add(empty_work, dependency, thread);
 
 	for(size_t i = 0; i < count; i++) {
-		TaskId child = _begin_add(items[i], INVALID_ID);
+		TaskId child = _begin_add(items[i], INVALID_ID, thread);
 		_add_child(parent, child);
 		_finish_add(child);
 	}
@@ -214,10 +228,10 @@ TaskId TaskManager::add(size_t count, const WorkItem* items, TaskId dependency) 
 	return parent;
 }
 
-TaskId TaskManager::add(const WorkItem& item, TaskId dependency) {
+TaskId TaskManager::add(const WorkItem& item, TaskId dependency, pthread_t thread) {
 	pthread_mutex_lock(&mutex);
 
-	TaskId task = _begin_add(item, dependency);
+	TaskId task = _begin_add(item, dependency, thread);
 	_finish_add(task);
 
 	pthread_mutex_unlock(&mutex);
@@ -225,9 +239,9 @@ TaskId TaskManager::add(const WorkItem& item, TaskId dependency) {
 	return task;
 }
 
-TaskId TaskManager::begin_add(const WorkItem& work, TaskId dependency) {
+TaskId TaskManager::begin_add(const WorkItem& work, TaskId dependency, pthread_t thread) {
 	pthread_mutex_lock(&mutex);
-	TaskId id = _begin_add(work, dependency);
+	TaskId id = _begin_add(work, dependency, thread);
 	pthread_mutex_unlock(&mutex);
 
 	return id;

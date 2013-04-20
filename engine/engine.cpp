@@ -29,6 +29,7 @@ class Engine {
 	Mesh* mesh;
 	float ang;
 	bool running;
+	bool need_resize;
 
 	int width;
 	int height;
@@ -36,7 +37,11 @@ class Engine {
 	void render() {
 		//wglMakeCurrent(swap_chain.hdc, swap_chain.hglrc);
 
-		glViewport(0, 0, width, height);
+		if(need_resize) {
+			swap_chain_resize(swap_chain, width, height);
+			glViewport(0, 0, width, height);
+			need_resize = false;
+		}
 
 		glClearColor(1.0, 1.0, 1.0, 1.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -48,7 +53,7 @@ class Engine {
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 		//gluLookAt(0., 0., 10., 0., 0., 0., 0., 1., 0.);
-		glRotatef(ang += 0.02, 0, 0, 1);
+		glRotatef(ang += 0.1, 0, 0, 1);
 
 		if(mesh) {
 			glEnableClientState(GL_VERTEX_ARRAY);
@@ -100,7 +105,8 @@ class Engine {
 						fprintf(stderr, "resize %dx%d\n", width, height);
 						fflush(stderr);
 
-						swap_chain_resize(swap_chain, width, height);
+						need_resize = true;
+						//swap_chain_resize(swap_chain, width, height);
 					} else if(!strcmp("load-mesh", type->string)) {
 						Value* _mesh = json_get_attribute(json.value, "mesh");
 
@@ -129,6 +135,7 @@ public:
 		mesh = 0;
 		ang = 0;
 		running = false;
+		need_resize = false;
 
 		width = 0;
 		height = 0;
@@ -162,8 +169,9 @@ public:
 	void run() {
 		running = true;
 		while(running) {
-			TaskId update = task_manager.add(update_task());
-			TaskId render = task_manager.add(render_task(), update);
+			TaskId update = task_manager.add(update_task(), INVALID_ID, pthread_self());
+			TaskId render = task_manager.add(render_task(), update, pthread_self());
+
 			task_manager.wait(update);
 		}
 	}

@@ -29,6 +29,7 @@ struct Task;
 
 const int32_t NUMBER_OF_THREADS = 2;
 const TaskId INVALID_ID = -1;
+const pthread_t INVALID_THREAD = {0};
 
 class TaskManager {
 	struct Comp {
@@ -59,18 +60,18 @@ class TaskManager {
 	Task* get_task(TaskId task_id);
 	void finalize_task(Task* task);
 	void decrement_work_count(Task* task);
-	TaskId _begin_add(const WorkItem& work, TaskId dependency);
+	TaskId _begin_add(const WorkItem& work, TaskId dependency, pthread_t thread);
 	void _finish_add(TaskId task_id);
 	void _add_child(TaskId parent_id, TaskId child_id);
 public:
 	TaskManager(int max_tasks);
 	~TaskManager();
 
-	TaskId add(size_t count, const WorkItem* items, TaskId dependency = INVALID_ID);
-	TaskId add(const WorkItem& item, TaskId dependency = INVALID_ID);
+	TaskId add(size_t count, const WorkItem* items, TaskId dependency = INVALID_ID, pthread_t thread = INVALID_THREAD);
+	TaskId add(const WorkItem& item, TaskId dependency = INVALID_ID, pthread_t thread = INVALID_THREAD);
 
-	TaskId begin_add_empty(TaskId dependency = INVALID_ID);
-	TaskId begin_add(const WorkItem& work, TaskId dependency = INVALID_ID);
+	TaskId begin_add_empty(TaskId dependency = INVALID_ID, pthread_t thread = INVALID_THREAD);
+	TaskId begin_add(const WorkItem& work, TaskId dependency = INVALID_ID, pthread_t thread = INVALID_THREAD);
 
 	void add_child(TaskId parent_id, TaskId child_id);
 
