@@ -38,7 +38,7 @@ class Engine {
 		//wglMakeCurrent(swap_chain.hdc, swap_chain.hglrc);
 
 		if(need_resize) {
-			swap_chain_resize(swap_chain, width, height);
+			swap_chain.resize(width, height);
 			glViewport(0, 0, width, height);
 			need_resize = false;
 		}
@@ -64,7 +64,7 @@ class Engine {
 			glDrawElements(GL_TRIANGLES, mesh->index_count, GL_UNSIGNED_SHORT, mesh->index_pointer());
 		}
 
-		swap_chain_swap_buffers(swap_chain);
+		swap_chain.swap_buffers();
 	}
 
 	static void render_function(TaskId task, WorkItem& item) {
@@ -77,7 +77,7 @@ class Engine {
 	}
 
 	void update() {
-		swap_chain_process_events(swap_chain);
+		swap_chain.process_events();
 
 		scene_graph.update();
 
@@ -161,7 +161,7 @@ public:
 
 		width = width_value->integer;
 		height = height_value->integer;
-		swap_chain = swap_chain_create((WindowID)(intptr_t)window_value->integer, width, height);
+		swap_chain.create((WindowID)(intptr_t)window_value->integer, width, height);
 
 		json_free(json);
 	}
@@ -177,7 +177,7 @@ public:
 	}
 
 	void finalize() {
-		swap_chain_destroy(swap_chain);
+		swap_chain.destroy();
 
 		fprintf(stderr, "finish engine\n");
 		fflush(stderr);

@@ -1,5 +1,5 @@
 /*
- * swap_chain.cpp
+ * cpp
  *
  *  Created on: 02/04/2013
  *      Author: marrony
@@ -20,10 +20,8 @@
 
 #ifdef WIN32
 
-SwapChain swap_chain_create(WindowID handle, int width, int height) {
-	SwapChain swap_chain;
-
-	swap_chain.parent = handle;
+void SwapChain::create(WindowID handle, int width, int height) {
+	parent = handle;
 
 	WNDCLASSEX wcx;
 	wcx.cbSize = sizeof(wcx);
@@ -41,7 +39,7 @@ SwapChain swap_chain_create(WindowID handle, int width, int height) {
 
 	RegisterClassEx(&wcx);
 
-	swap_chain.window = CreateWindowEx(
+	window = CreateWindowEx(
 			WS_EX_NOPARENTNOTIFY,
 			"SwapChainClass",
 			NULL,
@@ -50,7 +48,7 @@ SwapChain swap_chain_create(WindowID handle, int width, int height) {
 			0,
 			width,
 			height,
-			swap_chain.parent,
+			parent,
 			(HMENU) NULL,
 			GetModuleHandle(NULL),
 			(LPVOID)NULL);
@@ -69,31 +67,29 @@ SwapChain swap_chain_create(WindowID handle, int width, int height) {
 	pfd.cAlphaBits = 32;
 	pfd.iLayerType = PFD_MAIN_PLANE;
 
-	swap_chain.hdc = GetDC(swap_chain.window);
+	hdc = GetDC(window);
 
-	int nPixelFormat = ChoosePixelFormat(swap_chain.hdc, &pfd);
-	BOOL bResult = SetPixelFormat(swap_chain.hdc, nPixelFormat, &pfd);
+	int nPixelFormat = ChoosePixelFormat(hdc, &pfd);
+	BOOL bResult = SetPixelFormat(hdc, nPixelFormat, &pfd);
 
-	swap_chain.hglrc = wglCreateContext(swap_chain.hdc);
-	wglMakeCurrent(swap_chain.hdc, swap_chain.hglrc);
+	hglrc = wglCreateContext(hdc);
+	wglMakeCurrent(hdc, hglrc);
 
-	ShowWindow(swap_chain.window, SW_SHOW);
-
-	return swap_chain;
+	ShowWindow(window, SW_SHOW);
 }
 
-void swap_chain_destroy(SwapChain& swap_chain) {
-	wglMakeCurrent(swap_chain.hdc, NULL);
-	wglDeleteContext(swap_chain.hglrc);
-	ReleaseDC(swap_chain.window, swap_chain.hdc);
-	DestroyWindow(swap_chain.window);
+void SwapChain::destroy() {
+	wglMakeCurrent(hdc, NULL);
+	wglDeleteContext(hglrc);
+	ReleaseDC(window, hdc);
+	DestroyWindow(window);
 }
 
-void swap_chain_swap_buffers(SwapChain& swap_chain) {
-	SwapBuffers(swap_chain.hdc);
+void SwapChain::swap_buffers() {
+	SwapBuffers(hdc);
 }
 
-void swap_chain_process_events(SwapChain& swap_chain) {
+void SwapChain::process_events() {
 	MSG msg;
 
 	if(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE) != 0) {
@@ -106,71 +102,69 @@ void swap_chain_process_events(SwapChain& swap_chain) {
 	}
 }
 
-void swap_chain_resize(SwapChain& swap_chain, int width, int height) {
+void SwapChain::resize(int width, int height) {
 	RECT pr;
-	GetClientRect(swap_chain.parent, &pr);
-	SetWindowPos(swap_chain.window, NULL, 0, 0, pr.right - pr.left, pr.bottom - pr.top, SWP_DEFERERASE | SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOREDRAW | SWP_NOMOVE);
+	GetClientRect(parent, &pr);
+	SetWindowPos(window, NULL, 0, 0, pr.right - pr.left, pr.bottom - pr.top, SWP_DEFERERASE | SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOREDRAW | SWP_NOMOVE);
 }
 
 #else
 
-SwapChain swap_chain_create(WindowID handle, int width, int height) {
+void SwapChain::create(WindowID handle, int width, int height) {
 	SwapChain swap_chain;
 
 	XInitThreads();
 
 	GLint att[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
 
-	swap_chain.parent = handle;
-	swap_chain.display = XOpenDisplay(":0.0");
+	parent = handle;
+	display = XOpenDisplay(":0.0");
 
-	Window root = DefaultRootWindow(swap_chain.display);
+	Window root = DefaultRootWindow(display);
 
-	swap_chain.vi = glXChooseVisual(swap_chain.display, 0, att);
+	vi = glXChooseVisual(display, 0, att);
 
-	Colormap cmap = XCreateColormap(swap_chain.display, root, swap_chain.vi->visual, AllocNone);
+	Colormap cmap = XCreateColormap(display, root, vi->visual, AllocNone);
 	XSetWindowAttributes swa;
 	swa.colormap = cmap;
 	swa.event_mask = ExposureMask;// | KeyPressMask | KeyReleaseMask | StructureNotifyMask;
 
-	swap_chain.window = XCreateWindow(swap_chain.display, swap_chain.parent, 0, 0, width, height, 0, swap_chain.vi->depth, InputOutput, swap_chain.vi->visual, CWColormap | CWEventMask, &swa);
+	window = XCreateWindow(display, parent, 0, 0, width, height, 0, vi->depth, InputOutput, vi->visual, CWColormap | CWEventMask, &swa);
 
-	XMapWindow(swap_chain.display, swap_chain.window);
+	XMapWindow(display, window);
 
-	swap_chain.glc = glXCreateContext(swap_chain.display, swap_chain.vi, NULL, GL_TRUE);
+	glc = glXCreateContext(display, vi, NULL, GL_TRUE);
 
-	glXMakeCurrent(swap_chain.display, swap_chain.window, swap_chain.glc);
-
-	return swap_chain;
+	glXMakeCurrent(display, window, glc);
 }
 
-void swap_chain_destroy(SwapChain& swap_chain) {
-	//XLockDisplay(swap_chain.display);
-	glXMakeCurrent(swap_chain.display, None, NULL);
-	glXDestroyContext(swap_chain.display, swap_chain.glc);
-	XCloseDisplay(swap_chain.display);
-	//XUnlockDisplay(swap_chain.display);
+void SwapChain::destroy() {
+	//XLockDisplay(display);
+	glXMakeCurrent(display, None, NULL);
+	glXDestroyContext(display, glc);
+	XCloseDisplay(display);
+	//XUnlockDisplay(display);
 }
 
-void swap_chain_swap_buffers(SwapChain& swap_chain) {
-	//XLockDisplay(swap_chain.display);
-	glXSwapBuffers(swap_chain.display, swap_chain.window);
-	//XUnlockDisplay(swap_chain.display);
+void SwapChain::swap_buffers() {
+	//XLockDisplay(display);
+	glXSwapBuffers(display, window);
+	//XUnlockDisplay(display);
 }
 
-void swap_chain_process_events(SwapChain& swap_chain) {
-	//XLockDisplay(swap_chain.display);
+void SwapChain::process_events() {
+	//XLockDisplay(display);
 	XEvent event;
-	while(XQLength(swap_chain.display) > 0)
-		XNextEvent(swap_chain.display, &event);
-	//XUnlockDisplay(swap_chain.display);
+	while(XQLength(display) > 0)
+		XNextEvent(display, &event);
+	//XUnlockDisplay(display);
 }
 
-void swap_chain_resize(SwapChain& swap_chain, int width, int height) {
-	//XLockDisplay(swap_chain.display);
-	XMoveResizeWindow(swap_chain.display, swap_chain.window, 0, 0, width, height);
-	//XResizeWindow(swap_chain.display, swap_chain.window, width, height);
-	//XUnlockDisplay(swap_chain.display);
+void SwapChain::resize(int width, int height) {
+	//XLockDisplay(display);
+	XMoveResizeWindow(display, window, 0, 0, width, height);
+	//XResizeWindow(display, window, width, height);
+	//XUnlockDisplay(display);
 }
 
 #endif //WIN32

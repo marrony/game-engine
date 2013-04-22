@@ -16,7 +16,7 @@
 
 #include "engine.h"
 
-struct SwapChain {
+class SwapChain {
 #ifdef WIN32
 	HWND parent;
 	HWND window;
@@ -29,12 +29,13 @@ struct SwapChain {
 	GLXContext glc;
 	XVisualInfo *vi;
 #endif
-};
 
-SwapChain swap_chain_create(WindowID handle, int width, int height);
-void swap_chain_destroy(SwapChain& swap_chain);
-void swap_chain_swap_buffers(SwapChain& swap_chain);
-void swap_chain_process_events(SwapChain& swap_chain);
-void swap_chain_resize(SwapChain& swap_chain, int width, int height);
+public:
+	void create(WindowID handle, int width, int height);
+	void destroy();
+	void swap_buffers();
+	void process_events();
+	void resize(int width, int height);
+};
 
 #endif /* SWAP_CHAIN_H_ */
