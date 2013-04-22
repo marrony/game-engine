@@ -41,6 +41,7 @@ void* TaskManager::thread_function(void* ptr) {
 	return NULL;
 }
 
+#ifdef WIN32
 bool operator==(pthread_t th0, pthread_t th1) {
 	//return pthread_equal(th0, th1);
 	return !memcmp(&th0, &th1, sizeof(pthread_t));
@@ -49,6 +50,7 @@ bool operator==(pthread_t th0, pthread_t th1) {
 bool operator!=(pthread_t th0, pthread_t th1) {
 	return !(th0 == th1);
 }
+#endif
 
 void TaskManager::schedule_task() {
 	pthread_t thread = pthread_self();

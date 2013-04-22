@@ -72,9 +72,7 @@ struct Matrix4 {
 	};
 
 	INLINE Matrix4& operator=(const Matrix4& mat) {
-		for(int i = 0; i < 16; i++) {
-			matrix[i] = mat.matrix[i];
-		}
+		memcpy(matrix, mat.matrix, sizeof(matrix));
 		return *this;
 	}
 
@@ -87,13 +85,7 @@ struct Matrix4 {
 	}
 
 	INLINE void loadIdentity() {
-		static float identity[16] = {
-				1, 0, 0, 0,
-				0, 1, 0, 0,
-				0, 0, 1, 0,
-				0, 0, 0, 1,
-		};
-
+		static float identity[16] = MATRIX4_IDENTITY;
 		memcpy(this->matrix, identity, sizeof(identity));
 	}
 

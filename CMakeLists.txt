@@ -16,14 +16,12 @@ endif(WIN32)
 set(CMAKE_THREAD_PREFER_PTHREAD)
 find_package(Threads REQUIRED)
 
+add_subdirectory(tinyxml)
+add_subdirectory(collada)
+
 add_subdirectory(engine)
 include_directories(engine)
 
-add_executable(tool tool/main.cpp tool/app.cpp tool/app_win32.cpp tool/app_x11.cpp tool/exec.cpp)
-target_link_libraries(
-    tool engine_static socket_static json_static stream_static protocol_static
-    ${LIBRARIES}
-    ${CMAKE_THREAD_LIBS_INIT}
-)
+add_subdirectory(tool)
 
 #install(TARGETS prog DESTINATION bin)
