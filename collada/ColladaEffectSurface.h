@@ -9,25 +9,18 @@
 #define COLLADAEFFECTSURFACE_H_
 
 #include "ColladaElement.h"
+#include "ColladaUtil.h"
 
 DECLARE_VISITOR(ColladaInitFrom);
 
 class ColladaInitFrom : public ColladaElement {
 	std::string value;
 public:
-	static std::string elementType() {
-		return "init_from";
-	}
+	static std::string elementType();
 
-	virtual void loadFromXml(TiXmlElement* element) {
-		ColladaElement::loadFromXml(element);
+	virtual void loadFromXml(TiXmlElement* element);
 
-		const char* v = element->Value();
-		if(v)
-			value = v;
-	}
-
-	virtual void accept(engine::Visitor* visitor);
+	virtual void accept(Visitor* visitor);
 
 	const std::string& getValue() const { return value; }
 };
@@ -38,23 +31,13 @@ class ColladaEffectSurface : public ColladaElement {
 	std::string type;
 	ColladaInitFrom* initFrom;
 public:
-	virtual ~ColladaEffectSurface() {
-		delete initFrom;
-	}
+	virtual ~ColladaEffectSurface();
 
-	static std::string elementType() {
-		return "surface";
-	}
+	static std::string elementType();
 
-	virtual void loadFromXml(TiXmlElement* element) {
-		ColladaElement::loadFromXml(element);
+	virtual void loadFromXml(TiXmlElement* element);
 
-		loadAttribute(element, "type", type);
-
-		initFrom = createElementFromXml<ColladaInitFrom>(element);
-	}
-
-	virtual void accept(engine::Visitor* visitor);
+	virtual void accept(Visitor* visitor);
 
 	const std::string& getType() const { return type; }
 	ColladaInitFrom* getInitFrom() const { return initFrom; }

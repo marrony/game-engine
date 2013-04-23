@@ -11,6 +11,7 @@
 #include "ColladaElement.h"
 #include "ColladaAsset.h"
 #include "ColladaExtra.h"
+#include "ColladaUtil.h"
 
 #include <vector>
 
@@ -31,8 +32,8 @@ class ColladaLibrary : public ColladaElement {
 public:
 	virtual ~ColladaLibrary() {
 		delete asset;
-		eraseVector(extras);
-		eraseVector(items);
+		ColladaUtil::eraseVector(extras);
+		ColladaUtil::eraseVector(items);
 	}
 
 	static std::string elementType() {
@@ -52,17 +53,17 @@ public:
 	virtual void loadFromXml(TiXmlElement* element) {
 		ColladaElement::loadFromXml(element);
 
-		asset = createElementFromXml<ColladaAsset>(element);
-		extras = createElementsFromXml<ColladaExtra>(element);
-		items = createElementsFromXml<Element>(element);
+		asset = ColladaUtil::createElementFromXml<ColladaAsset>(this, element);
+		extras = ColladaUtil::createElementsFromXml<ColladaExtra>(this, element);
+		items = ColladaUtil::createElementsFromXml<Element>(this, element);
 	}
 
-	virtual void accept(engine::Visitor* visitor) {
+	virtual void accept(Visitor* visitor) {
 		ColladaLibraryVisitor<Element>* v = dynamic_cast<ColladaLibraryVisitor<Element>*>(visitor);
 		if(v) v->visit(this);
 	}
 
-	std::vector<Element*> getItems() {
+	std::vector<Element*>& getItems() {
 		return items;
 	}
 

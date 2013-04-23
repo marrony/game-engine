@@ -9,28 +9,21 @@
 #define COLLADAVISUALSCENE_H_
 
 #include "ColladaElement.h"
-#include "ColladaNode.h"
 
 DECLARE_VISITOR(ColladaVisualScene);
+
+class ColladaNode;
 
 class ColladaVisualScene : public ColladaElement {
 	std::vector<ColladaNode*> nodes;
 public:
-	~ColladaVisualScene() {
-		eraseVector(nodes);
-	}
+	~ColladaVisualScene();
 
-	static std::string elementType() {
-		return "visual_scene";
-	}
+	static std::string elementType();
 
-	virtual void loadFromXml(TiXmlElement* element) {
-		ColladaElement::loadFromXml(element);
+	virtual void loadFromXml(TiXmlElement* element);
 
-		nodes = createElementsFromXml<ColladaNode>(element);
-	}
-
-	virtual void accept(engine::Visitor* visitor);
+	virtual void accept(Visitor* visitor);
 
 	const std::vector<ColladaNode*>& getNodes() const { return nodes; }
 };

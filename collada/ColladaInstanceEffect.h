@@ -10,8 +10,6 @@
 
 #include "ColladaElement.h"
 
-#include <string>
-
 DECLARE_VISITOR(ColladaInstanceEffect);
 
 class ColladaInstanceEffect : public ColladaElement {
@@ -21,7 +19,7 @@ public:
 
 	virtual void loadFromXml(class TiXmlElement* element);
 
-	virtual void accept(engine::Visitor* visitor);
+	virtual void accept(Visitor* visitor);
 
 	const std::string& getUrl() const { return url; }
 };

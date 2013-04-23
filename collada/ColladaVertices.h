@@ -9,41 +9,23 @@
 #define COLLADAVERTICES_H_
 
 #include "ColladaElement.h"
-#include "ColladaInput.h"
 
 DECLARE_VISITOR(ColladaVertices);
+
+class ColladaInput;
 
 class ColladaVertices : public ColladaElement {
 	std::vector<ColladaInput*> inputs;
 public:
-	~ColladaVertices() {
-		eraseVector(inputs);
-	}
+	~ColladaVertices();
 
-	static std::string elementType() {
-		return "vertices";
-	}
+	static std::string elementType();
 
-	virtual void loadFromXml(TiXmlElement* element) {
-		ColladaElement::loadFromXml(element);
+	virtual void loadFromXml(TiXmlElement* element);
 
-		inputs = createElementsFromXml<ColladaInput>(element);
-		//TODO deve existir um input com semmantic=POSITION
-	}
+	ColladaInput* findInputWithSemantic(const std::string& semantic);
 
-	virtual void accept(engine::Visitor* visitor);
-
-	ColladaInput* findInputWithSemantic(const std::string& semantic) {
-		std::vector<ColladaInput*>::iterator input;
-
-		for(input = inputs.begin(); input != inputs.end(); input++) {
-			if((*input)->getSemantic() == semantic) {
-				return *input;
-			}
-		}
-
-		return 0;
-	}
+	virtual void accept(Visitor* visitor);
 };
 
 #endif /* COLLADAVERTICES_H_ */

@@ -15,26 +15,13 @@ DECLARE_VISITOR(ColladaPrimitive);
 class ColladaPrimitive : public ColladaElement {
 	std::vector<int> indices;
 public:
-	static std::string elementType() {
-		return "p";
-	}
+	static std::string elementType();
 
-	virtual void loadFromXml(TiXmlElement* element) {
-		ColladaElement::loadFromXml(element);
+	virtual void loadFromXml(TiXmlElement* element);
 
-		std::string value = element->GetText();
-		std::stringstream stream(value);
-		std::istream_iterator<int> beginOfStream(stream);
-		std::istream_iterator<int> endOfStream;
+	std::vector<int> getIndices() const { return indices; }
 
-		std::copy(beginOfStream, endOfStream, std::back_inserter(indices));
-	}
-
-	virtual void accept(engine::Visitor* visitor);
-
-	std::vector<int> getIndices() {
-		return indices;
-	}
+	virtual void accept(Visitor* visitor);
 };
 
 #endif /* COLLADAPRIMITIVE_H_ */

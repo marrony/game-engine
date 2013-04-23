@@ -10,23 +10,24 @@
 #include "ColladaInput.h"
 #include "ColladaSource.h"
 #include "ColladaArray.h"
+#include "ColladaUtil.h"
 
 DEFINE_VISITOR(ColladaGeometricPrimitive)
 
 ColladaGeometricPrimitive::~ColladaGeometricPrimitive() {
-	eraseVector(inputs);
+	ColladaUtil::eraseVector(inputs);
 }
 
 void ColladaGeometricPrimitive::loadFromXml(TiXmlElement* element) {
 	ColladaElement::loadFromXml(element);
 
-	loadAttribute(element, "material", material);
-	inputs = createElementsFromXml<ColladaInput>(element);
+	ColladaUtil::loadAttribute(element, "material", material);
+	inputs = ColladaUtil::createElementsFromXml<ColladaInput>(this, element);
 
 	TiXmlElement* xmlPrimitive = element->FirstChildElement("p");
 	while(xmlPrimitive) {
 		primitive.push_back(std::vector<int>());
-		loadArray(xmlPrimitive, primitive.back());
+		ColladaUtil::loadArray(xmlPrimitive, primitive.back());
 
 		xmlPrimitive = xmlPrimitive->NextSiblingElement("p");
 	}

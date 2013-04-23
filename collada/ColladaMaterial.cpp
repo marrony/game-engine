@@ -9,8 +9,7 @@
 #include "ColladaInstanceEffect.h"
 #include "ColladaImage.h"
 #include "ColladaEffect.h"
-
-#include "tinyxml.h"
+#include "ColladaUtil.h"
 
 DEFINE_VISITOR(ColladaMaterial)
 
@@ -25,5 +24,5 @@ std::string ColladaMaterial::elementType() {
 void ColladaMaterial::loadFromXml(TiXmlElement* element) {
 	ColladaElement::loadFromXml(element);
 
-	instanceEffect = createElementFromXml<ColladaInstanceEffect>(element);
+	instanceEffect = ColladaUtil::createElementFromXml<ColladaInstanceEffect>(this, element);
 }

@@ -13,6 +13,7 @@
 #include "ColladaVertices.h"
 #include "ColladaTriangles.h"
 #include "ColladaPolyList.h"
+#include "ColladaUtil.h"
 
 DECLARE_VISITOR(ColladaMesh);
 
@@ -22,27 +23,13 @@ class ColladaMesh : public ColladaElement {
 	std::vector<ColladaTriangles*> triangles;
 	std::vector<ColladaPolyList*> polylists;
 public:
-	~ColladaMesh() {
-		eraseVector(sources);
-		delete vertices;
-		eraseVector(triangles);
-		eraseVector(polylists);
-	}
+	~ColladaMesh();
 
-	static std::string elementType() {
-		return "mesh";
-	}
+	static std::string elementType();
 
-	virtual void loadFromXml(TiXmlElement* element) {
-		ColladaElement::loadFromXml(element);
+	virtual void loadFromXml(TiXmlElement* element);
 
-		sources = createElementsFromXml<ColladaSource>(element);
-		vertices = createElementFromXml<ColladaVertices>(element);
-		triangles = createElementsFromXml<ColladaTriangles>(element);
-		polylists = createElementsFromXml<ColladaPolyList>(element);
-	}
-
-	virtual void accept(engine::Visitor* visitor);
+	virtual void accept(Visitor* visitor);
 
 	const std::vector<ColladaSource*>& getSources() const { return sources; }
 	ColladaVertices* getVertices() const { return vertices; }

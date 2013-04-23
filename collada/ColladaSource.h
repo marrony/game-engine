@@ -10,34 +10,34 @@
 
 #include "ColladaElement.h"
 
-#include <string>
-
 DECLARE_VISITOR(ColladaSource);
 
+class ColladaIDRefArray;
+class ColladaNameArray;
+class ColladaBoolArray;
+class ColladaFloatArray;
+class ColladaIntArray;
+
 class ColladaSource : public ColladaElement {
-	class ColladaIDRefArray* idRefArray;
-	class ColladaNameArray* nameArray;
-	class ColladaBoolArray* boolArray;
-	class ColladaFloatArray* floatArray;
-	class ColladaIntArray* intArray;
+	ColladaIDRefArray* idRefArray;
+	ColladaNameArray* nameArray;
+	ColladaBoolArray* boolArray;
+	ColladaFloatArray* floatArray;
+	ColladaIntArray* intArray;
 public:
 	~ColladaSource();
 
 	static std::string elementType();
 
 	ColladaIDRefArray* getIdRefArray();
-
 	ColladaNameArray* getNameArray();
-
 	ColladaBoolArray* getBoolArray();
-
 	ColladaFloatArray* getFloatArray();
-
 	ColladaIntArray* getIntArray();
 
 	virtual void loadFromXml(class TiXmlElement* element);
 
-	virtual void accept(engine::Visitor* visitor);
+	virtual void accept(Visitor* visitor);
 };
 
 #endif /* COLLADASOURCE_H_ */

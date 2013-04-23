@@ -8,8 +8,7 @@
 #include "ColladaInput.h"
 #include "ColladaVertices.h"
 #include "ColladaSource.h"
-
-#include "tinyxml.h"
+#include "ColladaUtil.h"
 
 DEFINE_VISITOR(ColladaInput)
 
@@ -20,10 +19,10 @@ std::string ColladaInput::elementType() {
 void ColladaInput::loadFromXml(TiXmlElement* element) {
 	ColladaElement::loadFromXml(element);
 
-	loadAttribute(element, "semantic", semantic);
-	loadAttribute(element, "source", source);
-	loadAttribute(element, "offset", offset);
-	loadAttribute(element, "set", set);
+	ColladaUtil::loadAttribute(element, "semantic", semantic);
+	ColladaUtil::loadAttribute(element, "source", source);
+	ColladaUtil::loadAttribute(element, "offset", offset);
+	ColladaUtil::loadAttribute(element, "set", set);
 }
 
 const std::string& ColladaInput::getSemantic() {

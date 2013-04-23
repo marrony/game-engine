@@ -15,17 +15,11 @@ DECLARE_VISITOR(ColladaEffectSemantic);
 class ColladaEffectSemantic : public ColladaElement {
 	std::string semantic;
 public:
-	static std::string elementType() {
-		return "semantic";
-	}
+	static std::string elementType();
 
-	virtual void loadFromXml(TiXmlElement* element) {
-		ColladaElement::loadFromXml(element);
+	virtual void loadFromXml(TiXmlElement* element);
 
-		semantic = element->GetText();
-	}
-
-	virtual void accept(engine::Visitor* visitor);
+	virtual void accept(Visitor* visitor);
 };
 
 #endif /* COLLADAEFFECTSEMANTIC_H_ */

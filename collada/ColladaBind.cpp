@@ -6,8 +6,7 @@
  */
 
 #include "ColladaBind.h"
-
-#include "tinyxml.h"
+#include "ColladaUtil.h"
 
 DEFINE_VISITOR(ColladaBind)
 
@@ -18,6 +17,6 @@ std::string ColladaBind::elementType() {
 void ColladaBind::loadFromXml(TiXmlElement* element) {
 	ColladaElement::loadFromXml(element);
 
-	loadAttribute(element, "semantic", semantic);
-	loadAttribute(element, "target", target);
+	ColladaUtil::loadAttribute(element, "semantic", semantic);
+	ColladaUtil::loadAttribute(element, "target", target);
 }

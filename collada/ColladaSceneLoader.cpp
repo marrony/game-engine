@@ -13,47 +13,6 @@
 #include "CreateGeometry.h"
 #include "CreateScene.h"
 
-//////////////////////////////////////////////////////////////////
-
-class ColladaEffectLambert : public ColladaEffectConstant {
-public:
-	static std::string elementType() {
-		return "lambert";
-	}
-
-	virtual void loadFromXml(TiXmlElement* element) {
-		ColladaElement::loadFromXml(element);
-	}
-};
-
-//////////////////////////////////////////////////////////////////
-
-class ColladaEffectBlinn : public ColladaEffectLambert {
-public:
-	static std::string elementType() {
-		return "blinn";
-	}
-
-	virtual void loadFromXml(TiXmlElement* element) {
-		ColladaElement::loadFromXml(element);
-	}
-};
-
-//////////////////////////////////////////////////////////////////
-
-class ColladaEffectPhong : public ColladaEffectBlinn {
-public:
-	static std::string elementType() {
-		return "phong";
-	}
-
-	virtual void loadFromXml(TiXmlElement* element) {
-		ColladaElement::loadFromXml(element);
-	}
-};
-
-//////////////////////////////////////////////////////////////////
-
 class ColladaLoader : public ResourceLoader {
 	ResourceCompiler* compiler;
 	ResourceManager* manager;
@@ -77,34 +36,6 @@ class ColladaLoader : public ResourceLoader {
 		}
 
 		colladaDocument.loadFromXml(root);
-	}
-
-	void saveModel(const std::string& path, Mesh* geometryData) {
-		std::string outputName = path + "/" + geometryData->getName() + ".model";
-		FileStream fileStream(outputName);
-		ResourceBinStream resourceStream(fileStream);
-		geometryData->writeToStream(resourceStream);
-	}
-
-	void saveScene(const std::string& path, Scene* scene) {
-		std::string outputName = path + "/" + scene->getName() + ".scene";
-		FileStream fileStream(outputName);
-		ResourceBinStream resourceStream(fileStream);
-		SceneUtils::write(resourceStream, *manager, scene);
-	}
-public:
-	virtual ~ColladaLoader() {
-	}
-
-	virtual void release() {
-		delete this;
-	}
-
-	virtual void initialize(ResourceCompiler* compiler, ResourceManager* manager) {
-		this->compiler = compiler;
-		this->manager = manager;
-
-		compiler->registerLoader(this, "Collada Loader", "dae");
 	}
 
 	virtual void compileResource(const char* fileName, std::map<std::string, std::string>& options) {
@@ -132,14 +63,3 @@ public:
 		}
 	}
 };
-
-static Module* dynamicLib;
-
-extern "C" Module* getModule() {
-	return dynamicLib;
-}
-
-extern "C" EXPIMP Plugin* initializePlugin(Module* dynLib) {
-	dynamicLib = dynLib;
-	return new ColladaLoader;
-}

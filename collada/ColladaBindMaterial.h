@@ -9,30 +9,23 @@
 #define COLLADABINDMATERIAL_H_
 
 #include "ColladaElement.h"
-#include "ColladaInstanceMaterial.h"
 
 #include <vector>
 
 DECLARE_VISITOR(ColladaTechniqueCommon);
 
+class ColladaInstanceMaterial;
+
 class ColladaTechniqueCommon : public ColladaElement {
 	std::vector<ColladaInstanceMaterial*> instanceMaterial;
 public:
-	~ColladaTechniqueCommon() {
-		eraseVector(instanceMaterial);
-	}
+	~ColladaTechniqueCommon();
 
-	static std::string elementType() {
-		return "technique_common";
-	}
+	static std::string elementType();
 
-	virtual void loadFromXml(TiXmlElement* element) {
-		ColladaElement::loadFromXml(element);
+	virtual void loadFromXml(TiXmlElement* element);
 
-		instanceMaterial = createElementsFromXml<ColladaInstanceMaterial>(element);
-	}
-
-	virtual void accept(engine::Visitor* visitor);
+	virtual void accept(Visitor* visitor);
 
 	const std::vector<ColladaInstanceMaterial*>& getInstanceMaterial() const { return instanceMaterial; }
 };
@@ -42,21 +35,13 @@ DECLARE_VISITOR(ColladaBindMaterial);
 class ColladaBindMaterial : public ColladaElement {
 	ColladaTechniqueCommon* techniqueCommon;
 public:
-	~ColladaBindMaterial() {
-		delete techniqueCommon;
-	}
+	~ColladaBindMaterial();
 
-	static std::string elementType() {
-		return "bind_material";
-	}
+	static std::string elementType();
 
-	virtual void loadFromXml(TiXmlElement* element) {
-		ColladaElement::loadFromXml(element);
+	virtual void loadFromXml(TiXmlElement* element);
 
-		techniqueCommon = createElementFromXml<ColladaTechniqueCommon>(element);
-	}
-
-	virtual void accept(engine::Visitor* visitor);
+	virtual void accept(Visitor* visitor);
 
 	ColladaTechniqueCommon* getTechniqueCommon() const { return techniqueCommon; }
 };

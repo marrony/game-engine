@@ -8,16 +8,13 @@
 #ifndef COLLADAGEOMETRICPRIMITIVE_H_
 #define COLLADAGEOMETRICPRIMITIVE_H_
 
+#include "ColladaElement.h"
+
 #include <string>
 #include <vector>
 
-#include "tinyxml.h"
-
-#include "ColladaElement.h"
 class ColladaInput;
 class ColladaSource;
-
-using namespace engine;
 
 DECLARE_VISITOR(ColladaGeometricPrimitive);
 
@@ -31,7 +28,7 @@ public:
 
 	virtual void loadFromXml(TiXmlElement* element);
 
-	virtual void accept(engine::Visitor* visitor);
+	virtual void accept(Visitor* visitor);
 
 	ColladaInput* findInputWithSemantic(const std::string& semantic);
 

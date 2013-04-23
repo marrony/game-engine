@@ -8,3 +8,11 @@
 #include "ColladaEffectConstant.h"
 
 DEFINE_VISITOR(ColladaEffectConstant)
+
+std::string ColladaEffectConstant::elementType() {
+	return "constant";
+}
+
+void ColladaEffectConstant::loadFromXml(TiXmlElement* element) {
+	ColladaElement::loadFromXml(element);
+}

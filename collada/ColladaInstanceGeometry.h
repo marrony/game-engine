@@ -10,13 +10,13 @@
 
 #include "ColladaElement.h"
 
-#include <string>
-
 DECLARE_VISITOR(ColladaInstanceGeometry);
+
+class ColladaBindMaterial;
 
 class ColladaInstanceGeometry : public ColladaElement {
 	std::string url;
-	class ColladaBindMaterial* bindMaterial;
+	ColladaBindMaterial* bindMaterial;
 public:
 	~ColladaInstanceGeometry();
 
@@ -24,10 +24,10 @@ public:
 
 	virtual void loadFromXml(class TiXmlElement* element);
 
-	virtual void accept(engine::Visitor* visitor);
+	virtual void accept(Visitor* visitor);
 
 	const std::string& getUrl() const { return url; }
-	class ColladaBindMaterial* getBindMaterial() const { return bindMaterial; }
+	ColladaBindMaterial* getBindMaterial() const { return bindMaterial; }
 };
 
 #endif /* COLLADAINSTANCEGEOMETRY_H_ */

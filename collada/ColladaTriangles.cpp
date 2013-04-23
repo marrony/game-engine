@@ -9,3 +9,10 @@
 
 DEFINE_VISITOR(ColladaTriangles)
 
+std::string ColladaTriangles::elementType() {
+	return "triangles";
+}
+
+void ColladaTriangles::loadFromXml(TiXmlElement* element) {
+	ColladaGeometricPrimitive::loadFromXml(element);
+}

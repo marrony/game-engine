@@ -15,20 +15,11 @@ DECLARE_VISITOR(ColladaPolyList);
 class ColladaPolyList : public ColladaGeometricPrimitive {
 	std::vector<int> vcount;
 public:
-	virtual ~ColladaPolyList() {
-	}
+	static std::string elementType();
 
-	static std::string elementType() {
-		return "polylist";
-	}
+	virtual void loadFromXml(TiXmlElement* element);
 
-	virtual void loadFromXml(TiXmlElement* element) {
-		ColladaGeometricPrimitive::loadFromXml(element);
-
-		loadArray(element->FirstChildElement("vcount"), vcount);
-	}
-
-	virtual void accept(engine::Visitor* visitor);
+	virtual void accept(Visitor* visitor);
 
 	const std::vector<int>& getVcount() const { return vcount; }
 };

@@ -27,7 +27,7 @@ public:
 
 	virtual void loadFromXml(TiXmlElement* element);
 
-	virtual void accept(engine::Visitor* visitor);
+	virtual void accept(Visitor* visitor);
 
 	const std::vector<class ColladaNode*>& getNodes() const { return nodes; }
 	const std::vector<class ColladaInstanceGeometry*>& getInstanceGeometries() const { return instanceGeometries; }

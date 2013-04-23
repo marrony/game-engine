@@ -7,8 +7,7 @@
 
 #include "ColladaSource.h"
 #include "ColladaArray.h"
-
-#include "tinyxml.h"
+#include "ColladaUtil.h"
 
 DEFINE_VISITOR(ColladaSource)
 
@@ -47,9 +46,9 @@ ColladaIntArray* ColladaSource::getIntArray() {
 void ColladaSource::loadFromXml(TiXmlElement* element) {
 	ColladaElement::loadFromXml(element);
 
-	idRefArray = createElementFromXml<ColladaIDRefArray>(element);
-	nameArray = createElementFromXml<ColladaNameArray>(element);
-	boolArray = createElementFromXml<ColladaBoolArray>(element);
-	floatArray = createElementFromXml<ColladaFloatArray>(element);
-	intArray = createElementFromXml<ColladaIntArray>(element);
+	idRefArray = ColladaUtil::createElementFromXml<ColladaIDRefArray>(this, element);
+	nameArray = ColladaUtil::createElementFromXml<ColladaNameArray>(this, element);
+	boolArray = ColladaUtil::createElementFromXml<ColladaBoolArray>(this, element);
+	floatArray = ColladaUtil::createElementFromXml<ColladaFloatArray>(this, element);
+	intArray = ColladaUtil::createElementFromXml<ColladaIntArray>(this, element);
 }

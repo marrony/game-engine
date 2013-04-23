@@ -9,40 +9,21 @@
 #define COLLADAGEOMETRY_H_
 
 #include "ColladaElement.h"
-#include "ColladaMesh.h"
 
 DECLARE_VISITOR(ColladaGeometry);
+
+class ColladaMesh;
 
 class ColladaGeometry : public ColladaElement {
 	ColladaMesh* mesh;
 public:
-	~ColladaGeometry() {
-		delete mesh;
-	}
+	~ColladaGeometry();
 
-	static std::string elementType() {
-		return "geometry";
-	}
+	static std::string elementType();
 
-	virtual void loadFromXml(TiXmlElement* element) {
-		ColladaElement::loadFromXml(element);
+	virtual void loadFromXml(TiXmlElement* element);
 
-		TiXmlElement* geometryChild;
-
-		geometryChild = element->FirstChildElement("convex_mesh");
-		if(geometryChild != 0) {
-			//throw Exception("Does not support <convex_mesh>");
-		}
-
-		geometryChild = element->FirstChildElement("spline");
-		if(geometryChild != 0) {
-			//throw Exception("Does not support <spline>");
-		}
-
-		mesh = createElementFromXml<ColladaMesh>(element);
-	}
-
-	virtual void accept(engine::Visitor* visitor);
+	virtual void accept(Visitor* visitor);
 
 	const std::string& getName() {
 		return name;

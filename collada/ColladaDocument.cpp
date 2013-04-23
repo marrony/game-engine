@@ -6,6 +6,16 @@
  */
 
 #include "ColladaDocument.h"
+#include "ColladaImage.h"
+#include "ColladaEffect.h"
+#include "ColladaMaterial.h"
+#include "ColladaLight.h"
+#include "ColladaCamera.h"
+#include "ColladaGeometry.h"
+#include "ColladaVisualScene.h"
+#include "ColladaNode.h"
+#include "ColladaScene.h"
+#include "ColladaUtil.h"
 
 DEFINE_VISITOR(ColladaDocument)
 
@@ -26,15 +36,15 @@ std::string ColladaDocument::elementType() {
 }
 
 void ColladaDocument::loadFromXml(TiXmlElement* element) {
-	libraryImages = createElementFromXml<ColladaLibrary<ColladaImage> >(element);
-	libraryEffects = createElementFromXml<ColladaLibrary<ColladaEffect> >(element);
-	libraryMaterials = createElementFromXml<ColladaLibrary<ColladaMaterial> >(element);
-	libraryLights = createElementFromXml<ColladaLibrary<ColladaLight> >(element);
-	libraryCameras = createElementFromXml<ColladaLibrary<ColladaCamera> >(element);
-	libraryGeometries = createElementFromXml<ColladaLibrary<ColladaGeometry> >(element);
-	libraryVisualScenes = createElementFromXml<ColladaLibrary<ColladaVisualScene> >(element);
-	libraryNodes = createElementFromXml<ColladaLibrary<ColladaNode> >(element);
-	scene = createElementFromXml<ColladaScene>(element);
+	libraryImages = ColladaUtil::createElementFromXml<ColladaLibrary<ColladaImage> >(this, element);
+	libraryEffects = ColladaUtil::createElementFromXml<ColladaLibrary<ColladaEffect> >(this, element);
+	libraryMaterials = ColladaUtil::createElementFromXml<ColladaLibrary<ColladaMaterial> >(this, element);
+	libraryLights = ColladaUtil::createElementFromXml<ColladaLibrary<ColladaLight> >(this, element);
+	libraryCameras = ColladaUtil::createElementFromXml<ColladaLibrary<ColladaCamera> >(this, element);
+	libraryGeometries = ColladaUtil::createElementFromXml<ColladaLibrary<ColladaGeometry> >(this, element);
+	libraryVisualScenes = ColladaUtil::createElementFromXml<ColladaLibrary<ColladaVisualScene> >(this, element);
+	libraryNodes = ColladaUtil::createElementFromXml<ColladaLibrary<ColladaNode> >(this, element);
+	scene = ColladaUtil::createElementFromXml<ColladaScene>(this, element);
 }
 
 ColladaImage* ColladaDocument::findImage(const std::string& url) {

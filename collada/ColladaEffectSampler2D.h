@@ -14,15 +14,11 @@ DECLARE_VISITOR(ColladaEffectSampler2D);
 
 class ColladaEffectSampler2D : public ColladaElement {
 public:
-	static std::string elementType() {
-		return "sampler2D";
-	}
+	static std::string elementType();
 
-	virtual void loadFromXml(TiXmlElement* element) {
-		ColladaElement::loadFromXml(element);
-	}
+	virtual void loadFromXml(TiXmlElement* element);
 
-	virtual void accept(engine::Visitor* visitor);
+	virtual void accept(Visitor* visitor);
 };
 
 #endif /* COLLADAEFFECTSAMPLER2D_H_ */

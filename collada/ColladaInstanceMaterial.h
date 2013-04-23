@@ -10,8 +10,6 @@
 
 #include "ColladaElement.h"
 
-#include <string>
-
 DECLARE_VISITOR(ColladaInstanceMaterial);
 
 class ColladaInstanceMaterial : public ColladaElement {
@@ -22,7 +20,7 @@ public:
 
 	virtual void loadFromXml(TiXmlElement* element);
 
-	virtual void accept(engine::Visitor* visitor);
+	virtual void accept(Visitor* visitor);
 
 	const std::string& getTarget() const { return target; }
 	const std::string& getSymbol() const { return symbol; }

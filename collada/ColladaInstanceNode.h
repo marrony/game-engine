@@ -10,22 +10,16 @@
 
 #include "ColladaElement.h"
 
-#include <string>
-
 DECLARE_VISITOR(ColladaInstanceNode);
 
 class ColladaInstanceNode : public ColladaElement {
 	std::string url;
 public:
-	static std::string elementType() {
-		return "instance_node";
-	}
+	static std::string elementType();
 
-	virtual void loadFromXml(TiXmlElement* element) {
-		loadAttribute(element, "url", url);
-	}
+	virtual void loadFromXml(TiXmlElement* element);
 
-	virtual void accept(engine::Visitor* visitor);
+	virtual void accept(Visitor* visitor);
 
 	const std::string& getUrl() const { return url; }
 };

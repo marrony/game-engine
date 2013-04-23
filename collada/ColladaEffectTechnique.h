@@ -9,43 +9,22 @@
 #define COLLADAEFFECTTECHNIQUE_H_
 
 #include "ColladaElement.h"
-#include "ColladaEffectConstant.h"
 
 DECLARE_VISITOR(ColladaEffectTechnique);
+
+class ColladaEffectConstant;
 
 class ColladaEffectTechnique : public ColladaElement {
 	std::string sid;
 	ColladaEffectConstant* shader;
 public:
-	~ColladaEffectTechnique() {
-		delete shader;
-	}
+	~ColladaEffectTechnique();
 
-	static std::string elementType() {
-		return "technique";
-	}
+	static std::string elementType();
 
-	virtual void loadFromXml(TiXmlElement* element) {
-		ColladaElement::loadFromXml(element);
+	virtual void loadFromXml(TiXmlElement* element);
 
-		loadAttribute(element, "sid", sid);
-
-		shader = createElementFromXml<ColladaEffectConstant>(element);
-
-//		if(!shader) {
-//			shader = createElementFromXml<ColladaEffectLambert>(element);
-//		}
-//
-//		if(!shader) {
-//			shader = createElementFromXml<ColladaEffectBlinn>(element);
-//		}
-//
-//		if(!shader) {
-//			shader = createElementFromXml<ColladaEffectPhong>(element);
-//		}
-	}
-
-	virtual void accept(engine::Visitor* visitor);
+	virtual void accept(Visitor* visitor);
 };
 
 #endif /* COLLADAEFFECTTECHNIQUE_H_ */

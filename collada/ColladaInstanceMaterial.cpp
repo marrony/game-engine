@@ -8,8 +8,7 @@
 #include "ColladaInstanceMaterial.h"
 #include "ColladaMaterial.h"
 #include "ColladaDocument.h"
-
-#include "tinyxml.h"
+#include "ColladaUtil.h"
 
 DEFINE_VISITOR(ColladaInstanceMaterial)
 
@@ -20,6 +19,6 @@ std::string ColladaInstanceMaterial::elementType() {
 void ColladaInstanceMaterial::loadFromXml(TiXmlElement* element) {
 	ColladaElement::loadFromXml(element);
 
-	loadAttribute(element, "target", target);
-	loadAttribute(element, "symbol", symbol);
+	ColladaUtil::loadAttribute(element, "target", target);
+	ColladaUtil::loadAttribute(element, "symbol", symbol);
 }

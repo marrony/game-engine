@@ -8,3 +8,10 @@
 #include "ColladaAsset.h"
 
 DEFINE_VISITOR(ColladaAsset)
+
+std::string ColladaAsset::elementType() {
+	return "asset";
+}
+
+void ColladaAsset::loadFromXml(class TiXmlElement* element) {
+}

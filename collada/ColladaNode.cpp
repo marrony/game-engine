@@ -11,15 +11,16 @@
 #include "ColladaInstanceController.h"
 #include "ColladaInstanceNode.h"
 #include "ColladaMatrix.h"
+#include "ColladaUtil.h"
 
 DEFINE_VISITOR(ColladaNode)
 
 ColladaNode::~ColladaNode() {
-	eraseVector(nodes);
-	eraseVector(instanceGeometries);
-	eraseVector(instanceControllers);
-	eraseVector(instanceNodes);
-	eraseVector(transformations);
+	ColladaUtil::eraseVector(nodes);
+	ColladaUtil::eraseVector(instanceGeometries);
+	ColladaUtil::eraseVector(instanceControllers);
+	ColladaUtil::eraseVector(instanceNodes);
+	ColladaUtil::eraseVector(transformations);
 }
 
 std::string ColladaNode::elementType() {
@@ -29,25 +30,25 @@ std::string ColladaNode::elementType() {
 void ColladaNode::loadFromXml(TiXmlElement* element) {
 	ColladaElement::loadFromXml(element);
 
-	nodes = createElementsFromXml<ColladaNode>(element);
-	instanceGeometries = createElementsFromXml<ColladaInstanceGeometry>(element);
-	instanceControllers = createElementsFromXml<ColladaInstanceController>(element);
-	instanceNodes = createElementsFromXml<ColladaInstanceNode>(element);
+	nodes = ColladaUtil::createElementsFromXml<ColladaNode>(this, element);
+	instanceGeometries = ColladaUtil::createElementsFromXml<ColladaInstanceGeometry>(this, element);
+	instanceControllers = ColladaUtil::createElementsFromXml<ColladaInstanceController>(this, element);
+	instanceNodes = ColladaUtil::createElementsFromXml<ColladaInstanceNode>(this, element);
 
 	TiXmlElement* child = element->FirstChildElement();
 	while(child) {
 		const char* elementType = child->Value();
 
 		if(ColladaMatrix::elementType() == elementType) {
-			transformations.push_back(createElementFromXml2<ColladaMatrix>(child));
+			transformations.push_back(ColladaUtil::createElementFromXml2<ColladaMatrix>(this, child));
 		} else if(ColladaRotate::elementType() == elementType) {
-			transformations.push_back(createElementFromXml2<ColladaRotate>(child));
+			transformations.push_back(ColladaUtil::createElementFromXml2<ColladaRotate>(this, child));
 		} else if(ColladaScale::elementType() == elementType) {
-			transformations.push_back(createElementFromXml2<ColladaScale>(child));
+			transformations.push_back(ColladaUtil::createElementFromXml2<ColladaScale>(this, child));
 		} else if(ColladaSkew::elementType() == elementType) {
-			transformations.push_back(createElementFromXml2<ColladaSkew>(child));
+			transformations.push_back(ColladaUtil::createElementFromXml2<ColladaSkew>(this, child));
 		} else if(ColladaTranslate::elementType() == elementType) {
-			transformations.push_back(createElementFromXml2<ColladaTranslate>(child));
+			transformations.push_back(ColladaUtil::createElementFromXml2<ColladaTranslate>(this, child));
 		}
 
 		child = child->NextSiblingElement();

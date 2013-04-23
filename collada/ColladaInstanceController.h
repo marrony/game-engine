@@ -9,32 +9,23 @@
 #define COLLADAINSTANCECONTROLLER_H_
 
 #include "ColladaElement.h"
-#include "ColladaSkeleton.h"
-#include "ColladaBindMaterial.h"
 
 DECLARE_VISITOR(ColladaInstanceController);
+
+class ColladaSkeleton;
+class ColladaBindMaterial;
 
 class ColladaInstanceController : public ColladaElement {
 	std::vector<ColladaSkeleton*> skeletons;
 	ColladaBindMaterial* bindMaterial;
 public:
-	~ColladaInstanceController() {
-		eraseVector(skeletons);
-		delete bindMaterial;
-	}
+	~ColladaInstanceController();
 
-	static std::string elementType() {
-		return "instance_controller";
-	}
+	static std::string elementType();
 
-	virtual void loadFromXml(TiXmlElement* element) {
-		ColladaElement::loadFromXml(element);
+	virtual void loadFromXml(TiXmlElement* element);
 
-		skeletons = createElementsFromXml<ColladaSkeleton>(element);
-		bindMaterial = createElementFromXml<ColladaBindMaterial>(element);
-	}
-
-	virtual void accept(engine::Visitor* visitor);
+	virtual void accept(Visitor* visitor);
 };
 
 #endif /* COLLADAINSTANCECONTROLLER_H_ */

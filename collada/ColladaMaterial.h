@@ -21,7 +21,7 @@ public:
 
 	virtual void loadFromXml(class TiXmlElement* element);
 
-	virtual void accept(engine::Visitor* visitor);
+	virtual void accept(Visitor* visitor);
 
 	class ColladaInstanceEffect* getInstanceEffect() const { return instanceEffect; }
 };

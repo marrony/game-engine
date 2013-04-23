@@ -7,6 +7,7 @@
 
 #include "ColladaInstanceEffect.h"
 #include "ColladaDocument.h"
+#include "ColladaUtil.h"
 
 DEFINE_VISITOR(ColladaInstanceEffect)
 
@@ -17,5 +18,5 @@ std::string ColladaInstanceEffect::elementType() {
 void ColladaInstanceEffect::loadFromXml(TiXmlElement* element) {
 	ColladaElement::loadFromXml(element);
 
-	loadAttribute(element, "url", url);
+	ColladaUtil::loadAttribute(element, "url", url);
 }

@@ -8,6 +8,7 @@
 #include "ColladaInstanceGeometry.h"
 #include "ColladaBindMaterial.h"
 #include "ColladaDocument.h"
+#include "ColladaUtil.h"
 
 DEFINE_VISITOR(ColladaInstanceGeometry)
 
@@ -22,6 +23,6 @@ std::string ColladaInstanceGeometry::elementType() {
 void ColladaInstanceGeometry::loadFromXml(TiXmlElement* element) {
 	ColladaElement::loadFromXml(element);
 
-	loadAttribute(element, "url", url);
-	bindMaterial = createElementFromXml<ColladaBindMaterial>(element);
+	ColladaUtil::loadAttribute(element, "url", url);
+	bindMaterial = ColladaUtil::createElementFromXml<ColladaBindMaterial>(this, element);
 }

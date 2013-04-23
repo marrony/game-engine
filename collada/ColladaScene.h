@@ -16,13 +16,11 @@ class ColladaInstanceVisualScene : public ColladaElement {
 	std::string sid;
 	std::string url;
 public:
-	static std::string elementType() {
-		return "instance_visual_scene";
-	}
+	static std::string elementType();
 
 	virtual void loadFromXml(class TiXmlElement* element);
 
-	virtual void accept(engine::Visitor* visitor);
+	virtual void accept(Visitor* visitor);
 
 	const std::string& getSid() const { return sid; }
 	const std::string& getUrl() const { return url; }
@@ -33,17 +31,13 @@ DECLARE_VISITOR(ColladaScene)
 class ColladaScene : public ColladaElement {
 	class ColladaInstanceVisualScene* instanceVisualScene;
 public:
-	virtual ~ColladaScene() {
-		delete instanceVisualScene;
-	}
+	virtual ~ColladaScene();
 
-	static std::string elementType() {
-		return "scene";
-	}
+	static std::string elementType();
 
 	virtual void loadFromXml(class TiXmlElement* element);
 
-	virtual void accept(engine::Visitor* visitor);
+	virtual void accept(Visitor* visitor);
 
 	class ColladaInstanceVisualScene* getInstanceVisualScene() const { return instanceVisualScene; }
 };

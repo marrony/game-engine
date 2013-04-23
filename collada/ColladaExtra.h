@@ -14,14 +14,11 @@ DECLARE_VISITOR(ColladaExtra);
 
 class ColladaExtra : public ColladaElement {
 public:
-	static std::string elementType() {
-		return "extra";
-	}
+	static std::string elementType();
 
-	virtual void loadFromXml(TiXmlElement* element) {
-	}
+	virtual void loadFromXml(TiXmlElement* element);
 
-	virtual void accept(engine::Visitor* visitor);
+	virtual void accept(Visitor* visitor);
 };
 
 #endif /* COLLADAEXTRA_H_ */

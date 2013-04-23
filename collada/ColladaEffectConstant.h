@@ -14,15 +14,48 @@ DECLARE_VISITOR(ColladaEffectConstant);
 
 class ColladaEffectConstant : public ColladaElement {
 public:
+	static std::string elementType();
+
+	virtual void loadFromXml(TiXmlElement* element);
+
+	virtual void accept(Visitor* visitor);
+};
+
+class ColladaEffectLambert : public ColladaEffectConstant {
+public:
 	static std::string elementType() {
-		return "constant";
+		return "lambert";
 	}
 
 	virtual void loadFromXml(TiXmlElement* element) {
 		ColladaElement::loadFromXml(element);
 	}
+};
 
-	virtual void accept(engine::Visitor* visitor);
+//////////////////////////////////////////////////////////////////
+
+class ColladaEffectBlinn : public ColladaEffectLambert {
+public:
+	static std::string elementType() {
+		return "blinn";
+	}
+
+	virtual void loadFromXml(TiXmlElement* element) {
+		ColladaElement::loadFromXml(element);
+	}
+};
+
+//////////////////////////////////////////////////////////////////
+
+class ColladaEffectPhong : public ColladaEffectBlinn {
+public:
+	static std::string elementType() {
+		return "phong";
+	}
+
+	virtual void loadFromXml(TiXmlElement* element) {
+		ColladaElement::loadFromXml(element);
+	}
 };
 
 #endif /* COLLADAEFFECTCONSTANT_H_ */

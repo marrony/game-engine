@@ -16,14 +16,11 @@ DECLARE_VISITOR(ColladaAsset);
 
 class ColladaAsset : public ColladaElement {
 public:
-	static std::string elementType() {
-		return "asset";
-	}
+	static std::string elementType();
 
-	virtual void loadFromXml(class TiXmlElement* element) {
-	}
+	virtual void loadFromXml(class TiXmlElement* element);
 
-	virtual void accept(engine::Visitor* visitor);
+	virtual void accept(Visitor* visitor);
 };
 
 #endif /* COLLADAASSET_H_ */

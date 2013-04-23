@@ -9,3 +9,12 @@
 
 DEFINE_VISITOR(ColladaLight)
 
+std::string ColladaLight::elementType() {
+	return "light";
+}
+
+void ColladaLight::loadFromXml(TiXmlElement* element) {
+	ColladaElement::loadFromXml(element);
+
+	//TODO parse light
+}

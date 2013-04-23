@@ -14,17 +14,11 @@ DECLARE_VISITOR(ColladaLight);
 
 class ColladaLight : public ColladaElement {
 public:
-	static std::string elementType() {
-		return "light";
-	}
+	static std::string elementType();
 
-	virtual void loadFromXml(TiXmlElement* element) {
-		ColladaElement::loadFromXml(element);
+	virtual void loadFromXml(TiXmlElement* element);
 
-		//TODO parse light
-	}
-
-	virtual void accept(engine::Visitor* visitor);
+	virtual void accept(Visitor* visitor);
 };
 
 #endif /* COLLADALIGHT_H_ */

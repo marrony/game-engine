@@ -8,3 +8,10 @@
 #include "ColladaExtra.h"
 
 DEFINE_VISITOR(ColladaExtra)
+
+std::string ColladaExtra::elementType() {
+	return "extra";
+}
+
+void ColladaExtra::loadFromXml(TiXmlElement* element) {
+}

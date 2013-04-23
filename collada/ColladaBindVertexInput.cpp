@@ -6,8 +6,7 @@
  */
 
 #include "ColladaBindVertexInput.h"
-
-#include "tinyxml.h"
+#include "ColladaUtil.h"
 
 DEFINE_VISITOR(ColladaBindVertexInput)
 
@@ -18,7 +17,7 @@ std::string ColladaBindVertexInput::elementType() {
 void ColladaBindVertexInput::loadFromXml(TiXmlElement* element) {
 	ColladaElement::loadFromXml(element);
 
-	loadAttribute(element, "semantic", semantic);
-	loadAttribute(element, "input_semantic", inputSemantic);
-	loadAttribute(element, "input_set", inputSet);
+	ColladaUtil::loadAttribute(element, "semantic", semantic);
+	ColladaUtil::loadAttribute(element, "input_semantic", inputSemantic);
+	ColladaUtil::loadAttribute(element, "input_set", inputSet);
 }

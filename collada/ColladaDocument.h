@@ -10,19 +10,20 @@
 
 #include "ColladaLibrary.h"
 #include "ColladaElement.h"
-#include "ColladaImage.h"
-#include "ColladaEffect.h"
-#include "ColladaMaterial.h"
-#include "ColladaLight.h"
-#include "ColladaCamera.h"
-#include "ColladaGeometry.h"
-#include "ColladaVisualScene.h"
-#include "ColladaNode.h"
-#include "ColladaScene.h"
 
 #include <string>
 
 DECLARE_VISITOR(ColladaDocument);
+
+class ColladaImage;
+class ColladaEffect;
+class ColladaMaterial;
+class ColladaLight;
+class ColladaCamera;
+class ColladaGeometry;
+class ColladaVisualScene;
+class ColladaNode;
+class ColladaScene;
 
 class ColladaDocument : public ColladaElement {
 public:
@@ -42,7 +43,7 @@ public:
 
 	void loadFromXml(class TiXmlElement* element);
 
-	virtual void accept(engine::Visitor* visitor);
+	virtual void accept(Visitor* visitor);
 
 	ColladaImage* findImage(const std::string& url);
 	ColladaEffect* findEffect(const std::string& url);

@@ -15,20 +15,11 @@ DECLARE_VISITOR(ColladaSkeleton);
 class ColladaSkeleton : public ColladaElement {
 	std::string uri;
 public:
-	~ColladaSkeleton() {
-	}
+	static std::string elementType();
 
-	static std::string elementType() {
-		return "skeleton";
-	}
+	virtual void loadFromXml(TiXmlElement* element);
 
-	virtual void loadFromXml(TiXmlElement* element) {
-		ColladaElement::loadFromXml(element);
-
-		uri = element->GetText();
-	}
-
-	virtual void accept(engine::Visitor* visitor);
+	virtual void accept(Visitor* visitor);
 };
 
 #endif /* COLLADASKELETON_H_ */
