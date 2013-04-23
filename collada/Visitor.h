@@ -22,6 +22,7 @@ struct name##Visitor {                            \
 void name::accept(Visitor* elementVisitor) {                               \
 	name##Visitor* visitor = dynamic_cast<name##Visitor*>(elementVisitor); \
 	if(visitor) visitor->visit(this);                                      \
+	ColladaElement::accept(elementVisitor);                                 \
 }
 
 #define ACCEPT_METHOD() virtual void accept(Visitor* visitor)

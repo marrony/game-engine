@@ -22,6 +22,8 @@
 #include <vector>
 #include <map>
 
+#include <stdint.h>
+
 struct MeshVertex {
 	Vector3 position;
 	Vector3 normal;
@@ -48,11 +50,38 @@ struct Batch {
 	unsigned short count;  //number os elements to draw
 	unsigned short start;  //minimum index in range [offset, offset+count]
 	unsigned short end;    //maximum index in range [offset, offset+count]
+	std::string material;
+};
+
+enum OffsetIndex {
+	PositionOffset = 0,
+	NormalOffset,
+	STangentOffset,
+	TTangentOffset,
+	ColorOffset,
+	TexCoordOffset,
+	BoneIdsOffset,
+	WeigthsOffset,
+	MaxAttributeOffset
+};
+
+union AttributeOffset {
+	struct {
+		uint16_t position;
+		uint16_t normal;
+		uint16_t sTangent;
+		uint16_t tTangent;
+		uint16_t color;
+		uint16_t texCoord;
+		uint16_t boneIds;
+		uint16_t weigths;
+	};
+
+	uint16_t offsets[MaxAttributeOffset];
 };
 
 class CreateGeometry : public Visitor,
 							public ColladaGeometryVisitor,
-							public ColladaMeshVisitor,
 							public ColladaPolyListVisitor,
 							public ColladaTrianglesVisitor {
 	std::string name;
@@ -64,18 +93,20 @@ class CreateGeometry : public Visitor,
 	std::vector<Vector2> texCoord;
 	std::vector<Vector4> boneIds;
 	std::vector<Vector4> weights;
-	std::vector<unsigned short> indices;
+	std::vector<uint16_t> indices;
 
 	int elementsPerVertex;
-	int attributeOffsets[8];
+	AttributeOffset attributeOffsets;
 
-	void addVertexData(const std::vector<MeshVertex>& vertexArray, const std::vector<unsigned short>& newIndices, int material, int flags);
+	std::vector<Batch> batches;
+
+	void add_vertex_data(const std::vector<MeshVertex>& vertexArray, const std::vector<uint16_t>& newIndices, const std::string& material, int flags);
+	void calculate_attribute_offsets_and_elements_per_vertex();
 public:
-	CreateGeometry(const std::string& name);
+	CreateGeometry();
 	virtual ~CreateGeometry();
 
 	virtual void visit(ColladaGeometry* geometry);
-	virtual void visit(ColladaMesh* mesh);
 	virtual void visit(ColladaPolyList* polylist);
 	virtual void visit(ColladaTriangles* triangles);
 };

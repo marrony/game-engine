@@ -16,13 +16,15 @@
 #include <iterator>
 #include <sstream>
 
+DECLARE_VISITOR(ColladaElement);
+
 class ColladaElement {
 public:
 	void addElement(ColladaElement* element);
 
 	ColladaElement* findElement(const std::string& url);
 
-	virtual void accept(Visitor* visitor) = 0;
+	virtual void accept(Visitor* visitor);
 
 	const std::string& getId() const {
 		return id;
@@ -44,6 +46,8 @@ public:
 	virtual void loadFromXml(TiXmlElement* element);
 
 	bool isElement(const std::string& url) const;
+
+	const std::vector<ColladaElement*>& getElements() const { return elements; }
 };
 
 #endif /* COLLADAELEMENT_H_ */

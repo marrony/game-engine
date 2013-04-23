@@ -12,8 +12,14 @@
 #include <stdint.h>
 
 struct Mesh {
-	uint16_t vertex_offset;
-	uint16_t color_offset;
+	int32_t vertex_offset;
+	int32_t normal_offset;
+	int32_t stangent_offset;
+	int32_t ttangent_offset;
+	int32_t color_offset;
+	int32_t texcoord_offset;
+	int32_t boneids_offset;
+	int32_t weights_offset;
 	uint16_t vertex_count;
 	uint16_t index_count;
 	uint8_t data[0];

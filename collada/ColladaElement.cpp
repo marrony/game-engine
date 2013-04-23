@@ -15,6 +15,16 @@ void ColladaElement::addElement(ColladaElement* element) {
 	}
 }
 
+void ColladaElement::accept(Visitor* visitor) {
+	for(size_t i = 0; i < elements.size(); i++) {
+		ColladaElement* element = elements[i];
+		element->accept(visitor);
+	}
+
+	if(ColladaElementVisitor* elementVisitor = dynamic_cast<ColladaElementVisitor*>(visitor))
+		elementVisitor->visit(this);
+}
+
 ColladaElement* ColladaElement::findElement(const std::string& url) {
 	for(size_t i = 0; i < elements.size(); i++) {
 		ColladaElement* element = elements[i];

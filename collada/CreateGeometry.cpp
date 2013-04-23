@@ -9,7 +9,7 @@
 #include "ColladaInput.h"
 #include "ColladaArray.h"
 
-CreateGeometry::CreateGeometry(const std::string& name) : name(name) {
+CreateGeometry::CreateGeometry() {
 	elementsPerVertex = 0;
 }
 
@@ -17,26 +17,16 @@ CreateGeometry::~CreateGeometry() {
 }
 
 void CreateGeometry::visit(ColladaGeometry* geometry) {
-	std::string name0;
-
-	if(!name.empty())
-		name0 = name;
-	else if(!geometry->getName().empty())
-		name0 = geometry->getName();
+	if(!geometry->getName().empty())
+		name = geometry->getName();
 	else
-		name0 = geometry->getId();
+		name = geometry->getId();
 
 	ColladaMesh* mesh = geometry->getMesh();
 
 	mesh->accept(this);
-}
 
-void CreateGeometry::visit(ColladaMesh* mesh) {
-	for(size_t i = 0; i < mesh->getPolylists().size(); i++)
-		mesh->getPolylists()[i]->accept(this);
-
-	for(size_t i = 0; i < mesh->getTriangles().size(); i++)
-		mesh->getTriangles()[i]->accept(this);
+	calculate_attribute_offsets_and_elements_per_vertex();
 }
 
 struct VertexSoup {
@@ -182,10 +172,7 @@ void CreateGeometry::visit(ColladaPolyList* polylist) {
 			}
 		}
 
-		addVertexData(vertexSoup.vertices, vertexSoup.indices, 0, vertexSoup.flags);
-
-//		Material* material = (Material*)manager->loadResource(MaterialKey(polylist->getMaterial()));
-//		geometryData->addVertexData(vertexSoup.vertices, vertexSoup.indices, material, vertexSoup.flags);
+		add_vertex_data(vertexSoup.vertices, vertexSoup.indices, polylist->getMaterial(), vertexSoup.flags);
 	}
 }
 
@@ -198,23 +185,20 @@ void CreateGeometry::visit(ColladaTriangles* triangles) {
 			vertexSoup.indices.push_back(index);
 		}
 
-		addVertexData(vertexSoup.vertices, vertexSoup.indices, 0, vertexSoup.flags);
-
-//		Material* material = (Material*)manager->loadResource(MaterialKey(triangles->getMaterial()));
-//		geometryData->addVertexData(vertexSoup.vertices, vertexSoup.indices, material, vertexSoup.flags);
+		add_vertex_data(vertexSoup.vertices, vertexSoup.indices, triangles->getMaterial(), vertexSoup.flags);
 	}
 }
 
-void CreateGeometry::addVertexData(const std::vector<MeshVertex>& vertexArray, const std::vector<unsigned short>& newIndices, int material, int flags) {
+void CreateGeometry::add_vertex_data(const std::vector<MeshVertex>& vertexArray, const std::vector<uint16_t>& newIndices, const std::string& material, int flags) {
 	size_t lastVertexCount = position.size();
 
-	Batch indexMesh;
-	indexMesh.offset = indices.size();
-	indexMesh.count = newIndices.size();
-	indexMesh.start = lastVertexCount + *std::min_element(newIndices.begin(), newIndices.end());
-	indexMesh.end = lastVertexCount + *std::max_element(newIndices.begin(), newIndices.end());
-	//batches.push_back(indexMesh);
-	//materials.push_back(material);
+	Batch batch;
+	batch.offset = indices.size();
+	batch.count = newIndices.size();
+	batch.start = lastVertexCount + *std::min_element(newIndices.begin(), newIndices.end());
+	batch.end = lastVertexCount + *std::max_element(newIndices.begin(), newIndices.end());
+	batch.material = material;
+	batches.push_back(batch);
 
 	for(size_t i = 0; i < newIndices.size(); i++) {
 		indices.push_back(lastVertexCount + newIndices[i]);
@@ -284,5 +268,53 @@ void CreateGeometry::addVertexData(const std::vector<MeshVertex>& vertexArray, c
 			boneIds[lastVertexCount + index] = vertexArray[index].boneIds;
 			weights[lastVertexCount + index] = vertexArray[index].weights;
 		}
+	}
+}
+
+void CreateGeometry::calculate_attribute_offsets_and_elements_per_vertex() {
+	attributeOffsets.position = 0;
+	elementsPerVertex = 3;
+
+	if(!boneIds.empty() && !weights.empty()) {
+		attributeOffsets.boneIds = elementsPerVertex * sizeof(float);
+		elementsPerVertex += 4;
+
+		attributeOffsets.weigths = elementsPerVertex * sizeof(float);
+		elementsPerVertex += 4;
+	} else {
+		attributeOffsets.boneIds = -1;
+		attributeOffsets.weigths = -1;
+	}
+
+	if(!normal.empty()) {
+		attributeOffsets.normal = elementsPerVertex * sizeof(float);
+		elementsPerVertex += 3;
+	} else {
+		attributeOffsets.normal = -1;
+	}
+
+	if(!sTangent.empty() && !tTangent.empty()) {
+		attributeOffsets.sTangent = elementsPerVertex * sizeof(float);
+		elementsPerVertex += 3;
+
+		attributeOffsets.tTangent = elementsPerVertex * sizeof(float);
+		elementsPerVertex += 3;
+	} else {
+		attributeOffsets.sTangent = -1;
+		attributeOffsets.tTangent = -1;
+	}
+
+	if(!color.empty()) {
+		attributeOffsets.color = elementsPerVertex * sizeof(float);
+		elementsPerVertex += 3;
+	} else {
+		attributeOffsets.color = -1;
+	}
+
+	if(!texCoord.empty()) {
+		attributeOffsets.texCoord = elementsPerVertex * sizeof(float);
+		elementsPerVertex += 2;
+	} else {
+		attributeOffsets.texCoord = -1;
 	}
 }
