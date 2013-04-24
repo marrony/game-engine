@@ -17,6 +17,7 @@
 #include "vector2.h"
 #include "vector3.h"
 #include "vector4.h"
+#include "mesh.h"
 
 #include <string>
 #include <vector>
@@ -45,16 +46,9 @@ struct MeshVertex {
 	};
 };
 
-struct Batch {
-	unsigned short offset; //offset in indices array
-	unsigned short count;  //number os elements to draw
-	unsigned short start;  //minimum index in range [offset, offset+count]
-	unsigned short end;    //maximum index in range [offset, offset+count]
-	std::string material;
-};
-
 enum OffsetIndex {
-	PositionOffset = 0,
+	BatcheOffset = 0,
+	PositionOffset,
 	NormalOffset,
 	STangentOffset,
 	TTangentOffset,
@@ -67,6 +61,7 @@ enum OffsetIndex {
 
 union AttributeOffset {
 	struct {
+		int32_t batches;
 		int32_t position;
 		int32_t normal;
 		int32_t sTangent;
@@ -95,6 +90,7 @@ class CreateGeometry : public Visitor,
 	std::vector<Vector4> weights;
 	std::vector<uint16_t> indices;
 
+	std::vector<std::string> materials;
 	std::vector<Batch> batches;
 
 	void add_vertex_data(const std::vector<MeshVertex>& vertexArray, const std::vector<uint16_t>& newIndices, const std::string& material, int flags);

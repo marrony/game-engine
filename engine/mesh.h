@@ -11,6 +11,14 @@
 #include <stddef.h>
 #include <stdint.h>
 
+struct Batch {
+	uint16_t offset; //offset in indices array
+	uint16_t count;  //number os elements to draw
+	uint16_t start;  //minimum index in range [offset, offset+count]
+	uint16_t end;    //maximum index in range [offset, offset+count]
+	uint16_t material;
+};
+
 struct Mesh {
 	int32_t vertex_offset;
 	int32_t normal_offset;
@@ -20,8 +28,10 @@ struct Mesh {
 	int32_t texcoord_offset;
 	int32_t boneids_offset;
 	int32_t weights_offset;
+	int32_t batches_offset;
 	uint16_t vertex_count;
 	uint16_t index_count;
+	uint16_t batch_count;
 	uint8_t data[0];
 
 	unsigned short* index_pointer() const {
@@ -60,9 +70,14 @@ struct Mesh {
 		return (float*)(data + weights_offset);
 	}
 
+	Batch* batches_pointer() const {
+		return (Batch*)(data + batches_offset);
+	}
+
 	uint32_t sizeof_mesh() const {
 		uint32_t size = sizeof(uint16_t)*index_count;
 
+		size += batches_offset != -1 ? sizeof(Batch)*batch_count : 0;
 		size += vertex_offset != -1 ? sizeof(float)*3*vertex_count : 0;
 		size += normal_offset != -1 ? sizeof(float)*3*vertex_count : 0;
 		size += stangent_offset != -1 ? sizeof(float)*3*vertex_count : 0;

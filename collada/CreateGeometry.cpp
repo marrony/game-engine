@@ -194,12 +194,20 @@ void CreateGeometry::visit(ColladaTriangles* triangles) {
 void CreateGeometry::add_vertex_data(const std::vector<MeshVertex>& vertexArray, const std::vector<uint16_t>& newIndices, const std::string& material, int flags) {
 	size_t lastVertexCount = position.size();
 
+	size_t material_index;
+	std::vector<std::string>::iterator mat = std::find(materials.begin(), materials.end(), material);
+	if(mat == materials.end()) {
+		material_index = materials.size();
+		materials.push_back(material);
+	} else
+		material_index = std::distance(materials.begin(), mat);
+
 	Batch batch;
 	batch.offset = indices.size();
 	batch.count = newIndices.size();
 	batch.start = lastVertexCount + *std::min_element(newIndices.begin(), newIndices.end());
 	batch.end = lastVertexCount + *std::max_element(newIndices.begin(), newIndices.end());
-	batch.material = material;
+	batch.material = material_index;
 	batches.push_back(batch);
 
 	for(size_t i = 0; i < newIndices.size(); i++) {
@@ -276,7 +284,10 @@ void CreateGeometry::add_vertex_data(const std::vector<MeshVertex>& vertexArray,
 void CreateGeometry::save_mesh() {
 	AttributeOffset attributeOffsets;
 
-	size_t offset = indices.size()*sizeof(uint16_t);
+	size_t offset = indices.size() * sizeof(uint16_t);
+
+	attributeOffsets.batches = offset;
+	offset += batches.size() * sizeof(Batch);
 
 	attributeOffsets.position = offset;
 	offset += position.size() * 3 * sizeof(float);
@@ -326,6 +337,7 @@ void CreateGeometry::save_mesh() {
 
 	Mesh* mesh = (Mesh*)malloc(sizeof(Mesh) + offset);
 
+	mesh->batches_offset = attributeOffsets.batches;
 	mesh->vertex_offset = attributeOffsets.position;
 	mesh->normal_offset = attributeOffsets.normal;
 	mesh->stangent_offset = attributeOffsets.sTangent;
@@ -336,8 +348,10 @@ void CreateGeometry::save_mesh() {
 	mesh->weights_offset = attributeOffsets.weigths;
 	mesh->vertex_count = (uint16_t)position.size();
 	mesh->index_count = (uint16_t)indices.size();
+	mesh->batch_count = (uint16_t)batches.size();
 
 	memcpy(mesh->index_pointer(), indices.data(), mesh->index_count*sizeof(uint16_t));
+	memcpy(mesh->batches_pointer(), batches.data(), mesh->batch_count*sizeof(Batch));
 
 	if(mesh->vertex_offset != -1)
 		memcpy(mesh->vertex_pointer(), position.data(), mesh->vertex_count*3*sizeof(float));

@@ -47,15 +47,15 @@ class Engine {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		//glOrtho(-1., 1., -1., 1., 1., 20.);
-		glFrustum(-10, +10, -10, +10, 0.1, 1000);
+		Matrix4 perspective = Matrix4::perspectiveMatrix(60, 1, 0.1, 1000);
+		glLoadMatrixf(perspective.matrix);
 
 		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		//gluLookAt(0., 0., 10., 0., 0., 0., 0., 1., 0.);
-		glRotatef(ang += 0.1, 0, 0, 1);
-		glTranslatef(0, 0, -55);
+		Matrix4 lookAt = Matrix4::lookAtMatrix(Vector3(0, 0, 0), Vector3(0, 0, -1));
+		glLoadMatrixf(lookAt.matrix);
+
+		glTranslatef(0, -60, -200);
+		glRotatef(ang += 0.1, 0, 1, 0);
 
 		if(mesh) {
 			glColor3f(0.1f, 0.1f, 0.1f);
