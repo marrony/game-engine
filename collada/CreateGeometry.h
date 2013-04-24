@@ -67,17 +67,17 @@ enum OffsetIndex {
 
 union AttributeOffset {
 	struct {
-		uint16_t position;
-		uint16_t normal;
-		uint16_t sTangent;
-		uint16_t tTangent;
-		uint16_t color;
-		uint16_t texCoord;
-		uint16_t boneIds;
-		uint16_t weigths;
+		int32_t position;
+		int32_t normal;
+		int32_t sTangent;
+		int32_t tTangent;
+		int32_t color;
+		int32_t texCoord;
+		int32_t boneIds;
+		int32_t weigths;
 	};
 
-	uint16_t offsets[MaxAttributeOffset];
+	int32_t offsets[MaxAttributeOffset];
 };
 
 class CreateGeometry : public Visitor,
@@ -95,13 +95,10 @@ class CreateGeometry : public Visitor,
 	std::vector<Vector4> weights;
 	std::vector<uint16_t> indices;
 
-	int elementsPerVertex;
-	AttributeOffset attributeOffsets;
-
 	std::vector<Batch> batches;
 
 	void add_vertex_data(const std::vector<MeshVertex>& vertexArray, const std::vector<uint16_t>& newIndices, const std::string& material, int flags);
-	void calculate_attribute_offsets_and_elements_per_vertex();
+	void save_mesh();
 public:
 	CreateGeometry();
 	virtual ~CreateGeometry();

@@ -9,8 +9,10 @@
 #include "ColladaInput.h"
 #include "ColladaArray.h"
 
+#include "mesh.h"
+#include "mesh_io.h"
+
 CreateGeometry::CreateGeometry() {
-	elementsPerVertex = 0;
 }
 
 CreateGeometry::~CreateGeometry() {
@@ -26,7 +28,7 @@ void CreateGeometry::visit(ColladaGeometry* geometry) {
 
 	mesh->accept(this);
 
-	calculate_attribute_offsets_and_elements_per_vertex();
+	save_mesh();
 }
 
 struct VertexSoup {
@@ -271,50 +273,96 @@ void CreateGeometry::add_vertex_data(const std::vector<MeshVertex>& vertexArray,
 	}
 }
 
-void CreateGeometry::calculate_attribute_offsets_and_elements_per_vertex() {
-	attributeOffsets.position = 0;
-	elementsPerVertex = 3;
+void CreateGeometry::save_mesh() {
+	AttributeOffset attributeOffsets;
+
+	size_t offset = indices.size()*sizeof(uint16_t);
+
+	attributeOffsets.position = offset;
+	offset += position.size() * 3 * sizeof(float);
 
 	if(!boneIds.empty() && !weights.empty()) {
-		attributeOffsets.boneIds = elementsPerVertex * sizeof(float);
-		elementsPerVertex += 4;
+		attributeOffsets.boneIds = offset;
+		offset += position.size() * 4 * sizeof(float);
 
-		attributeOffsets.weigths = elementsPerVertex * sizeof(float);
-		elementsPerVertex += 4;
+		attributeOffsets.weigths = offset;
+		offset += position.size() * 4 * sizeof(float);
 	} else {
 		attributeOffsets.boneIds = -1;
 		attributeOffsets.weigths = -1;
 	}
 
 	if(!normal.empty()) {
-		attributeOffsets.normal = elementsPerVertex * sizeof(float);
-		elementsPerVertex += 3;
+		attributeOffsets.normal = offset;
+		offset += position.size() * 3 * sizeof(float);
 	} else {
 		attributeOffsets.normal = -1;
 	}
 
 	if(!sTangent.empty() && !tTangent.empty()) {
-		attributeOffsets.sTangent = elementsPerVertex * sizeof(float);
-		elementsPerVertex += 3;
+		attributeOffsets.sTangent = offset;
+		offset += position.size() * 3 * sizeof(float);
 
-		attributeOffsets.tTangent = elementsPerVertex * sizeof(float);
-		elementsPerVertex += 3;
+		attributeOffsets.tTangent = offset;
+		offset += position.size() * 3 * sizeof(float);
 	} else {
 		attributeOffsets.sTangent = -1;
 		attributeOffsets.tTangent = -1;
 	}
 
 	if(!color.empty()) {
-		attributeOffsets.color = elementsPerVertex * sizeof(float);
-		elementsPerVertex += 3;
+		attributeOffsets.color = offset;
+		offset += position.size() * 3 * sizeof(float);
 	} else {
 		attributeOffsets.color = -1;
 	}
 
 	if(!texCoord.empty()) {
-		attributeOffsets.texCoord = elementsPerVertex * sizeof(float);
-		elementsPerVertex += 2;
+		attributeOffsets.texCoord = offset;
+		offset += position.size() * 2 * sizeof(float);
 	} else {
 		attributeOffsets.texCoord = -1;
 	}
+
+	Mesh* mesh = (Mesh*)malloc(sizeof(Mesh) + offset);
+
+	mesh->vertex_offset = attributeOffsets.position;
+	mesh->normal_offset = attributeOffsets.normal;
+	mesh->stangent_offset = attributeOffsets.sTangent;
+	mesh->ttangent_offset = attributeOffsets.tTangent;
+	mesh->color_offset = attributeOffsets.color;
+	mesh->texcoord_offset = attributeOffsets.texCoord;
+	mesh->boneids_offset = attributeOffsets.boneIds;
+	mesh->weights_offset = attributeOffsets.weigths;
+	mesh->vertex_count = (uint16_t)position.size();
+	mesh->index_count = (uint16_t)indices.size();
+
+	memcpy(mesh->index_pointer(), indices.data(), mesh->index_count*sizeof(uint16_t));
+
+	if(mesh->vertex_offset != -1)
+		memcpy(mesh->vertex_pointer(), position.data(), mesh->vertex_count*3*sizeof(float));
+
+	if(mesh->normal_offset != -1)
+		memcpy(mesh->normal_pointer(), normal.data(), mesh->vertex_count*3*sizeof(float));
+
+	if(mesh->stangent_offset != -1)
+		memcpy(mesh->stangent_pointer(), sTangent.data(), mesh->vertex_count*3*sizeof(float));
+
+	if(mesh->ttangent_offset != -1)
+		memcpy(mesh->ttangent_pointer(), tTangent.data(), mesh->vertex_count*3*sizeof(float));
+
+	if(mesh->color_offset != -1)
+		memcpy(mesh->color_pointer(), color.data(), mesh->vertex_count*3*sizeof(float));
+
+	if(mesh->texcoord_offset != -1)
+		memcpy(mesh->texcoord_pointer(), texCoord.data(), mesh->vertex_count*2*sizeof(float));
+
+	if(mesh->boneids_offset != -1)
+		memcpy(mesh->boneids_pointer(), boneIds.data(), mesh->vertex_count*4*sizeof(float));
+
+	if(mesh->weights_offset != -1)
+		memcpy(mesh->weights_pointer(), weights.data(), mesh->vertex_count*4*sizeof(float));
+
+	mesh_write("teste.mesh", mesh);
+	mesh_destroy(mesh);
 }

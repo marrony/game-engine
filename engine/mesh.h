@@ -32,16 +32,51 @@ struct Mesh {
 		return (float*)(data + vertex_offset);
 	}
 
+	float* normal_pointer() const {
+		return (float*)(data + normal_offset);
+	}
+
+	float* stangent_pointer() const {
+		return (float*)(data + stangent_offset);
+	}
+
+	float* ttangent_pointer() const {
+		return (float*)(data + ttangent_offset);
+	}
+
 	float* color_pointer() const {
 		return (float*)(data + color_offset);
 	}
 
+	float* texcoord_pointer() const {
+		return (float*)(data + texcoord_offset);
+	}
+
+	float* boneids_pointer() const {
+		return (float*)(data + boneids_offset);
+	}
+
+	float* weights_pointer() const {
+		return (float*)(data + weights_offset);
+	}
+
 	uint32_t sizeof_mesh() const {
-		return sizeof(Mesh) + vertex_count*sizeof(float)*3*2 + index_count*sizeof(uint16_t);
+		uint32_t size = sizeof(uint16_t)*index_count;
+
+		size += vertex_offset != -1 ? sizeof(float)*3*vertex_count : 0;
+		size += normal_offset != -1 ? sizeof(float)*3*vertex_count : 0;
+		size += stangent_offset != -1 ? sizeof(float)*3*vertex_count : 0;
+		size += ttangent_offset != -1 ? sizeof(float)*3*vertex_count : 0;
+		size += color_offset != -1 ? sizeof(float)*3*vertex_count : 0;
+		size += texcoord_offset != -1 ? sizeof(float)*2*vertex_count : 0;
+		size += boneids_offset != -1 ? sizeof(float)*4*vertex_count : 0;
+		size += weights_offset != -1 ? sizeof(float)*4*vertex_count : 0;
+
+		return sizeof(Mesh) + size;
 	}
 };
 
-void mesh_destroy(Mesh* mesh) {
+static inline void mesh_destroy(Mesh* mesh) {
 	free(mesh);
 }
 

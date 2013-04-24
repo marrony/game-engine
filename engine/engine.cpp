@@ -48,19 +48,23 @@ class Engine {
 
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
-		glOrtho(-1., 1., -1., 1., 1., 20.);
+		//glOrtho(-1., 1., -1., 1., 1., 20.);
+		glFrustum(-10, +10, -10, +10, 0.1, 1000);
 
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 		//gluLookAt(0., 0., 10., 0., 0., 0., 0., 1., 0.);
 		glRotatef(ang += 0.1, 0, 0, 1);
+		glTranslatef(0, 0, -55);
 
 		if(mesh) {
+			glColor3f(0.1f, 0.1f, 0.1f);
+
 			glEnableClientState(GL_VERTEX_ARRAY);
-			glEnableClientState(GL_COLOR_ARRAY);
+			//glEnableClientState(GL_COLOR_ARRAY);
 
 			glVertexPointer(3, GL_FLOAT, 0, mesh->vertex_pointer());
-			glColorPointer(3, GL_FLOAT, 0, mesh->color_pointer());
+			//glColorPointer(3, GL_FLOAT, 0, mesh->color_pointer());
 			glDrawElements(GL_TRIANGLES, mesh->index_count, GL_UNSIGNED_SHORT, mesh->index_pointer());
 		}
 

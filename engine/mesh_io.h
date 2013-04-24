@@ -16,7 +16,7 @@
 static inline Mesh* mesh_read(const char* filename) {
 	struct stat st;
 
-	FILE* fp = fopen(filename, "r");
+	FILE* fp = fopen(filename, "rb");
 	fstat(fileno(fp), &st);
 
 	Mesh* mesh = (Mesh*)malloc(st.st_size);
@@ -27,7 +27,7 @@ static inline Mesh* mesh_read(const char* filename) {
 }
 
 static inline void mesh_write(const char* filename, const Mesh* mesh) {
-	FILE* fp = fopen(filename, "w");
+	FILE* fp = fopen(filename, "wb");
 	fwrite(mesh, mesh->sizeof_mesh(), 1, fp);
 	fclose(fp);
 }
