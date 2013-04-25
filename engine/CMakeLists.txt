@@ -20,6 +20,8 @@ add_library(protocol_static STATIC protocol.cpp)
 add_executable(engine engine.cpp)
 target_link_libraries(
     engine engine_static json_static socket_static protocol_static
-    ${OPENGL_LIBRARIES} ${LIBRARIES}
+    ${OPENGL_LIBRARIES}
+    ${GLEW_LIBRARY}
     ${CMAKE_THREAD_LIBS_INIT}
+    ${LIBRARIES}
 )

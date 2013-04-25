@@ -7,15 +7,6 @@
 
 #include "swap_chain.h"
 
-#ifdef WIN32
-#include <windows.h>
-#include <GL/gl.h>
-//#include <GL/glext.h>
-#else
-#include <GL/gl.h>
-#include <GL/glx.h>
-#endif
-
 #include <stdio.h>
 
 #ifdef WIN32
@@ -136,6 +127,8 @@ void SwapChain::create(WindowID handle, int width, int height) {
 	glc = glXCreateContext(display, vi, NULL, GL_TRUE);
 
 	glXMakeCurrent(display, window, glc);
+
+	glewInit();
 }
 
 void SwapChain::destroy() {

@@ -8,13 +8,7 @@
 #ifndef SWAP_CHAIN_H_
 #define SWAP_CHAIN_H_
 
-#ifdef WIN32
-#else
-#include <GL/gl.h>
-#include <GL/glx.h>
-#endif //WIN32
-
-#include "engine.h"
+#include "opengl.h"
 
 class SwapChain {
 #ifdef WIN32

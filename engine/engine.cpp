@@ -14,6 +14,7 @@
 #include "mesh_io.h"
 #include "task.h"
 #include "scene_graph.h"
+#include "shader.h"
 
 #include <cstring>
 #include <stdlib.h>
@@ -23,6 +24,8 @@
 class Engine {
 	TaskManager task_manager;
 	SceneGraph scene_graph;
+	ShaderSystem shader_system;
+	int32_t shader;
 	ServerSocket server;
 	Socket client;
 	SwapChain swap_chain;
@@ -46,25 +49,24 @@ class Engine {
 		glClearColor(1.0, 1.0, 1.0, 1.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		glMatrixMode(GL_PROJECTION);
-		Matrix4 perspective = Matrix4::perspectiveMatrix(60, 1, 0.1, 1000);
-		glLoadMatrixf(perspective.matrix);
-
-		glMatrixMode(GL_MODELVIEW);
-		Matrix4 lookAt = Matrix4::lookAtMatrix(Vector3(0, 0, 0), Vector3(0, 0, -1));
-		glLoadMatrixf(lookAt.matrix);
-
-		glTranslatef(0, -60, -200);
-		glRotatef(ang += 0.1, 0, 1, 0);
-
 		if(mesh) {
-			glColor3f(0.1f, 0.1f, 0.1f);
+			shader_system.bind_shader(shader);
+			Matrix4 projection = Matrix4::perspectiveMatrix(60, 1, 0.1, 1000);
+			Matrix4 view = Matrix4::lookAtMatrix(Vector3(0, 0, 0), Vector3(0, 0, -1));
+			Matrix4 model = Matrix4::transformationMatrix(Quaternion(Vector3(0, 1, 0), ang += 0.1), Vector3(0, -60, -200), Vector3(1, 1, 1));
 
-			glEnableClientState(GL_VERTEX_ARRAY);
-			//glEnableClientState(GL_COLOR_ARRAY);
+			int projectionLocation = glGetUniformLocation(1, "projection");
+			int modelLocation = glGetUniformLocation(1, "model");
+			int viewLocation = glGetUniformLocation(1, "view");
+			int attribLocation = glGetAttribLocation(1, "vPosition");
 
-			glVertexPointer(3, GL_FLOAT, 0, mesh->vertex_pointer());
-			//glColorPointer(3, GL_FLOAT, 0, mesh->color_pointer());
+			glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, projection.matrix);
+			glUniformMatrix4fv(modelLocation, 1, GL_FALSE, model.matrix);
+			glUniformMatrix4fv(viewLocation, 1, GL_FALSE, view.matrix);
+
+			glEnableVertexAttribArray(attribLocation);
+			glVertexAttribPointer(attribLocation, 3, GL_FLOAT, GL_FALSE, 0, mesh->vertex_pointer());
+
 			glDrawElements(GL_TRIANGLES, mesh->index_count, GL_UNSIGNED_SHORT, mesh->index_pointer());
 		}
 
@@ -140,6 +142,7 @@ public:
 		ang = 0;
 		running = false;
 		need_resize = false;
+		shader = -1;
 
 		width = 0;
 		height = 0;
@@ -168,6 +171,33 @@ public:
 		swap_chain.create((WindowID)(intptr_t)window_value->integer, width, height);
 
 		json_free(json);
+
+#define STRINGFY(x) #x
+
+		Source sources[2];
+
+		sources[0].type = VertexShader;
+		sources[0].source = STRINGFY(
+			uniform mat4 model;
+			uniform mat4 view;
+			uniform mat4 projection;
+			attribute vec4 vPosition;
+
+			void main() {
+				gl_Position = projection * view * model * vPosition;
+			}
+		);
+
+		sources[1].type = FragmentShader;
+		sources[1].source = STRINGFY(
+			void main() {
+				gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);
+			}
+		);
+
+#undef STRINGFY
+
+		shader = shader_system.create_shader("teste", 2, sources);
 	}
 
 	void run() {

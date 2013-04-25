@@ -46,17 +46,16 @@ public:
 		s(_s), x(_x), y(_y), z(_z) {
 	}
 
-//	INLINE Quaternion(const AxisAngle& axisAngle) {
-//		const float angle = axisAngle.angle * 0.5;
-//		const float si = std::sin(angle);
-//		const float co = std::cos(angle);
-//
-//		s = co;
-//		x = axisAngle.axis.x * si;
-//		y = axisAngle.axis.y * si;
-//		z = axisAngle.axis.z * si;
-//	}
-//
+	INLINE Quaternion(const Vector3& axis, float angle) {
+		const float si = std::sin(angle*0.5);
+		const float co = std::cos(angle*0.5);
+
+		s = co;
+		x = axis.x * si;
+		y = axis.y * si;
+		z = axis.z * si;
+	}
+
 //	INLINE Quaternion(const EulerAngle& angles) {
 //		float angle;
 //

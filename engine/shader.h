@@ -11,6 +11,7 @@
 #include <vector>
 
 #include <stdint.h>
+#include <stddef.h>
 
 enum ShaderType {
 	VertexShader,
@@ -36,6 +37,8 @@ public:
 	int32_t load_shader(const char* filename);
 	int32_t find_shader(const char* name);
 	void destroy_shader(int32_t shader);
+
+	void bind_shader(int32_t shader);
 };
 
 #endif /* SHADER_H_ */
