@@ -54,6 +54,35 @@ class Engine {
 			glEnable(GL_DEPTH_TEST);
 			glDepthFunc(GL_LEQUAL);
 
+			struct Attrib {
+				int32_t index;
+				int32_t size;
+				intptr_t pointer;
+			};
+
+			struct Uniform {
+				int8_t type;
+				int16_t count;
+				union {
+					Vector3 vec3;
+					Vector4 vec4;
+					Matrix3 mat3;
+					Matrix4 mat4;
+				};
+			};
+
+			struct Material {
+				int32_t shader;
+				int16_t attrib_count;
+				Attrib* attribs;
+			};
+
+			struct Model {
+				Mesh* mesh;
+				int16_t material_count;
+				Material* materials;
+			};
+
 			shader_system.bind_shader(shader);
 			Matrix4 projection = Matrix4::perspectiveMatrix(60, 1, 0.1, 1000);
 			Matrix4 view = Matrix4::lookAtMatrix(Vector3(0, 0, 0), Vector3(0, 0, -1));
@@ -199,7 +228,7 @@ public:
 			attribute vec3 vNormal;
 
 			varying vec3 N;
-			varying vec3 V;
+			varying vec4 V;
 
 			void main() {
 				N = normalMatrix * vNormal;
@@ -213,10 +242,10 @@ public:
 			uniform vec3 light;
 
 			varying vec3 N;
-			varying vec3 V;
+			varying vec4 V;
 
 			void main() {
-				vec3 light_dir = normalize(light - V);
+				vec3 light_dir = normalize(light - V.xyz);
 				vec3 normal = normalize(N);
 
 				gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0) * clamp(dot(normal, light_dir), 0, 1);
