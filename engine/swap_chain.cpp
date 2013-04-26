@@ -66,6 +66,8 @@ void SwapChain::create(WindowID handle, int width, int height) {
 	hglrc = wglCreateContext(hdc);
 	wglMakeCurrent(hdc, hglrc);
 
+	glewInit();
+
 	ShowWindow(window, SW_SHOW);
 }
 

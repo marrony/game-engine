@@ -45,6 +45,8 @@ static uint32_t compile_shader(const Source& source) {
 
 		glGetShaderiv(shader_id, GL_INFO_LOG_LENGTH, &lenght);
 		glGetShaderInfoLog(shader_id, 1024, &lenght, log);
+
+		printf("%s\n", log);
 	}
 
 	return shader_id;
@@ -72,6 +74,8 @@ int32_t ShaderSystem::create_shader(const char* name, size_t source_count, const
 
 		glGetProgramiv(shader.id, GL_INFO_LOG_LENGTH, &lenght);
 		glGetProgramInfoLog(shader.id, 1024, &lenght, log);
+
+		printf("%s\n", log);
 	}
 
 	int numAttribs = 0;

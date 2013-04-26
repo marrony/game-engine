@@ -50,22 +50,35 @@ class Engine {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		if(mesh) {
+			glEnable(GL_CULL_FACE);
+			glEnable(GL_DEPTH_TEST);
+			glDepthFunc(GL_LEQUAL);
+
 			shader_system.bind_shader(shader);
 			Matrix4 projection = Matrix4::perspectiveMatrix(60, 1, 0.1, 1000);
 			Matrix4 view = Matrix4::lookAtMatrix(Vector3(0, 0, 0), Vector3(0, 0, -1));
 			Matrix4 model = Matrix4::transformationMatrix(Quaternion(Vector3(0, 1, 0), ang += 0.1), Vector3(0, -60, -200), Vector3(1, 1, 1));
+			Matrix4 modelView = view * model;
+			Matrix3 normalMatrix = modelView.upperLeft().inverse().transpose();
 
-			int projectionLocation = glGetUniformLocation(1, "projection");
-			int modelLocation = glGetUniformLocation(1, "model");
-			int viewLocation = glGetUniformLocation(1, "view");
-			int attribLocation = glGetAttribLocation(1, "vPosition");
+			int normalMatrixLocation = glGetUniformLocation(1, "normalMatrix");
+			int projectionMatrixLocation = glGetUniformLocation(1, "projectionMatrix");
+			int modelViewMatrixLocation = glGetUniformLocation(1, "modelViewMatrix");
+			int lightLocation = glGetUniformLocation(1, "light");
 
-			glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, projection.matrix);
-			glUniformMatrix4fv(modelLocation, 1, GL_FALSE, model.matrix);
-			glUniformMatrix4fv(viewLocation, 1, GL_FALSE, view.matrix);
+			glUniformMatrix4fv(projectionMatrixLocation, 1, GL_FALSE, projection.matrix);
+			glUniformMatrix4fv(modelViewMatrixLocation, 1, GL_FALSE, modelView.matrix);
+			glUniformMatrix3fv(normalMatrixLocation, 1, GL_FALSE, normalMatrix.matrix);
+			glUniform3f(lightLocation, 0, 0, 0);
 
-			glEnableVertexAttribArray(attribLocation);
-			glVertexAttribPointer(attribLocation, 3, GL_FLOAT, GL_FALSE, 0, mesh->vertex_pointer());
+			int positionLocation = glGetAttribLocation(1, "vPosition");
+			int normalLocation = glGetAttribLocation(1, "vNormal");
+
+			glEnableVertexAttribArray(positionLocation);
+			glEnableVertexAttribArray(normalLocation);
+
+			glVertexAttribPointer(positionLocation, 3, GL_FLOAT, GL_FALSE, 0, mesh->vertex_pointer());
+			glVertexAttribPointer(normalLocation, 3, GL_FLOAT, GL_FALSE, 0, mesh->normal_pointer());
 
 			glDrawElements(GL_TRIANGLES, mesh->index_count, GL_UNSIGNED_SHORT, mesh->index_pointer());
 		}
@@ -178,20 +191,35 @@ public:
 
 		sources[0].type = VertexShader;
 		sources[0].source = STRINGFY(
-			uniform mat4 model;
-			uniform mat4 view;
-			uniform mat4 projection;
+			uniform mat4 modelViewMatrix;
+			uniform mat4 projectionMatrix;
+			uniform mat3 normalMatrix;
+
 			attribute vec4 vPosition;
+			attribute vec3 vNormal;
+
+			varying vec3 N;
+			varying vec3 V;
 
 			void main() {
-				gl_Position = projection * view * model * vPosition;
+				N = normalMatrix * vNormal;
+				V = modelViewMatrix * vPosition;
+				gl_Position = projectionMatrix * modelViewMatrix * vPosition;
 			}
 		);
 
 		sources[1].type = FragmentShader;
 		sources[1].source = STRINGFY(
+			uniform vec3 light;
+
+			varying vec3 N;
+			varying vec3 V;
+
 			void main() {
-				gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);
+				vec3 light_dir = normalize(light - V);
+				vec3 normal = normalize(N);
+
+				gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0) * clamp(dot(normal, light_dir), 0, 1);
 			}
 		);
 
