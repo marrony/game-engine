@@ -71,11 +71,6 @@ struct Matrix4 {
 #endif
 	};
 
-	INLINE Matrix4& operator=(const Matrix4& mat) {
-		memcpy(matrix, mat.matrix, sizeof(matrix));
-		return *this;
-	}
-
 	INLINE bool operator==(const Matrix4& mat) const {
 		for(int i = 0; i < 16; i++) {
 			if(matrix[i] != mat.matrix[i])
@@ -104,7 +99,7 @@ struct Matrix4 {
 	 * m30, m31, m32, m33
 	 */
 	INLINE Vector4 row(int index) const {
-		return Vector4(at(index, 0), at(index, 1), at(index, 2), at(index, 3));
+		return vector::make(at(index, 0), at(index, 1), at(index, 2), at(index, 3));
 	}
 
 	INLINE void row(int index, const Vector4& r) {
@@ -115,7 +110,7 @@ struct Matrix4 {
 	}
 
 	INLINE Vector4 column(int index) const {
-		return Vector4(at(0, index), at(1, index), at(2, index), at(3, index));
+		return vector::make(at(0, index), at(1, index), at(2, index), at(3, index));
 	}
 
 	INLINE void column(int index, const Vector4& c) {
@@ -284,7 +279,7 @@ struct Matrix4 {
 	 * m20, m21, m22, m23
 	 * m30, m31, m32, m33
 	 */
-	static INLINE Matrix4 transformationMatrix(const Quaternion& orientation, const Vector3& translation, const Vector3& scale = Vector3(1, 1, 1)) {
+	static INLINE Matrix4 transformationMatrix(const Quaternion& orientation, const Vector3& translation, const Vector3& scale = vector::make(1, 1, 1)) {
 		Matrix4 mat = rotationMatrix(orientation);
 
 		mat.m00 *= scale.x;  mat.m01 *= scale.x;  mat.m02 *= scale.x;  mat.m03 = translation.x;
@@ -369,7 +364,7 @@ struct Matrix4 {
 		Matrix4 matrix;
 
 		Vector3 s, u, f;
-		Vector3 up(0, 1, 0);
+		Vector3 up = {0, 1, 0};
 
 		f = direction.normalize();
 		if(1.0 - std::abs(f.y) <= 0.005) {
@@ -489,11 +484,11 @@ INLINE Vector4 operator*(const Matrix4& m, const Vector4& v) {
 }
 
 INLINE Vector3 operator|(const Matrix4& m, const Vector3& v) {
-	Vector4 result = m * Vector4(v.x, v.y, v.z, 1);
+	Vector4 result = m * vector::make(v.x, v.y, v.z, 1);
 
 	float inv = 1.0 / result.w;
 
-	return Vector3(result.x * inv, result.y * inv, result.z * inv);
+	return vector::make(result.x * inv, result.y * inv, result.z * inv);
 }
 
 #endif /* MATRIX4_H_ */

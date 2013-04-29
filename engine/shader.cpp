@@ -81,26 +81,35 @@ int32_t ShaderSystem::create_shader(const char* name, size_t source_count, const
 	int numAttribs = 0;
 	glGetProgramiv(shader.id, GL_ACTIVE_ATTRIBUTES, &numAttribs);
 
+	shader.attributes.resize(numAttribs);
 	for(int i = 0; i < numAttribs; i++) {
 		GLchar name[256] = { 0 };
 		GLint size = 0;
 		GLenum type = 0;
 
-		glGetActiveAttrib(shader.id, i, sizeof(name), 0, &size, &type, name);
+		glGetActiveAttrib(shader.id, i, sizeof(name), NULL, &size, &type, name);
 
-		printf("%s\n", name);
+		shader.attributes[i].name = name;
+		shader.attributes[i].index = glGetAttribLocation(shader.id, name);
+		shader.attributes[i].size = size;
+		shader.attributes[i].type = type;
 	}
 
 	int numUniforms = 0;
 	glGetProgramiv(shader.id, GL_ACTIVE_UNIFORMS, &numUniforms);
 
+	shader.uniforms.resize(numUniforms);
 	for(int i = 0; i < numUniforms; i++) {
 		GLchar name[256] = { 0 };
 		GLint size = 0;
 		GLenum type = 0;
 
-		glGetActiveUniform(shader.id, i, sizeof(name), 0, &size, &type, name);
-		printf("%s\n", name);
+		glGetActiveUniform(shader.id, i, sizeof(name), NULL, &size, &type, name);
+		int uniform = glGetUniformLocation(shader.id, name);
+		shader.uniforms[i].name = name;
+		shader.uniforms[i].index = glGetUniformLocation(shader.id, name);
+		shader.uniforms[i].size = size;
+		shader.uniforms[i].type = type;
 	}
 
 	size_t index;

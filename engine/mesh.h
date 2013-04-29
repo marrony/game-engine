@@ -34,8 +34,8 @@ struct Mesh {
 	uint16_t batch_count;
 	uint8_t data[0];
 
-	unsigned short* index_pointer() const {
-		return (unsigned short*)data;
+	uint16_t* index_pointer() const {
+		return (uint16_t*)data;
 	}
 
 	float* vertex_pointer() const {
@@ -72,6 +72,18 @@ struct Mesh {
 
 	Batch* batches_pointer() const {
 		return (Batch*)(data + batches_offset);
+	}
+
+	int32_t material_count() const {
+		int32_t count = -1;
+
+		Batch* batches = batches_pointer();
+		for(int16_t i = 0; i < batch_count; i++) {
+			if(batches[i].material > count)
+				count = batches[i].material;
+		}
+
+		return count+1;
 	}
 
 	uint32_t sizeof_mesh() const {

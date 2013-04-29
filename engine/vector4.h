@@ -27,14 +27,6 @@ struct Vector4 {
 		};
 	};
 
-	INLINE Vector4() { }
-
-	INLINE Vector4(const float vector[4]) :
-		x(vector[0]), y(vector[1]), z(vector[2]), w(vector[3]) { }
-
-	INLINE Vector4(float _x, float _y, float _z, float _w) :
-		x(_x), y(_y), z(_z), w(_w) { }
-
 	INLINE bool operator==(const Vector4& other) const {
 		return x == other.x && y == other.y && z == other.z && w == other.w;
 	}
@@ -50,11 +42,13 @@ struct Vector4 {
 	INLINE Vector4 normalize() const {
 		float lenght = 1.0 / length();
 
-		return Vector4(x*lenght, y*lenght, z*lenght, w*lenght);
+		Vector4 out = {x*lenght, y*lenght, z*lenght, w*lenght};
+		return out;
 	}
 
 	INLINE Vector4 operator-() const {
-		return Vector4(-x, -y, -z, -w);
+		Vector4 out = {-x, -y, -z, -w};
+		return out;
 	}
 
 	INLINE Vector4& operator+=(const Vector4& other) {
@@ -123,16 +117,23 @@ struct Vector4 {
 
 	static INLINE Vector4 min() {
 		float m = -std::numeric_limits<float>::max();
-		return Vector4(m, m, m, m);
+		Vector4 out = {m, m, m, m};
+		return out;
 	}
 
 	static INLINE Vector4 max() {
 		float m = +std::numeric_limits<float>::max();
-		return Vector4(m, m, m, m);
+		Vector4 out = {m, m, m, m};
+		return out;
 	}
 };
 
 namespace vector {
+	INLINE Vector4 make(float x, float y, float z, float w) {
+		Vector4 out = {x, y, z, w};
+		return out;
+	}
+
 	INLINE float dot(const Vector4& v0, const Vector4& v1) {
 		return v0.x*v1.x + v0.y*v1.y + v0.z*v1.z + v0.w*v1.w;
 	}
@@ -143,7 +144,7 @@ namespace vector {
 		float z = std::max(v0.z, v1.z);
 		float w = std::max(v0.w, v1.w);
 
-		return Vector4(x, y, z, w);
+		return make(x, y, z, w);
 	}
 
 	INLINE Vector4 min(const Vector4& v0, const Vector4& v1) {
@@ -152,7 +153,7 @@ namespace vector {
 		float z = std::min(v0.z, v1.z);
 		float w = std::min(v0.w, v1.w);
 
-		return Vector4(x, y, z, w);
+		return make(x, y, z, w);
 	}
 
 	INLINE Vector4 abs(const Vector4& v) {
@@ -161,7 +162,7 @@ namespace vector {
 		float z = std::abs(v.z);
 		float w = std::abs(v.w);
 
-		return Vector4(x, y, z, w);
+		return make(x, y, z, w);
 	}
 }
 
@@ -182,51 +183,51 @@ INLINE bool operator<=(const Vector4& v0, const Vector4& v1) {
 }
 
 INLINE Vector4 operator+(const Vector4& v, float k) {
-	return Vector4(v.x+k, v.y+k, v.z+k, v.w+k);
+	return vector::make(v.x+k, v.y+k, v.z+k, v.w+k);
 }
 
 INLINE Vector4 operator-(const Vector4& v, float k) {
-	return Vector4(v.x-k, v.y-k, v.z-k, v.w-k);
+	return vector::make(v.x-k, v.y-k, v.z-k, v.w-k);
 }
 
 INLINE Vector4 operator+(float k, const Vector4& v) {
-	return Vector4(k+v.x, k+v.y, k+v.z, k+v.w);
+	return vector::make(k+v.x, k+v.y, k+v.z, k+v.w);
 }
 
 INLINE Vector4 operator-(float k, const Vector4& v) {
-	return Vector4(k-v.x, k-v.y, k-v.z, k-v.w);
+	return vector::make(k-v.x, k-v.y, k-v.z, k-v.w);
 }
 
 INLINE Vector4 operator*(const Vector4& v0, const Vector4& v1) {
-	return Vector4(v0.x*v1.x, v0.y*v1.y, v0.z*v1.z, v0.w*v1.w);
+	return vector::make(v0.x*v1.x, v0.y*v1.y, v0.z*v1.z, v0.w*v1.w);
 }
 
 INLINE Vector4 operator*(const Vector4& v, float k) {
-	return Vector4(v.x*k, v.y*k, v.z*k, v.w*k);
+	return vector::make(v.x*k, v.y*k, v.z*k, v.w*k);
 }
 
 INLINE Vector4 operator*(float k, const Vector4& v) {
-	return Vector4(k*v.x, k*v.y, k*v.z, k*v.w);
+	return vector::make(k*v.x, k*v.y, k*v.z, k*v.w);
 }
 
 INLINE Vector4 operator/(const Vector4& v0, const Vector4& v1) {
-	return Vector4(v0.x/v1.x, v0.y/v1.y, v0.z/v1.z, v0.w/v1.w);
+	return vector::make(v0.x/v1.x, v0.y/v1.y, v0.z/v1.z, v0.w/v1.w);
 }
 
 INLINE Vector4 operator/(const Vector4& v, float k) {
-	return Vector4(v.x/k, v.y/k, v.z/k, v.w/k);
+	return vector::make(v.x/k, v.y/k, v.z/k, v.w/k);
 }
 
 INLINE Vector4 operator/(float k, const Vector4& v) {
-	return Vector4(k/v.x, k/v.y, k/v.z, k/v.w);
+	return vector::make(k/v.x, k/v.y, k/v.z, k/v.w);
 }
 
 INLINE Vector4 operator+(const Vector4& v0, const Vector4& v1) {
-	return Vector4(v0.x+v1.x, v0.y+v1.y, v0.z+v1.z, v0.w+v1.w);
+	return vector::make(v0.x+v1.x, v0.y+v1.y, v0.z+v1.z, v0.w+v1.w);
 }
 
 INLINE Vector4 operator-(const Vector4& v0, const Vector4& v1) {
-	return Vector4(v0.x-v1.x, v0.y-v1.y, v0.z-v1.z, v0.w-v1.w);
+	return vector::make(v0.x-v1.x, v0.y-v1.y, v0.z-v1.z, v0.w-v1.w);
 }
 
 #endif /* VECTOR4_H_ */

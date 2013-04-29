@@ -9,6 +9,7 @@
 #define SHADER_H_
 
 #include <vector>
+#include <string>
 
 #include <stdint.h>
 #include <stddef.h>
@@ -24,11 +25,20 @@ struct Source {
 	ShaderType type;
 };
 
+struct Location {
+	std::string name;
+	int32_t index;
+	int32_t size;
+	uint32_t type;
+};
+
 class ShaderSystem {
 	struct Shader {
 		const char* name;
 		const char* filename;
 		uint32_t id;
+		std::vector<Location> attributes;
+		std::vector<Location> uniforms;
 	};
 
 	std::vector<Shader> shaders;
@@ -39,6 +49,14 @@ public:
 	void destroy_shader(int32_t shader);
 
 	void bind_shader(int32_t shader);
+
+	std::vector<Location> get_uniforms(int32_t shader) {
+		return shaders[shader].uniforms;
+	}
+
+	std::vector<Location> get_attributes(int32_t shader) {
+		return shaders[shader].attributes;
+	}
 };
 
 #endif /* SHADER_H_ */

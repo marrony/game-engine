@@ -16,10 +16,49 @@
 #include "scene_graph.h"
 #include "shader.h"
 
+#include "vector2.h"
+#include "vector3.h"
+#include "vector4.h"
+#include "matrix3.h"
+#include "matrix4.h"
+
 #include <cstring>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/stat.h>
+
+struct Attribute {
+	int32_t index;
+	int32_t size;
+	intptr_t pointer;
+};
+
+struct Uniform {
+	int32_t index;
+	int32_t type;
+	int16_t count;
+	union {
+		float* pointer;
+		float vec1;
+		Vector2 vec2;
+		Vector3 vec3;
+		Vector4 vec4;
+		Matrix3 mat3;
+		Matrix4 mat4;
+	};
+};
+
+struct Material {
+	int32_t shader;
+	int8_t attrib_count;
+	Attribute attribs[10];
+};
+
+struct Model {
+	Mesh* mesh;
+	int8_t material_count;
+	Material materials[0];
+};
 
 class Engine {
 	TaskManager task_manager;
@@ -29,13 +68,49 @@ class Engine {
 	ServerSocket server;
 	Socket client;
 	SwapChain swap_chain;
-	Mesh* mesh;
 	float ang;
 	bool running;
 	bool need_resize;
 
+	Model* model;
+
 	int width;
 	int height;
+
+	Matrix4 get_matrix4(const char* name) {
+		if(!strcmp(name, "projectionMatrix"))
+			return Matrix4::perspectiveMatrix(60, (float)width/(float)height, 0.1, 1000);
+
+		Matrix4 viewMatrix = Matrix4::lookAtMatrix(vector::make(0, 0, 0), vector::make(0, 0, -1));
+		Matrix4 modelMatrix = Matrix4::transformationMatrix(Quaternion(vector::make(0, 1, 0), ang), vector::make(0, -60, -200), vector::make(1, 1, 1));
+
+		if(!strcmp(name, "viewMatrix"))
+			return viewMatrix;
+
+		if(!strcmp(name, "modelMatrix"))
+			return modelMatrix;
+
+		if(!strcmp(name, "modelViewMatrix"))
+			return viewMatrix * modelMatrix;
+
+		Matrix4 m = MATRIX4_IDENTITY;
+		return m;
+	}
+
+	Matrix3 get_matrix3(const char* name) {
+		if(!strcmp(name, "normalMatrix")) {
+			Matrix4 modelViewMatrix = get_matrix4("modelViewMatrix");
+			return modelViewMatrix.upperLeft().inverse().transpose();
+		}
+
+		Matrix3 m = MATRIX3_IDENTITY;
+		return m;
+	}
+
+	Vector3 get_vec3(const char* name) {
+		Vector3 v = {0};
+		return v;
+	}
 
 	void render() {
 		//wglMakeCurrent(swap_chain.hdc, swap_chain.hglrc);
@@ -49,67 +124,106 @@ class Engine {
 		glClearColor(1.0, 1.0, 1.0, 1.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		if(mesh) {
+		if(model) {
+			ang += 0.1;
+
 			glEnable(GL_CULL_FACE);
 			glEnable(GL_DEPTH_TEST);
 			glDepthFunc(GL_LEQUAL);
 
-			struct Attrib {
-				int32_t index;
-				int32_t size;
-				intptr_t pointer;
-			};
-
-			struct Uniform {
-				int8_t type;
-				int16_t count;
-				union {
-					Vector3 vec3;
-					Vector4 vec4;
-					Matrix3 mat3;
-					Matrix4 mat4;
-				};
-			};
-
-			struct Material {
+			struct Render {
+				Batch batch;
+				intptr_t index;
 				int32_t shader;
-				int16_t attrib_count;
-				Attrib* attribs;
+				int8_t attrib_count;
+				Attribute attribs[10];
+				int8_t uniform_count;
+				Uniform uniforms[10];
 			};
 
-			struct Model {
-				Mesh* mesh;
-				int16_t material_count;
-				Material* materials;
-			};
+			Render render[10];
+			int render_count = 0;
 
-			shader_system.bind_shader(shader);
-			Matrix4 projection = Matrix4::perspectiveMatrix(60, 1, 0.1, 1000);
-			Matrix4 view = Matrix4::lookAtMatrix(Vector3(0, 0, 0), Vector3(0, 0, -1));
-			Matrix4 model = Matrix4::transformationMatrix(Quaternion(Vector3(0, 1, 0), ang += 0.1), Vector3(0, -60, -200), Vector3(1, 1, 1));
-			Matrix4 modelView = view * model;
-			Matrix3 normalMatrix = modelView.upperLeft().inverse().transpose();
+			for(int i = 0; i < model->mesh->batch_count; i++) {
+				const Batch* batches = model->mesh->batches_pointer();
 
-			int normalMatrixLocation = glGetUniformLocation(1, "normalMatrix");
-			int projectionMatrixLocation = glGetUniformLocation(1, "projectionMatrix");
-			int modelViewMatrixLocation = glGetUniformLocation(1, "modelViewMatrix");
-			int lightLocation = glGetUniformLocation(1, "light");
+				render[render_count].index = (intptr_t)model->mesh->index_pointer();
+				render[render_count].batch = batches[i];
+				render[render_count].shader = model->materials[batches[i].material].shader;
 
-			glUniformMatrix4fv(projectionMatrixLocation, 1, GL_FALSE, projection.matrix);
-			glUniformMatrix4fv(modelViewMatrixLocation, 1, GL_FALSE, modelView.matrix);
-			glUniformMatrix3fv(normalMatrixLocation, 1, GL_FALSE, normalMatrix.matrix);
-			glUniform3f(lightLocation, 0, 0, 0);
+				render[render_count].attrib_count = model->materials[batches[i].material].attrib_count;
+				for(int j = 0; j < render[render_count].attrib_count; j++) {
+					render[render_count].attribs[j] = model->materials[batches[i].material].attribs[j];
+				}
 
-			int positionLocation = glGetAttribLocation(1, "vPosition");
-			int normalLocation = glGetAttribLocation(1, "vNormal");
+				std::vector<Location> uniforms = shader_system.get_uniforms(render[render_count].shader);
+				render[render_count].uniform_count = uniforms.size();
+				for(int j = 0; j < render[render_count].uniform_count; j++) {
+					render[render_count].uniforms[j].index = uniforms[j].index;
+					render[render_count].uniforms[j].type = uniforms[j].type;
 
-			glEnableVertexAttribArray(positionLocation);
-			glEnableVertexAttribArray(normalLocation);
+					switch(uniforms[j].type) {
+					case GL_FLOAT:
+						break;
+					case GL_FLOAT_VEC2:
+						break;
+					case GL_FLOAT_VEC3:
+						render[render_count].uniforms[j].vec3 = get_vec3(uniforms[j].name.c_str());
+						break;
+					case GL_FLOAT_VEC4:
+						break;
+					case GL_FLOAT_MAT2:
+						break;
+					case GL_FLOAT_MAT3:
+						render[render_count].uniforms[j].mat3 = get_matrix3(uniforms[j].name.c_str());
+						break;
+					case GL_FLOAT_MAT4:
+						render[render_count].uniforms[j].mat4 = get_matrix4(uniforms[j].name.c_str());
+						break;
+					}
+				}
 
-			glVertexAttribPointer(positionLocation, 3, GL_FLOAT, GL_FALSE, 0, mesh->vertex_pointer());
-			glVertexAttribPointer(normalLocation, 3, GL_FLOAT, GL_FALSE, 0, mesh->normal_pointer());
+				render_count++;
+			}
 
-			glDrawElements(GL_TRIANGLES, mesh->index_count, GL_UNSIGNED_SHORT, mesh->index_pointer());
+			for(int i = 0; i < render_count; i++) {
+				Render& r = render[i];
+
+				shader_system.bind_shader(r.shader);
+
+				for(int j = 0; j < r.uniform_count; j++) {
+					Uniform& u = r.uniforms[j];
+
+					switch(u.type) {
+					case GL_FLOAT:
+						break;
+					case GL_FLOAT_VEC2:
+						break;
+					case GL_FLOAT_VEC3:
+						glUniform3fv(u.index, 1, u.vec3.vector);
+						break;
+					case GL_FLOAT_VEC4:
+						break;
+					case GL_FLOAT_MAT2:
+						break;
+					case GL_FLOAT_MAT3:
+						glUniformMatrix3fv(u.index, 1, GL_FALSE, u.mat3.matrix);
+						break;
+					case GL_FLOAT_MAT4:
+						glUniformMatrix4fv(u.index, 1, GL_FALSE, u.mat4.matrix);
+						break;
+					}
+				}
+
+				for(int j = 0; j < r.attrib_count; j++) {
+					const Attribute& attrib = r.attribs[j];
+
+					glEnableVertexAttribArray(attrib.index);
+					glVertexAttribPointer(attrib.index, attrib.size, GL_FLOAT, GL_FALSE, 0, (void*)attrib.pointer);
+				}
+
+				glDrawRangeElements(GL_TRIANGLES, render[i].batch.start, render[i].batch.end, render[i].batch.count, GL_UNSIGNED_SHORT, (void*)render[i].index);
+			}
 		}
 
 		swap_chain.swap_buffers();
@@ -158,10 +272,34 @@ class Engine {
 					} else if(!strcmp("load-mesh", type->string)) {
 						Value* _mesh = json_get_attribute(json.value, "mesh");
 
-						if(mesh)
-							mesh_destroy(mesh);
+						if(model && model->mesh) {
+							mesh_destroy(model->mesh);
+							free(model);
+						}
 
-						mesh = mesh_read(_mesh->string);
+						std::vector<Location> attributes = shader_system.get_attributes(shader);
+
+						model = (Model*)malloc(sizeof(Model) + sizeof(Material) * 1);
+						model->mesh = mesh_read(_mesh->string);
+						model->material_count = 1;
+						model->materials[0].shader = shader;
+						model->materials[0].attrib_count = attributes.size();
+
+						for(int i = 0; i < model->materials[0].attrib_count; i++) {
+							const Location& attrib = attributes[i];
+
+							model->materials[0].attribs[i].index = attrib.index;
+
+							if(attrib.name == "vPosition") {
+								model->materials[0].attribs[i].size = 3;
+								model->materials[0].attribs[i].pointer = (intptr_t)model->mesh->vertex_pointer();
+							}
+
+							if(attrib.name == "vNormal") {
+								model->materials[0].attribs[i].size = 3;
+								model->materials[0].attribs[i].pointer = (intptr_t)model->mesh->normal_pointer();
+							}
+						}
 					}
 				}
 
@@ -180,7 +318,7 @@ class Engine {
 	}
 public:
 	Engine() : task_manager(32) {
-		mesh = 0;
+		model = 0;
 		ang = 0;
 		running = false;
 		need_resize = false;
@@ -275,8 +413,9 @@ public:
 
 		protocol_send_finish_message(client);
 
-		if(mesh)
-			mesh_destroy(mesh);
+		if(model->mesh)
+			mesh_destroy(model->mesh);
+		free(model);
 
 		client.close();
 		server.close();
