@@ -20,6 +20,11 @@ enum ShaderType {
 	GeometryShader
 };
 
+enum Semmantic {
+	Vertex,
+	Normal,
+};
+
 struct Source {
 	const char* source;
 	ShaderType type;
@@ -27,6 +32,7 @@ struct Source {
 
 struct Location {
 	std::string name;
+	Semmantic semmantic;
 	int32_t index;
 	int32_t size;
 	uint32_t type;

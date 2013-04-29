@@ -50,8 +50,6 @@ struct Uniform {
 
 struct Material {
 	int32_t shader;
-	int8_t attrib_count;
-	Attribute attribs[10];
 };
 
 struct Model {
@@ -113,8 +111,6 @@ class Engine {
 	}
 
 	void render() {
-		//wglMakeCurrent(swap_chain.hdc, swap_chain.hglrc);
-
 		if(need_resize) {
 			swap_chain.resize(width, height);
 			glViewport(0, 0, width, height);
@@ -151,9 +147,20 @@ class Engine {
 				render[render_count].batch = batches[i];
 				render[render_count].shader = model->materials[batches[i].material].shader;
 
-				render[render_count].attrib_count = model->materials[batches[i].material].attrib_count;
+				std::vector<Location> attributes = shader_system.get_attributes(render[render_count].shader);
+				render[render_count].attrib_count = attributes.size();
 				for(int j = 0; j < render[render_count].attrib_count; j++) {
-					render[render_count].attribs[j] = model->materials[batches[i].material].attribs[j];
+					render[render_count].attribs[j].index = attributes[j].index;
+
+					if(attributes[j].semmantic == Vertex) {
+						render[render_count].attribs[j].pointer =  (intptr_t)model->mesh->vertex_pointer();
+						render[render_count].attribs[j].size = 3;
+					}
+
+					if(attributes[j].semmantic == Normal) {
+						render[render_count].attribs[j].pointer =  (intptr_t)model->mesh->normal_pointer();
+						render[render_count].attribs[j].size = 3;
+					}
 				}
 
 				std::vector<Location> uniforms = shader_system.get_uniforms(render[render_count].shader);
@@ -185,6 +192,8 @@ class Engine {
 
 				render_count++;
 			}
+
+			//render
 
 			for(int i = 0; i < render_count; i++) {
 				Render& r = render[i];
@@ -283,23 +292,6 @@ class Engine {
 						model->mesh = mesh_read(_mesh->string);
 						model->material_count = 1;
 						model->materials[0].shader = shader;
-						model->materials[0].attrib_count = attributes.size();
-
-						for(int i = 0; i < model->materials[0].attrib_count; i++) {
-							const Location& attrib = attributes[i];
-
-							model->materials[0].attribs[i].index = attrib.index;
-
-							if(attrib.name == "vPosition") {
-								model->materials[0].attribs[i].size = 3;
-								model->materials[0].attribs[i].pointer = (intptr_t)model->mesh->vertex_pointer();
-							}
-
-							if(attrib.name == "vNormal") {
-								model->materials[0].attribs[i].size = 3;
-								model->materials[0].attribs[i].pointer = (intptr_t)model->mesh->normal_pointer();
-							}
-						}
 					}
 				}
 

@@ -89,7 +89,15 @@ int32_t ShaderSystem::create_shader(const char* name, size_t source_count, const
 
 		glGetActiveAttrib(shader.id, i, sizeof(name), NULL, &size, &type, name);
 
+		Semmantic semmantic;
+		if(!strcmp(name, "vPosition"))
+			semmantic = Vertex;
+
+		if(!strcmp(name, "vNormal"))
+			semmantic = Normal;
+
 		shader.attributes[i].name = name;
+		shader.attributes[i].semmantic = semmantic;
 		shader.attributes[i].index = glGetAttribLocation(shader.id, name);
 		shader.attributes[i].size = size;
 		shader.attributes[i].type = type;
