@@ -21,8 +21,21 @@ enum ShaderType {
 };
 
 enum Semmantic {
+	None,
 	Vertex,
 	Normal,
+	STangent,
+	TTangent,
+	Color,
+	TexCoord,
+	BoneIds,
+	Weigths,
+	ModelViewMatrix,
+	ProjectionMatrix,
+	ModelMatrix,
+	ViewMatrix,
+	NormalMatrix,
+	LightPosition,
 };
 
 struct Source {
@@ -31,7 +44,6 @@ struct Source {
 };
 
 struct Location {
-	std::string name;
 	Semmantic semmantic;
 	int32_t index;
 	int32_t size;

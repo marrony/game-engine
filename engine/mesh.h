@@ -74,8 +74,8 @@ struct Mesh {
 		return (Batch*)(data + batches_offset);
 	}
 
-	int32_t material_count() const {
-		int32_t count = -1;
+	int16_t material_count() const {
+		int16_t count = -1;
 
 		Batch* batches = batches_pointer();
 		for(int16_t i = 0; i < batch_count; i++) {

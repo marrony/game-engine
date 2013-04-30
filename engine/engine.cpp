@@ -50,12 +50,25 @@ struct Uniform {
 
 struct Material {
 	int32_t shader;
+	int8_t texture_count;
+	int32_t textures[16];
 };
 
 struct Model {
 	Mesh* mesh;
-	int8_t material_count;
+	int16_t material_count;
 	Material materials[0];
+};
+
+struct Render {
+	Batch batch;
+	intptr_t index;
+	int32_t shader;
+	int32_t light;
+	int8_t attrib_count;
+	Attribute attribs[10];
+	int8_t uniform_count;
+	Uniform uniforms[10];
 };
 
 class Engine {
@@ -75,39 +88,63 @@ class Engine {
 	int width;
 	int height;
 
-	Matrix4 get_matrix4(const char* name) {
-		if(!strcmp(name, "projectionMatrix"))
-			return Matrix4::perspectiveMatrix(60, (float)width/(float)height, 0.1, 1000);
+	void collect(Render& render) {
+		std::vector<Location> attributes = shader_system.get_attributes(render.shader);
+		render.attrib_count = attributes.size();
+		for(int j = 0; j < render.attrib_count; j++) {
+			render.attribs[j].index = attributes[j].index;
 
-		Matrix4 viewMatrix = Matrix4::lookAtMatrix(vector::make(0, 0, 0), vector::make(0, 0, -1));
-		Matrix4 modelMatrix = Matrix4::transformationMatrix(Quaternion(vector::make(0, 1, 0), ang), vector::make(0, -60, -200), vector::make(1, 1, 1));
+			switch(attributes[j].semmantic) {
+			case Vertex:
+				render.attribs[j].pointer = (intptr_t)model->mesh->vertex_pointer();
+				render.attribs[j].size = 3;
+				break;
 
-		if(!strcmp(name, "viewMatrix"))
-			return viewMatrix;
-
-		if(!strcmp(name, "modelMatrix"))
-			return modelMatrix;
-
-		if(!strcmp(name, "modelViewMatrix"))
-			return viewMatrix * modelMatrix;
-
-		Matrix4 m = MATRIX4_IDENTITY;
-		return m;
-	}
-
-	Matrix3 get_matrix3(const char* name) {
-		if(!strcmp(name, "normalMatrix")) {
-			Matrix4 modelViewMatrix = get_matrix4("modelViewMatrix");
-			return modelViewMatrix.upperLeft().inverse().transpose();
+			case Normal:
+				render.attribs[j].pointer = (intptr_t)model->mesh->normal_pointer();
+				render.attribs[j].size = 3;
+				break;
+			}
 		}
 
-		Matrix3 m = MATRIX3_IDENTITY;
-		return m;
-	}
+		Matrix4 projectionMatrix = Matrix4::perspectiveMatrix(60, (float)width/(float)height, 0.1, 1000);
+		Matrix4 viewMatrix = Matrix4::lookAtMatrix(vector::make(0, 0, 0), vector::make(0, 0, -1));
+		Matrix4 modelMatrix = Matrix4::transformationMatrix(Quaternion(vector::make(0, 1, 0), ang), vector::make(0, 0, -10), vector::make(1, 1, 1));
+		Matrix4 modelViewMatrix = viewMatrix * modelMatrix;
+		Matrix3 normalMatrix = modelViewMatrix.upperLeft().inverse().transpose();
 
-	Vector3 get_vec3(const char* name) {
-		Vector3 v = {0};
-		return v;
+		std::vector<Location> uniforms = shader_system.get_uniforms(render.shader);
+		render.uniform_count = uniforms.size();
+		for(int j = 0; j < render.uniform_count; j++) {
+			render.uniforms[j].index = uniforms[j].index;
+			render.uniforms[j].type = uniforms[j].type;
+
+			switch(uniforms[j].semmantic) {
+			case ProjectionMatrix:
+				render.uniforms[j].mat4 = projectionMatrix;
+				break;
+
+			case ViewMatrix:
+				render.uniforms[j].mat4 = viewMatrix;
+				break;
+
+			case ModelMatrix:
+				render.uniforms[j].mat4 = modelMatrix;
+				break;
+
+			case ModelViewMatrix:
+				render.uniforms[j].mat4 = modelViewMatrix;
+				break;
+
+			case NormalMatrix:
+				render.uniforms[j].mat3 = normalMatrix;
+				break;
+
+			case LightPosition:
+				render.uniforms[j].vec3 = vector::make(0, 0, 0);
+				break;
+			}
+		}
 	}
 
 	void render() {
@@ -127,16 +164,6 @@ class Engine {
 			glEnable(GL_DEPTH_TEST);
 			glDepthFunc(GL_LEQUAL);
 
-			struct Render {
-				Batch batch;
-				intptr_t index;
-				int32_t shader;
-				int8_t attrib_count;
-				Attribute attribs[10];
-				int8_t uniform_count;
-				Uniform uniforms[10];
-			};
-
 			Render render[10];
 			int render_count = 0;
 
@@ -146,49 +173,9 @@ class Engine {
 				render[render_count].index = (intptr_t)model->mesh->index_pointer();
 				render[render_count].batch = batches[i];
 				render[render_count].shader = model->materials[batches[i].material].shader;
+				render[render_count].light = 0;
 
-				std::vector<Location> attributes = shader_system.get_attributes(render[render_count].shader);
-				render[render_count].attrib_count = attributes.size();
-				for(int j = 0; j < render[render_count].attrib_count; j++) {
-					render[render_count].attribs[j].index = attributes[j].index;
-
-					if(attributes[j].semmantic == Vertex) {
-						render[render_count].attribs[j].pointer =  (intptr_t)model->mesh->vertex_pointer();
-						render[render_count].attribs[j].size = 3;
-					}
-
-					if(attributes[j].semmantic == Normal) {
-						render[render_count].attribs[j].pointer =  (intptr_t)model->mesh->normal_pointer();
-						render[render_count].attribs[j].size = 3;
-					}
-				}
-
-				std::vector<Location> uniforms = shader_system.get_uniforms(render[render_count].shader);
-				render[render_count].uniform_count = uniforms.size();
-				for(int j = 0; j < render[render_count].uniform_count; j++) {
-					render[render_count].uniforms[j].index = uniforms[j].index;
-					render[render_count].uniforms[j].type = uniforms[j].type;
-
-					switch(uniforms[j].type) {
-					case GL_FLOAT:
-						break;
-					case GL_FLOAT_VEC2:
-						break;
-					case GL_FLOAT_VEC3:
-						render[render_count].uniforms[j].vec3 = get_vec3(uniforms[j].name.c_str());
-						break;
-					case GL_FLOAT_VEC4:
-						break;
-					case GL_FLOAT_MAT2:
-						break;
-					case GL_FLOAT_MAT3:
-						render[render_count].uniforms[j].mat3 = get_matrix3(uniforms[j].name.c_str());
-						break;
-					case GL_FLOAT_MAT4:
-						render[render_count].uniforms[j].mat4 = get_matrix4(uniforms[j].name.c_str());
-						break;
-					}
-				}
+				collect(render[render_count]);
 
 				render_count++;
 			}
@@ -286,12 +273,17 @@ class Engine {
 							free(model);
 						}
 
+						Mesh* mesh = mesh_read(_mesh->string);
+						int16_t material_count = mesh->material_count();
+
 						std::vector<Location> attributes = shader_system.get_attributes(shader);
 
-						model = (Model*)malloc(sizeof(Model) + sizeof(Material) * 1);
-						model->mesh = mesh_read(_mesh->string);
-						model->material_count = 1;
-						model->materials[0].shader = shader;
+						model = (Model*)malloc(sizeof(Model) + sizeof(Material) * material_count);
+						model->mesh = mesh;
+						model->material_count = material_count;
+
+						for(int16_t i = 0; i < material_count; i++)
+							model->materials[i].shader = shader;
 					}
 				}
 
@@ -369,13 +361,13 @@ public:
 
 		sources[1].type = FragmentShader;
 		sources[1].source = STRINGFY(
-			uniform vec3 light;
+			uniform vec3 lightPosition;
 
 			varying vec3 N;
 			varying vec4 V;
 
 			void main() {
-				vec3 light_dir = normalize(light - V.xyz);
+				vec3 light_dir = normalize(lightPosition - V.xyz);
 				vec3 normal = normalize(N);
 
 				gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0) * clamp(dot(normal, light_dir), 0, 1);

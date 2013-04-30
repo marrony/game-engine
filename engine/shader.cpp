@@ -11,6 +11,34 @@
 #include <string.h>
 #include <stdio.h>
 
+static const struct {
+	Semmantic semmantic;
+	const char* name;
+} mapping[] = {
+	{Vertex, "vPosition"},
+	{Normal, "vNormal"},
+	{STangent, ""},
+	{TTangent, ""},
+	{Color, ""},
+	{TexCoord, ""},
+	{BoneIds, ""},
+	{Weigths, ""},
+	{ModelViewMatrix, "modelViewMatrix"},
+	{ProjectionMatrix, "projectionMatrix"},
+	{ModelMatrix, "modelMatrix"},
+	{ViewMatrix, "viewMatrix"},
+	{NormalMatrix, "normalMatrix"},
+	{LightPosition, "lightPosition"},
+};
+
+static Semmantic find_semantic(const char* name) {
+	for(int i = 0; i < sizeof(mapping)/sizeof(mapping[0]); i++) {
+		if(!strcmp(mapping[i].name, name))
+			return mapping[i].semmantic;
+	}
+	return None;
+}
+
 static uint32_t compile_shader(const Source& source) {
 	GLenum glType;
 
@@ -89,15 +117,7 @@ int32_t ShaderSystem::create_shader(const char* name, size_t source_count, const
 
 		glGetActiveAttrib(shader.id, i, sizeof(name), NULL, &size, &type, name);
 
-		Semmantic semmantic;
-		if(!strcmp(name, "vPosition"))
-			semmantic = Vertex;
-
-		if(!strcmp(name, "vNormal"))
-			semmantic = Normal;
-
-		shader.attributes[i].name = name;
-		shader.attributes[i].semmantic = semmantic;
+		shader.attributes[i].semmantic = find_semantic(name);
 		shader.attributes[i].index = glGetAttribLocation(shader.id, name);
 		shader.attributes[i].size = size;
 		shader.attributes[i].type = type;
@@ -113,8 +133,8 @@ int32_t ShaderSystem::create_shader(const char* name, size_t source_count, const
 		GLenum type = 0;
 
 		glGetActiveUniform(shader.id, i, sizeof(name), NULL, &size, &type, name);
-		int uniform = glGetUniformLocation(shader.id, name);
-		shader.uniforms[i].name = name;
+
+		shader.uniforms[i].semmantic = find_semantic(name);
 		shader.uniforms[i].index = glGetUniformLocation(shader.id, name);
 		shader.uniforms[i].size = size;
 		shader.uniforms[i].type = type;

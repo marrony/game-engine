@@ -39,7 +39,6 @@ struct VertexSoup {
 	ColladaInput* vertexInput;
 	ColladaInput* normalInput;
 	ColladaInput* texCoordInput;
-	ColladaElement* vertex;
 	ColladaSource* position;
 	ColladaSource* normal;
 	ColladaSource* texCoord;
@@ -49,8 +48,8 @@ struct VertexSoup {
 	VertexSoup(ColladaGeometricPrimitive* g, const std::vector<int>& primitive)
 			: primitive(primitive) {
 		icount = 0;
-		vertex = 0;
 		texCoord = 0;
+		normal = 0;
 
 		vertexInput = g->findInputWithSemantic("VERTEX");
 		normalInput = g->findInputWithSemantic("NORMAL");
