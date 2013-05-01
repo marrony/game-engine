@@ -20,15 +20,20 @@ struct Batch {
 };
 
 struct Mesh {
-	int32_t vertex_offset;
-	int32_t normal_offset;
-	int32_t stangent_offset;
-	int32_t ttangent_offset;
-	int32_t color_offset;
-	int32_t texcoord_offset;
-	int32_t boneids_offset;
-	int32_t weights_offset;
-	int32_t batches_offset;
+	enum Attributes {
+		Batches,
+		Vertex,
+		Normal,
+		STangent,
+		TTangent,
+		Color,
+		TexCoord,
+		BoneIds,
+		Weigths,
+		MaxAttributes
+	};
+
+	int32_t offsets[MaxAttributes];
 	uint16_t vertex_count;
 	uint16_t index_count;
 	uint16_t batch_count;
@@ -38,40 +43,32 @@ struct Mesh {
 		return (uint16_t*)data;
 	}
 
-	float* vertex_pointer() const {
-		return (float*)(data + vertex_offset);
+	float* get_pointer(Attributes attribute) const {
+		return (float*)(data + offsets[attribute]);
 	}
 
-	float* normal_pointer() const {
-		return (float*)(data + normal_offset);
+	static inline int16_t get_stride(Attributes attribute) {
+		static int16_t stride[] = {
+				sizeof(Batch),
+				sizeof(float)*3,
+				sizeof(float)*3,
+				sizeof(float)*3,
+				sizeof(float)*3,
+				sizeof(float)*3,
+				sizeof(float)*2,
+				sizeof(float)*4,
+				sizeof(float)*4
+		};
+		return stride[attribute];
 	}
 
-	float* stangent_pointer() const {
-		return (float*)(data + stangent_offset);
-	}
-
-	float* ttangent_pointer() const {
-		return (float*)(data + ttangent_offset);
-	}
-
-	float* color_pointer() const {
-		return (float*)(data + color_offset);
-	}
-
-	float* texcoord_pointer() const {
-		return (float*)(data + texcoord_offset);
-	}
-
-	float* boneids_pointer() const {
-		return (float*)(data + boneids_offset);
-	}
-
-	float* weights_pointer() const {
-		return (float*)(data + weights_offset);
+	static inline int16_t get_size(Attributes attribute) {
+		static int16_t size[] = {0, 3, 3, 3, 3, 3, 2, 4, 4};
+		return size[attribute];
 	}
 
 	Batch* batches_pointer() const {
-		return (Batch*)(data + batches_offset);
+		return (Batch*)(data + offsets[Batches]);
 	}
 
 	int16_t material_count() const {
@@ -89,15 +86,9 @@ struct Mesh {
 	uint32_t sizeof_mesh() const {
 		uint32_t size = sizeof(uint16_t)*index_count;
 
-		size += batches_offset != -1 ? sizeof(Batch)*batch_count : 0;
-		size += vertex_offset != -1 ? sizeof(float)*3*vertex_count : 0;
-		size += normal_offset != -1 ? sizeof(float)*3*vertex_count : 0;
-		size += stangent_offset != -1 ? sizeof(float)*3*vertex_count : 0;
-		size += ttangent_offset != -1 ? sizeof(float)*3*vertex_count : 0;
-		size += color_offset != -1 ? sizeof(float)*3*vertex_count : 0;
-		size += texcoord_offset != -1 ? sizeof(float)*2*vertex_count : 0;
-		size += boneids_offset != -1 ? sizeof(float)*4*vertex_count : 0;
-		size += weights_offset != -1 ? sizeof(float)*4*vertex_count : 0;
+		size += offsets[Batches] != -1 ? get_stride(Batches)*batch_count : 0;
+		for(int i = 1; i < MaxAttributes; i++)
+			size += offsets[i] != -1 ? get_stride((Attributes)i)*vertex_count : 0;
 
 		return sizeof(Mesh) + size;
 	}

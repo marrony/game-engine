@@ -46,37 +46,9 @@ struct MeshVertex {
 	};
 };
 
-enum OffsetIndex {
-	BatcheOffset = 0,
-	PositionOffset,
-	NormalOffset,
-	STangentOffset,
-	TTangentOffset,
-	ColorOffset,
-	TexCoordOffset,
-	BoneIdsOffset,
-	WeigthsOffset,
-	MaxAttributeOffset
-};
-
-union AttributeOffset {
-	struct {
-		int32_t batches;
-		int32_t position;
-		int32_t normal;
-		int32_t sTangent;
-		int32_t tTangent;
-		int32_t color;
-		int32_t texCoord;
-		int32_t boneIds;
-		int32_t weigths;
-	};
-
-	int32_t offsets[MaxAttributeOffset];
-};
-
 class CreateGeometry : public Visitor,
 							public ColladaGeometryVisitor,
+							public ColladaMeshVisitor,
 							public ColladaPolyListVisitor,
 							public ColladaTrianglesVisitor {
 	std::string name;
@@ -100,6 +72,7 @@ public:
 	virtual ~CreateGeometry();
 
 	virtual void visit(ColladaGeometry* geometry);
+	virtual void visit(ColladaMesh* mesh);
 	virtual void visit(ColladaPolyList* polylist);
 	virtual void visit(ColladaTriangles* triangles);
 };

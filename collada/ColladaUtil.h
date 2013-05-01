@@ -48,8 +48,10 @@ namespace ColladaUtil {
 
 		if(validadeCount) {
 			int count;
-			if(element->Attribute("count", &count) == 0) {
-				//throw Exception("attribute count is required");
+			if(element->Attribute("count", &count)) {
+				if(count != values.size()) {
+					printf("invalid number of elements %d %d", count, values.size());
+				}
 			}
 		}
 	}

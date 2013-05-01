@@ -31,6 +31,16 @@ void CreateGeometry::visit(ColladaGeometry* geometry) {
 	save_mesh();
 }
 
+void CreateGeometry::visit(ColladaMesh* mesh) {
+	const std::vector<ColladaPolyList*>& polylist = mesh->getPolylists();
+	for(size_t i = 0; i < polylist.size(); i++)
+		polylist[i]->accept(this);
+
+	const std::vector<ColladaTriangles*>& triangle = mesh->getTriangles();
+	for(size_t i = 0; i < triangle.size(); i++)
+		triangle[i]->accept(this);
+}
+
 struct VertexSoup {
 	size_t icount;
 	const std::vector<int>& primitive;
@@ -77,7 +87,7 @@ struct VertexSoup {
 	}
 
 	struct Find {
-		const MeshVertex& vertex;
+		const MeshVertex vertex;
 		int flags;
 		bool normalInput;
 		bool texCoordInput;
@@ -85,14 +95,14 @@ struct VertexSoup {
 		Find(const MeshVertex& vertex, int flags, bool normalInput, bool texCoordInput)
 				: vertex(vertex), flags(flags), normalInput(normalInput), texCoordInput(texCoordInput) { }
 
-		bool operator()(const MeshVertex& other) const {
-			bool equals = (vertex.position == other.position);
+		bool operator()(const MeshVertex other) const {
+			bool equals = (vertex.position - other.position).length() <= 0.001;
 
 			if(flags & MeshVertex::NORMAL)
-				equals &= (normalInput && vertex.normal == other.normal);
+				equals = equals && (normalInput && (vertex.normal - other.normal).length() <= 0.001);
 
 			if(flags & MeshVertex::TEXTURE)
-				equals &= (texCoordInput && vertex.texCoord == other.texCoord);
+				equals = equals && (texCoordInput && (vertex.texCoord - other.texCoord).length() <= 0.001);
 
 			return equals;
 		}
@@ -145,11 +155,13 @@ struct VertexSoup {
 };
 
 void CreateGeometry::visit(ColladaPolyList* polylist) {
-	for(size_t i = 0; i < polylist->getPrimitive().size(); i++) {
-		VertexSoup vertexSoup(polylist, polylist->getPrimitive()[i]);
+	const std::vector<std::vector<int> >& primitive = polylist->getPrimitive();
+	for(size_t i = 0; i < primitive.size(); i++) {
+		VertexSoup vertexSoup(polylist, primitive[i]);
 
-		for(size_t x = 0; x < polylist->getVcount().size(); x++) {
-			int vc = polylist->getVcount()[x];
+		const std::vector<int>& vcount = polylist->getVcount();
+		for(size_t x = 0; x < vcount.size(); x++) {
+			int vc = vcount[x];
 			int index[3];
 
 			if(!vertexSoup.hasVertex()) break;
@@ -178,8 +190,9 @@ void CreateGeometry::visit(ColladaPolyList* polylist) {
 }
 
 void CreateGeometry::visit(ColladaTriangles* triangles) {
-	for(size_t i = 0; i < triangles->getPrimitive().size(); i++) {
-		VertexSoup vertexSoup(triangles, triangles->getPrimitive()[i]);
+	const std::vector<std::vector<int> >& primitive = triangles->getPrimitive();
+	for(size_t i = 0; i < primitive.size(); i++) {
+		VertexSoup vertexSoup(triangles, primitive[i]);
 
 		while(vertexSoup.hasVertex()) {
 			int index = vertexSoup.addVertex(vertexSoup.nextVertex());
@@ -281,100 +294,83 @@ void CreateGeometry::add_vertex_data(const std::vector<MeshVertex>& vertexArray,
 }
 
 void CreateGeometry::save_mesh() {
-	AttributeOffset attributeOffsets;
+	int32_t attributeOffsets[Mesh::MaxAttributes];
+
+	for(int i = 0; i < Mesh::MaxAttributes; i++)
+		attributeOffsets[i] = -1;
 
 	size_t offset = indices.size() * sizeof(uint16_t);
 
-	attributeOffsets.batches = offset;
-	offset += batches.size() * sizeof(Batch);
+	attributeOffsets[Mesh::Batches] = offset;
+	offset += batches.size() * Mesh::get_stride(Mesh::Batches);
 
-	attributeOffsets.position = offset;
-	offset += position.size() * 3 * sizeof(float);
+	attributeOffsets[Mesh::Vertex] = offset;
+	offset += position.size() * Mesh::get_stride(Mesh::Vertex);
 
 	if(!boneIds.empty() && !weights.empty()) {
-		attributeOffsets.boneIds = offset;
-		offset += position.size() * 4 * sizeof(float);
+		attributeOffsets[Mesh::BoneIds] = offset;
+		offset += position.size() * Mesh::get_stride(Mesh::BoneIds);
 
-		attributeOffsets.weigths = offset;
-		offset += position.size() * 4 * sizeof(float);
-	} else {
-		attributeOffsets.boneIds = -1;
-		attributeOffsets.weigths = -1;
+		attributeOffsets[Mesh::Weigths] = offset;
+		offset += position.size() * Mesh::get_stride(Mesh::Weigths);
 	}
 
 	if(!normal.empty()) {
-		attributeOffsets.normal = offset;
-		offset += position.size() * 3 * sizeof(float);
-	} else {
-		attributeOffsets.normal = -1;
+		attributeOffsets[Mesh::Normal] = offset;
+		offset += position.size() * Mesh::get_stride(Mesh::Normal);
 	}
 
 	if(!sTangent.empty() && !tTangent.empty()) {
-		attributeOffsets.sTangent = offset;
-		offset += position.size() * 3 * sizeof(float);
+		attributeOffsets[Mesh::STangent] = offset;
+		offset += position.size() * Mesh::get_stride(Mesh::STangent);
 
-		attributeOffsets.tTangent = offset;
-		offset += position.size() * 3 * sizeof(float);
-	} else {
-		attributeOffsets.sTangent = -1;
-		attributeOffsets.tTangent = -1;
+		attributeOffsets[Mesh::TTangent] = offset;
+		offset += position.size() * Mesh::get_stride(Mesh::TTangent);
 	}
 
 	if(!color.empty()) {
-		attributeOffsets.color = offset;
-		offset += position.size() * 3 * sizeof(float);
-	} else {
-		attributeOffsets.color = -1;
+		attributeOffsets[Mesh::Color] = offset;
+		offset += position.size() * Mesh::get_stride(Mesh::Color);
 	}
 
 	if(!texCoord.empty()) {
-		attributeOffsets.texCoord = offset;
-		offset += position.size() * 2 * sizeof(float);
-	} else {
-		attributeOffsets.texCoord = -1;
+		attributeOffsets[Mesh::TexCoord] = offset;
+		offset += position.size() * Mesh::get_stride(Mesh::TexCoord);
 	}
 
 	Mesh* mesh = (Mesh*)malloc(sizeof(Mesh) + offset);
 
-	mesh->batches_offset = attributeOffsets.batches;
-	mesh->vertex_offset = attributeOffsets.position;
-	mesh->normal_offset = attributeOffsets.normal;
-	mesh->stangent_offset = attributeOffsets.sTangent;
-	mesh->ttangent_offset = attributeOffsets.tTangent;
-	mesh->color_offset = attributeOffsets.color;
-	mesh->texcoord_offset = attributeOffsets.texCoord;
-	mesh->boneids_offset = attributeOffsets.boneIds;
-	mesh->weights_offset = attributeOffsets.weigths;
 	mesh->vertex_count = (uint16_t)position.size();
 	mesh->index_count = (uint16_t)indices.size();
 	mesh->batch_count = (uint16_t)batches.size();
 
+	memcpy(mesh->offsets, attributeOffsets, sizeof(attributeOffsets));
 	memcpy(mesh->index_pointer(), indices.data(), mesh->index_count*sizeof(uint16_t));
-	memcpy(mesh->batches_pointer(), batches.data(), mesh->batch_count*sizeof(Batch));
+	memcpy(mesh->batches_pointer(), batches.data(), mesh->batch_count*Mesh::get_stride(Mesh::Batches));
 
-	if(mesh->vertex_offset != -1)
-		memcpy(mesh->vertex_pointer(), position.data(), mesh->vertex_count*3*sizeof(float));
+	if(mesh->offsets[Mesh::Vertex] != -1)
+		memcpy(mesh->get_pointer(Mesh::Vertex), position.data(), mesh->vertex_count*Mesh::get_stride(Mesh::Vertex));
 
-	if(mesh->normal_offset != -1)
-		memcpy(mesh->normal_pointer(), normal.data(), mesh->vertex_count*3*sizeof(float));
+	if(mesh->offsets[Mesh::Normal] != -1)
+		memcpy(mesh->get_pointer(Mesh::Normal), normal.data(), mesh->vertex_count*Mesh::get_stride(Mesh::Normal));
 
-	if(mesh->stangent_offset != -1)
-		memcpy(mesh->stangent_pointer(), sTangent.data(), mesh->vertex_count*3*sizeof(float));
+	if(mesh->offsets[Mesh::STangent] != -1)
+		memcpy(mesh->get_pointer(Mesh::STangent), sTangent.data(), mesh->vertex_count*Mesh::get_stride(Mesh::STangent));
 
-	if(mesh->ttangent_offset != -1)
-		memcpy(mesh->ttangent_pointer(), tTangent.data(), mesh->vertex_count*3*sizeof(float));
+	if(mesh->offsets[Mesh::TTangent] != -1)
+		memcpy(mesh->get_pointer(Mesh::TTangent), tTangent.data(), mesh->vertex_count*Mesh::get_stride(Mesh::TTangent));
 
-	if(mesh->color_offset != -1)
-		memcpy(mesh->color_pointer(), color.data(), mesh->vertex_count*3*sizeof(float));
+	if(mesh->offsets[Mesh::Color] != -1)
+		memcpy(mesh->get_pointer(Mesh::Color), color.data(), mesh->vertex_count*Mesh::get_stride(Mesh::Color));
 
-	if(mesh->texcoord_offset != -1)
-		memcpy(mesh->texcoord_pointer(), texCoord.data(), mesh->vertex_count*2*sizeof(float));
+	if(mesh->offsets[Mesh::TexCoord] != -1)
+		memcpy(mesh->get_pointer(Mesh::TexCoord), texCoord.data(), mesh->vertex_count*Mesh::get_stride(Mesh::TexCoord));
 
-	if(mesh->boneids_offset != -1)
-		memcpy(mesh->boneids_pointer(), boneIds.data(), mesh->vertex_count*4*sizeof(float));
+	if(mesh->offsets[Mesh::BoneIds] != -1)
+		memcpy(mesh->get_pointer(Mesh::BoneIds), boneIds.data(), mesh->vertex_count*Mesh::get_stride(Mesh::BoneIds));
 
-	if(mesh->weights_offset != -1)
-		memcpy(mesh->weights_pointer(), weights.data(), mesh->vertex_count*4*sizeof(float));
+	if(mesh->offsets[Mesh::Weigths] != -1)
+		memcpy(mesh->get_pointer(Mesh::Weigths), weights.data(), mesh->vertex_count*Mesh::get_stride(Mesh::Weigths));
 
 	mesh_write("teste.mesh", mesh);
 	mesh_destroy(mesh);

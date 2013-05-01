@@ -183,51 +183,63 @@ INLINE bool operator<=(const Vector4& v0, const Vector4& v1) {
 }
 
 INLINE Vector4 operator+(const Vector4& v, float k) {
-	return vector::make(v.x+k, v.y+k, v.z+k, v.w+k);
+	Vector4 out = {v.x+k, v.y+k, v.z+k, v.w+k};
+	return out;
 }
 
 INLINE Vector4 operator-(const Vector4& v, float k) {
-	return vector::make(v.x-k, v.y-k, v.z-k, v.w-k);
+	Vector4 out = {v.x-k, v.y-k, v.z-k, v.w-k};
+	return out;
 }
 
 INLINE Vector4 operator+(float k, const Vector4& v) {
-	return vector::make(k+v.x, k+v.y, k+v.z, k+v.w);
+	Vector4 out = {k+v.x, k+v.y, k+v.z, k+v.w};
+	return out;
 }
 
 INLINE Vector4 operator-(float k, const Vector4& v) {
-	return vector::make(k-v.x, k-v.y, k-v.z, k-v.w);
+	Vector4 out = {k-v.x, k-v.y, k-v.z, k-v.w};
+	return out;
 }
 
 INLINE Vector4 operator*(const Vector4& v0, const Vector4& v1) {
-	return vector::make(v0.x*v1.x, v0.y*v1.y, v0.z*v1.z, v0.w*v1.w);
+	Vector4 out = {v0.x*v1.x, v0.y*v1.y, v0.z*v1.z, v0.w*v1.w};
+	return out;
 }
 
 INLINE Vector4 operator*(const Vector4& v, float k) {
-	return vector::make(v.x*k, v.y*k, v.z*k, v.w*k);
+	Vector4 out = {v.x*k, v.y*k, v.z*k, v.w*k};
+	return out;
 }
 
 INLINE Vector4 operator*(float k, const Vector4& v) {
-	return vector::make(k*v.x, k*v.y, k*v.z, k*v.w);
+	Vector4 out = {k*v.x, k*v.y, k*v.z, k*v.w};
+	return out;
 }
 
 INLINE Vector4 operator/(const Vector4& v0, const Vector4& v1) {
-	return vector::make(v0.x/v1.x, v0.y/v1.y, v0.z/v1.z, v0.w/v1.w);
+	Vector4 out = {v0.x/v1.x, v0.y/v1.y, v0.z/v1.z, v0.w/v1.w};
+	return out;
 }
 
 INLINE Vector4 operator/(const Vector4& v, float k) {
-	return vector::make(v.x/k, v.y/k, v.z/k, v.w/k);
+	Vector4 out = {v.x/k, v.y/k, v.z/k, v.w/k};
+	return out;
 }
 
 INLINE Vector4 operator/(float k, const Vector4& v) {
-	return vector::make(k/v.x, k/v.y, k/v.z, k/v.w);
+	Vector4 out = {k/v.x, k/v.y, k/v.z, k/v.w};
+	return out;
 }
 
 INLINE Vector4 operator+(const Vector4& v0, const Vector4& v1) {
-	return vector::make(v0.x+v1.x, v0.y+v1.y, v0.z+v1.z, v0.w+v1.w);
+	Vector4 out = {v0.x+v1.x, v0.y+v1.y, v0.z+v1.z, v0.w+v1.w};
+	return out;
 }
 
 INLINE Vector4 operator-(const Vector4& v0, const Vector4& v1) {
-	return vector::make(v0.x-v1.x, v0.y-v1.y, v0.z-v1.z, v0.w-v1.w);
+	Vector4 out = {v0.x-v1.x, v0.y-v1.y, v0.z-v1.z, v0.w-v1.w};
+	return out;
 }
 
 #endif /* VECTOR4_H_ */

@@ -30,7 +30,7 @@
 struct Attribute {
 	int32_t index;
 	int32_t size;
-	intptr_t pointer;
+	void* pointer;
 };
 
 struct Uniform {
@@ -56,17 +56,17 @@ struct Material {
 
 struct Model {
 	Mesh* mesh;
-	Attribute attributes[MaxAttribSemantic];
-	int16_t material_count;
-	Material materials[0];
 };
 
 struct Render {
-	Batch batch;
-	intptr_t index;
+	uint16_t offset;
+	uint16_t count;
+	uint16_t start;
+	uint16_t end;
+	void* index;
 	int32_t shader;
-	Attribute attribs[10];
-	int8_t attrib_count;
+	int8_t attribute_count;
+	Attribute attributes[Mesh::MaxAttributes];
 	int8_t uniform_count;
 	Uniform uniforms[10];
 };
@@ -83,33 +83,31 @@ class Engine {
 	bool running;
 	bool need_resize;
 
+	std::vector<Material> materials;
+
 	Model* model;
 
 	int width;
 	int height;
 
-	void collect(Render& render) {
-		std::vector<Location> attributes = shader_system.get_attributes(render.shader);
-		render.attrib_count = attributes.size();
-		for(int j = 0; j < render.attrib_count; j++) {
-			render.attribs[j].index = attributes[j].index;
+	void collect_attributes(Render& render, Mesh* mesh) {
+		std::vector<Location> locations = shader_system.get_attributes(render.shader);
 
-			switch(attributes[j].semmantic) {
-			case Vertex:
-				render.attribs[j].pointer = (intptr_t)model->mesh->vertex_pointer();
-				render.attribs[j].size = 3;
-				break;
+		render.attribute_count = locations.size();
+		for(size_t i = 0; i < render.attribute_count; i++) {
+			const Location& location = locations[i];
+			Mesh::Attributes semantic = (Mesh::Attributes)location.semantic;
 
-			case Normal:
-				render.attribs[j].pointer = (intptr_t)model->mesh->normal_pointer();
-				render.attribs[j].size = 3;
-				break;
-			}
+			render.attributes[i].index = location.index;
+			render.attributes[i].pointer = mesh->get_pointer(semantic);
+			render.attributes[i].size = Mesh::get_size(semantic);
 		}
+	}
 
+	void collect_uniforms(Render& render) {
 		Matrix4 projectionMatrix = Matrix4::perspectiveMatrix(60, (float)width/(float)height, 0.1, 1000);
 		Matrix4 viewMatrix = Matrix4::lookAtMatrix(vector::make(0, 0, 0), vector::make(0, 0, -1));
-		Matrix4 modelMatrix = Matrix4::transformationMatrix(Quaternion(vector::make(0, 1, 0), ang), vector::make(0, 0, -10), vector::make(1, 1, 1));
+		Matrix4 modelMatrix = Matrix4::transformationMatrix(Quaternion(vector::make(0, 1, 0), ang), vector::make(0, -5, -10), vector::make(1, 1, 1));
 		Matrix4 modelViewMatrix = viewMatrix * modelMatrix;
 		Matrix3 normalMatrix = modelViewMatrix.upperLeft().inverse().transpose();
 
@@ -119,7 +117,7 @@ class Engine {
 			render.uniforms[j].index = uniforms[j].index;
 			render.uniforms[j].type = uniforms[j].type;
 
-			switch(uniforms[j].semmantic) {
+			switch(uniforms[j].semantic) {
 			case ProjectionMatrix:
 				render.uniforms[j].mat4 = projectionMatrix;
 				break;
@@ -170,11 +168,14 @@ class Engine {
 			for(int i = 0; i < model->mesh->batch_count; i++) {
 				const Batch* batches = model->mesh->batches_pointer();
 
-				render[render_count].index = (intptr_t)model->mesh->index_pointer();
-				render[render_count].batch = batches[i];
-				render[render_count].shader = model->materials[batches[i].material].shader;
-
-				collect(render[render_count]);
+				render[render_count].index = model->mesh->index_pointer();
+				render[render_count].offset = batches[i].offset;
+				render[render_count].count = batches[i].count;
+				render[render_count].start = batches[i].start;
+				render[render_count].end = batches[i].end;
+				render[render_count].shader = materials[batches[i].material].shader;
+				collect_attributes(render[render_count], model->mesh);
+				collect_uniforms(render[render_count]);
 
 				render_count++;
 			}
@@ -210,14 +211,15 @@ class Engine {
 					}
 				}
 
-				for(int j = 0; j < r.attrib_count; j++) {
-					const Attribute& attrib = r.attribs[j];
+				for(int j = 0; j < render[i].attribute_count; j++) {
+					const Attribute& attribute = render[i].attributes[j];
 
-					glEnableVertexAttribArray(attrib.index);
-					glVertexAttribPointer(attrib.index, attrib.size, GL_FLOAT, GL_FALSE, 0, (void*)attrib.pointer);
+					glEnableVertexAttribArray(attribute.index);
+					glVertexAttribPointer(attribute.index, attribute.size, GL_FLOAT, GL_FALSE, 0, attribute.pointer);
 				}
 
-				glDrawRangeElements(GL_TRIANGLES, render[i].batch.start, render[i].batch.end, render[i].batch.count, GL_UNSIGNED_SHORT, (void*)render[i].index);
+				int16_t* ptr = (int16_t*)render[i].index;
+				glDrawRangeElements(GL_TRIANGLES, render[i].start, render[i].end, render[i].count, GL_UNSIGNED_SHORT, ptr + render[i].offset);
 			}
 		}
 
@@ -275,14 +277,14 @@ class Engine {
 						Mesh* mesh = mesh_read(_mesh->string);
 						int16_t material_count = mesh->material_count();
 
-						std::vector<Location> attributes = shader_system.get_attributes(shader);
-
-						model = (Model*)malloc(sizeof(Model) + sizeof(Material) * material_count);
+						model = (Model*)malloc(sizeof(Model));
 						model->mesh = mesh;
-						model->material_count = material_count;
 
-						for(int16_t i = 0; i < material_count; i++)
-							model->materials[i].shader = shader;
+						for(int16_t i = 0; i < material_count; i++) {
+							Material material = {shader};
+
+							materials.push_back(material);
+						}
 					}
 				}
 

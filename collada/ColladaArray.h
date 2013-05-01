@@ -21,7 +21,7 @@ public:
 		ColladaUtil::loadArray(element, array, true);
 	}
 
-	std::vector<Element> getArray() {
+	const std::vector<Element>& getArray() const {
 		return array;
 	}
 };

@@ -161,51 +161,63 @@ INLINE bool operator<=(const Vector2& v0, const Vector2& v1) {
 }
 
 INLINE Vector2 operator+(const Vector2& v, float k) {
-	return vector::make(v.x+k, v.y+k);
+	Vector2 out = {v.x+k, v.y+k};
+	return out;
 }
 
 INLINE Vector2 operator-(const Vector2& v, float k) {
-	return vector::make(v.x-k, v.y-k);
+	Vector2 out = {v.x-k, v.y-k};
+	return out;
 }
 
 INLINE Vector2 operator+(float k, const Vector2& v) {
-	return vector::make(k+v.x, k+v.y);
+	Vector2 out = {k+v.x, k+v.y};
+	return out;
 }
 
 INLINE Vector2 operator-(float k, const Vector2& v) {
-	return vector::make(k-v.x, k-v.y);
+	Vector2 out = {k-v.x, k-v.y};
+	return out;
 }
 
 INLINE Vector2 operator*(const Vector2& v0, const Vector2& v1) {
-	return vector::make(v0.x*v1.x, v0.y*v1.y);
+	Vector2 out = {v0.x*v1.x, v0.y*v1.y};
+	return out;
 }
 
 INLINE Vector2 operator*(const Vector2& v, float k) {
-	return vector::make(v.x*k, v.y*k);
+	Vector2 out = {v.x*k, v.y*k};
+	return out;
 }
 
 INLINE Vector2 operator*(float k, const Vector2& v) {
-	return vector::make(k*v.x, k*v.y);
+	Vector2 out = {k*v.x, k*v.y};
+	return out;
 }
 
 INLINE Vector2 operator/(const Vector2& v0, const Vector2& v1) {
-	return vector::make(v0.x/v1.x, v0.y/v1.y);
+	Vector2 out = {v0.x/v1.x, v0.y/v1.y};
+	return out;
 }
 
 INLINE Vector2 operator/(const Vector2& v, float k) {
-	return vector::make(v.x/k, v.y/k);
+	Vector2 out = {v.x/k, v.y/k};
+	return out;
 }
 
 INLINE Vector2 operator/(float k, const Vector2& v) {
-	return vector::make(k/v.x, k/v.y);
+	Vector2 out = {k/v.x, k/v.y};
+	return out;
 }
 
 INLINE Vector2 operator+(const Vector2& v0, const Vector2& v1) {
-	return vector::make(v0.x+v1.x, v0.y+v1.y);
+	Vector2 out = {v0.x+v1.x, v0.y+v1.y};
+	return out;
 }
 
 INLINE Vector2 operator-(const Vector2& v0, const Vector2& v1) {
-	return vector::make(v0.x-v1.x, v0.y-v1.y);
+	Vector2 out = {v0.x-v1.x, v0.y-v1.y};
+	return out;
 }
 
 #endif /* VECTOR2_H_ */

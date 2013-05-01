@@ -20,18 +20,6 @@ enum ShaderType {
 	GeometryShader
 };
 
-enum AttribSemantic {
-	Vertex,
-	Normal,
-	STangent,
-	TTangent,
-	Color,
-	TexCoord,
-	BoneIds,
-	Weigths,
-	MaxAttribSemantic
-};
-
 enum UniformSemantic {
 	ModelViewMatrix,
 	ProjectionMatrix,
@@ -47,7 +35,7 @@ struct Source {
 };
 
 struct Location {
-	int32_t semmantic;
+	int32_t semantic;
 	int32_t index;
 	int32_t size;
 	uint32_t type;

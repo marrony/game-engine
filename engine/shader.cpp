@@ -7,6 +7,7 @@
 
 #include "shader.h"
 #include "opengl.h"
+#include "mesh.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -15,14 +16,14 @@ static const struct {
 	int32_t semmantic;
 	const char* name;
 } mapping[] = {
-	{Vertex, "vPosition"},
-	{Normal, "vNormal"},
-	{STangent, ""},
-	{TTangent, ""},
-	{Color, ""},
-	{TexCoord, ""},
-	{BoneIds, ""},
-	{Weigths, ""},
+	{Mesh::Vertex, "vPosition"},
+	{Mesh::Normal, "vNormal"},
+	{Mesh::STangent, ""},
+	{Mesh::TTangent, ""},
+	{Mesh::Color, ""},
+	{Mesh::TexCoord, ""},
+	{Mesh::BoneIds, ""},
+	{Mesh::Weigths, ""},
 	{ModelViewMatrix, "modelViewMatrix"},
 	{ProjectionMatrix, "projectionMatrix"},
 	{ModelMatrix, "modelMatrix"},
@@ -117,7 +118,7 @@ int32_t ShaderSystem::create_shader(const char* name, size_t source_count, const
 
 		glGetActiveAttrib(shader.id, i, sizeof(name), NULL, &size, &type, name);
 
-		shader.attributes[i].semmantic = find_semantic(name);
+		shader.attributes[i].semantic = find_semantic(name);
 		shader.attributes[i].index = glGetAttribLocation(shader.id, name);
 		shader.attributes[i].size = size;
 		shader.attributes[i].type = type;
@@ -134,7 +135,7 @@ int32_t ShaderSystem::create_shader(const char* name, size_t source_count, const
 
 		glGetActiveUniform(shader.id, i, sizeof(name), NULL, &size, &type, name);
 
-		shader.uniforms[i].semmantic = find_semantic(name);
+		shader.uniforms[i].semantic = find_semantic(name);
 		shader.uniforms[i].index = glGetUniformLocation(shader.id, name);
 		shader.uniforms[i].size = size;
 		shader.uniforms[i].type = type;

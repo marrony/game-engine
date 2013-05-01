@@ -31,14 +31,14 @@ Mesh* create_mesh() {
 	int size = vertex_size + color_size + index_size;
 	Mesh* mesh = (Mesh*)malloc(sizeof(Mesh) + size);
 
-	mesh->vertex_offset = index_size;
-	mesh->color_offset = index_size + vertex_size;
+	mesh->offsets[Mesh::Vertex] = index_size;
+	mesh->offsets[Mesh::Color] = index_size + vertex_size;
 	mesh->vertex_count = vertex_size / sizeof(float) / 3;
 	mesh->index_count = index_size / sizeof(uint16_t);
 
 	memcpy(mesh->index_pointer(), indices, index_size);
-	memcpy(mesh->vertex_pointer(), vertices, vertex_size);
-	memcpy(mesh->color_pointer(), colors, color_size);
+	memcpy(mesh->get_pointer(Mesh::Vertex), vertices, vertex_size);
+	memcpy(mesh->get_pointer(Mesh::Color), colors, color_size);
 
 	return mesh;
 }
