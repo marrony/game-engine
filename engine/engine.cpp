@@ -56,6 +56,7 @@ struct Material {
 
 struct Model {
 	Mesh* mesh;
+	Attribute attributes[MaxAttribSemantic];
 	int16_t material_count;
 	Material materials[0];
 };
@@ -64,9 +65,8 @@ struct Render {
 	Batch batch;
 	intptr_t index;
 	int32_t shader;
-	int32_t light;
-	int8_t attrib_count;
 	Attribute attribs[10];
+	int8_t attrib_count;
 	int8_t uniform_count;
 	Uniform uniforms[10];
 };
@@ -173,7 +173,6 @@ class Engine {
 				render[render_count].index = (intptr_t)model->mesh->index_pointer();
 				render[render_count].batch = batches[i];
 				render[render_count].shader = model->materials[batches[i].material].shader;
-				render[render_count].light = 0;
 
 				collect(render[render_count]);
 

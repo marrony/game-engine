@@ -12,7 +12,7 @@
 #include <stdio.h>
 
 static const struct {
-	Semmantic semmantic;
+	int32_t semmantic;
 	const char* name;
 } mapping[] = {
 	{Vertex, "vPosition"},
@@ -31,12 +31,12 @@ static const struct {
 	{LightPosition, "lightPosition"},
 };
 
-static Semmantic find_semantic(const char* name) {
+static int32_t find_semantic(const char* name) {
 	for(int i = 0; i < sizeof(mapping)/sizeof(mapping[0]); i++) {
 		if(!strcmp(mapping[i].name, name))
 			return mapping[i].semmantic;
 	}
-	return None;
+	return -1;
 }
 
 static uint32_t compile_shader(const Source& source) {
