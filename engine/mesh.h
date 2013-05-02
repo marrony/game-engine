@@ -11,6 +11,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <stdlib.h>
+
 struct Batch {
 	uint16_t offset; //offset in indices array
 	uint16_t count;  //number os elements to draw

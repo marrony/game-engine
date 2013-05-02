@@ -50,7 +50,7 @@ namespace ColladaUtil {
 			int count;
 			if(element->Attribute("count", &count)) {
 				if(count != values.size()) {
-					printf("invalid number of elements %d %d", count, values.size());
+					printf("invalid number of elements %d %zu", count, values.size());
 				}
 			}
 		}

@@ -30,6 +30,7 @@
 struct Attribute {
 	int32_t index;
 	int32_t size;
+	int32_t stride;
 	void* pointer;
 };
 
@@ -56,6 +57,8 @@ struct Material {
 
 struct Model {
 	Mesh* mesh;
+	uint32_t vertex_buffer;
+	uint32_t index_buffer;
 };
 
 struct Render {
@@ -66,9 +69,9 @@ struct Render {
 	void* index;
 	int32_t shader;
 	int8_t attribute_count;
-	Attribute attributes[Mesh::MaxAttributes];
+	int16_t attribute_start;
 	int8_t uniform_count;
-	Uniform uniforms[10];
+	int16_t uniform_start;
 };
 
 class Engine {
@@ -85,6 +88,10 @@ class Engine {
 
 	std::vector<Material> materials;
 
+	std::vector<Render> render_list;
+	std::vector<Uniform> uniform_list;
+	std::vector<Attribute> attribute_list;
+
 	Model* model;
 
 	int width;
@@ -93,14 +100,18 @@ class Engine {
 	void collect_attributes(Render& render, Mesh* mesh) {
 		std::vector<Location> locations = shader_system.get_attributes(render.shader);
 
+		render.attribute_start = attribute_list.size();
 		render.attribute_count = locations.size();
-		for(size_t i = 0; i < render.attribute_count; i++) {
+
+		attribute_list.resize(render.attribute_start+render.attribute_count);
+		for(int i = 0; i < render.attribute_count; i++) {
 			const Location& location = locations[i];
 			Mesh::Attributes semantic = (Mesh::Attributes)location.semantic;
 
-			render.attributes[i].index = location.index;
-			render.attributes[i].pointer = mesh->get_pointer(semantic);
-			render.attributes[i].size = Mesh::get_size(semantic);
+			attribute_list[render.attribute_start+i].index = location.index;
+			attribute_list[render.attribute_start+i].pointer = mesh->get_pointer(semantic);
+			attribute_list[render.attribute_start+i].size = Mesh::get_size(semantic);
+			attribute_list[render.attribute_start+i].stride = 0;
 		}
 	}
 
@@ -112,34 +123,38 @@ class Engine {
 		Matrix3 normalMatrix = modelViewMatrix.upperLeft().inverse().transpose();
 
 		std::vector<Location> uniforms = shader_system.get_uniforms(render.shader);
+
+		render.uniform_start = uniform_list.size();
 		render.uniform_count = uniforms.size();
+
+		uniform_list.resize(render.uniform_start + render.uniform_count);
 		for(int j = 0; j < render.uniform_count; j++) {
-			render.uniforms[j].index = uniforms[j].index;
-			render.uniforms[j].type = uniforms[j].type;
+			uniform_list[render.uniform_start+j].index = uniforms[j].index;
+			uniform_list[render.uniform_start+j].type = uniforms[j].type;
 
 			switch(uniforms[j].semantic) {
 			case ProjectionMatrix:
-				render.uniforms[j].mat4 = projectionMatrix;
+				uniform_list[render.uniform_start+j].mat4 = projectionMatrix;
 				break;
 
 			case ViewMatrix:
-				render.uniforms[j].mat4 = viewMatrix;
+				uniform_list[render.uniform_start+j].mat4 = viewMatrix;
 				break;
 
 			case ModelMatrix:
-				render.uniforms[j].mat4 = modelMatrix;
+				uniform_list[j].mat4 = modelMatrix;
 				break;
 
 			case ModelViewMatrix:
-				render.uniforms[j].mat4 = modelViewMatrix;
+				uniform_list[render.uniform_start+j].mat4 = modelViewMatrix;
 				break;
 
 			case NormalMatrix:
-				render.uniforms[j].mat3 = normalMatrix;
+				uniform_list[render.uniform_start+j].mat3 = normalMatrix;
 				break;
 
 			case LightPosition:
-				render.uniforms[j].vec3 = vector::make(0, 0, 0);
+				uniform_list[render.uniform_start+j].vec3 = vector::make(0, 0, 0);
 				break;
 			}
 		}
@@ -162,33 +177,35 @@ class Engine {
 			glEnable(GL_DEPTH_TEST);
 			glDepthFunc(GL_LEQUAL);
 
-			Render render[10];
-			int render_count = 0;
+			render_list.clear();
+			uniform_list.clear();
+			attribute_list.clear();
 
 			for(int i = 0; i < model->mesh->batch_count; i++) {
 				const Batch* batches = model->mesh->batches_pointer();
+				render_list.push_back(Render());
 
-				render[render_count].index = model->mesh->index_pointer();
-				render[render_count].offset = batches[i].offset;
-				render[render_count].count = batches[i].count;
-				render[render_count].start = batches[i].start;
-				render[render_count].end = batches[i].end;
-				render[render_count].shader = materials[batches[i].material].shader;
-				collect_attributes(render[render_count], model->mesh);
-				collect_uniforms(render[render_count]);
+				Render& render = render_list.back();
 
-				render_count++;
+				render.index = model->mesh->index_pointer();
+				render.offset = batches[i].offset;
+				render.count = batches[i].count;
+				render.start = batches[i].start;
+				render.end = batches[i].end;
+				render.shader = materials[batches[i].material].shader;
+				collect_attributes(render, model->mesh);
+				collect_uniforms(render);
 			}
 
 			//render
 
-			for(int i = 0; i < render_count; i++) {
-				Render& r = render[i];
+			for(int i = 0; i < render_list.size(); i++) {
+				Render& r = render_list[i];
 
 				shader_system.bind_shader(r.shader);
 
-				for(int j = 0; j < r.uniform_count; j++) {
-					Uniform& u = r.uniforms[j];
+				for(int j = r.uniform_start; j < r.uniform_start+r.uniform_count; j++) {
+					Uniform& u = uniform_list[j];
 
 					switch(u.type) {
 					case GL_FLOAT:
@@ -211,15 +228,15 @@ class Engine {
 					}
 				}
 
-				for(int j = 0; j < render[i].attribute_count; j++) {
-					const Attribute& attribute = render[i].attributes[j];
+				for(int j = r.attribute_start; j < r.attribute_start+r.attribute_count; j++) {
+					const Attribute& attribute = attribute_list[j];
 
 					glEnableVertexAttribArray(attribute.index);
-					glVertexAttribPointer(attribute.index, attribute.size, GL_FLOAT, GL_FALSE, 0, attribute.pointer);
+					glVertexAttribPointer(attribute.index, attribute.size, GL_FLOAT, GL_FALSE, attribute.stride, attribute.pointer);
 				}
 
-				int16_t* ptr = (int16_t*)render[i].index;
-				glDrawRangeElements(GL_TRIANGLES, render[i].start, render[i].end, render[i].count, GL_UNSIGNED_SHORT, ptr + render[i].offset);
+				int16_t* ptr = (int16_t*)r.index;
+				glDrawRangeElements(GL_TRIANGLES, r.start, r.end, r.count, GL_UNSIGNED_SHORT, ptr + r.offset);
 			}
 		}
 
