@@ -67,10 +67,10 @@ struct Render {
 	uint32_t index_buffer;
 	uint32_t vertex_buffer;
 	int32_t shader;
-	int8_t attribute_count;
 	int16_t attribute_start;
-	int8_t uniform_count;
+	int16_t attribute_end;
 	int16_t uniform_start;
+	int16_t uniform_end;
 };
 
 struct MeshLoaded {
@@ -161,10 +161,10 @@ class Engine {
 		std::vector<Location> locations = shader_system.get_attributes(render.shader);
 
 		render.attribute_start = attribute_list.size();
-		render.attribute_count = locations.size();
+		render.attribute_end = render.attribute_start + locations.size();
 
-		attribute_list.resize(render.attribute_start+render.attribute_count);
-		for(int i = 0; i < render.attribute_count; i++) {
+		attribute_list.resize(render.attribute_end);
+		for(int i = 0; i < locations.size(); i++) {
 			const Location& location = locations[i];
 			Mesh::Attributes semantic = (Mesh::Attributes)location.semantic;
 
@@ -176,19 +176,24 @@ class Engine {
 	}
 
 	void collect_uniforms(Render& render) {
+		Vector3 cam[] = {
+				{0, -5, -10},
+				{0, -5, -200},
+		};
+
 		Matrix4 projectionMatrix = Matrix4::perspectiveMatrix(60, (float)width/(float)height, 0.1, 1000);
 		Matrix4 viewMatrix = Matrix4::lookAtMatrix(vector::make(0, 0, 0), vector::make(0, 0, -1));
-		Matrix4 modelMatrix = Matrix4::transformationMatrix(Quaternion(vector::make(0, 1, 0), ang), vector::make(0, -5, -10), vector::make(1, 1, 1));
+		Matrix4 modelMatrix = Matrix4::transformationMatrix(Quaternion(vector::make(0, 1, 0), ang), cam[models.size() != 1], vector::make(1, 1, 1));
 		Matrix4 modelViewMatrix = viewMatrix * modelMatrix;
 		Matrix3 normalMatrix = modelViewMatrix.upperLeft().inverse().transpose();
 
 		std::vector<Location> uniforms = shader_system.get_uniforms(render.shader);
 
 		render.uniform_start = uniform_list.size();
-		render.uniform_count = uniforms.size();
+		render.uniform_end = render.uniform_start + uniforms.size();
 
-		uniform_list.resize(render.uniform_start + render.uniform_count);
-		for(int j = 0; j < render.uniform_count; j++) {
+		uniform_list.resize(render.uniform_end);
+		for(int j = 0; j < uniforms.size(); j++) {
 			uniform_list[render.uniform_start+j].index = uniforms[j].index;
 			uniform_list[render.uniform_start+j].type = uniforms[j].type;
 
@@ -272,7 +277,7 @@ class Engine {
 				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, r.index_buffer);
 				glBindBuffer(GL_ARRAY_BUFFER, r.vertex_buffer);
 
-				for(int j = r.uniform_start; j < r.uniform_start+r.uniform_count; j++) {
+				for(int j = r.uniform_start; j < r.uniform_end; j++) {
 					Uniform& u = uniform_list[j];
 
 					switch(u.type) {
@@ -296,16 +301,18 @@ class Engine {
 					}
 				}
 
-				for(int j = r.attribute_start; j < r.attribute_start+r.attribute_count; j++) {
+				for(int j = r.attribute_start; j < r.attribute_end; j++) {
 					const Attribute& attribute = attribute_list[j];
 
 					glEnableVertexAttribArray(attribute.index);
-					glVertexAttribPointer(attribute.index, attribute.size, GL_FLOAT, GL_FALSE, attribute.stride, (void*)attribute.pointer);
+					glVertexAttribPointer(attribute.index, attribute.size, GL_FLOAT, GL_FALSE, attribute.stride, (char*)0 + attribute.pointer);
 				}
 
-				uint16_t* ptr = 0;
-				glDrawRangeElements(GL_TRIANGLES, r.start, r.end, r.count, GL_UNSIGNED_SHORT, ptr + r.offset);
+				glDrawRangeElements(GL_TRIANGLES, r.start, r.end, r.count, GL_UNSIGNED_SHORT, (uint16_t*)0 + r.offset);
 			}
+
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
 		}
 
 		swap_chain.swap_buffers();
