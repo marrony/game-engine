@@ -25,20 +25,34 @@ Mesh* create_mesh() {
 			0, 2, 3
 	};
 
+	Batch batch;
+	batch.offset = 0;
+	batch.count = 2;
+	batch.start = 0;
+	batch.end = 3;
+	batch.material = 0;
+
 	int vertex_size = sizeof(vertices);
 	int color_size = sizeof(colors);
 	int index_size = sizeof(indices);
-	int size = vertex_size + color_size + index_size;
+	int batch_size = sizeof(batch);
+	int size = vertex_size + color_size + index_size + batch_size;
 	Mesh* mesh = (Mesh*)malloc(sizeof(Mesh) + size);
+
+	for(int i = 0; i < Mesh::MaxAttributes; i++)
+		mesh->offsets[i] = -1;
 
 	mesh->offsets[Mesh::Vertex] = index_size;
 	mesh->offsets[Mesh::Color] = index_size + vertex_size;
+	mesh->offsets[Mesh::Batches] = index_size + vertex_size + color_size;
 	mesh->vertex_count = vertex_size / sizeof(float) / 3;
 	mesh->index_count = index_size / sizeof(uint16_t);
+	mesh->batch_count = 1;
 
 	memcpy(mesh->index_pointer(), indices, index_size);
 	memcpy(mesh->get_pointer(Mesh::Vertex), vertices, vertex_size);
 	memcpy(mesh->get_pointer(Mesh::Color), colors, color_size);
+	memcpy(mesh->get_pointer(Mesh::Batches), &batch, batch_size);
 
 	return mesh;
 }

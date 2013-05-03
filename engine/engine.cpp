@@ -31,7 +31,7 @@ struct Attribute {
 	int32_t index;
 	int32_t size;
 	int32_t stride;
-	void* pointer;
+	int32_t pointer;
 };
 
 struct Uniform {
@@ -56,9 +56,7 @@ struct Material {
 };
 
 struct Model {
-	Mesh* mesh;
-	uint32_t vertex_buffer;
-	uint32_t index_buffer;
+	int32_t mesh;
 };
 
 struct Render {
@@ -66,12 +64,22 @@ struct Render {
 	uint16_t count;
 	uint16_t start;
 	uint16_t end;
-	void* index;
+	uint32_t index_buffer;
+	uint32_t vertex_buffer;
 	int32_t shader;
 	int8_t attribute_count;
 	int16_t attribute_start;
 	int8_t uniform_count;
 	int16_t uniform_start;
+};
+
+struct MeshLoaded {
+	char name[32];
+	uint32_t vertex_buffer;
+	uint32_t index_buffer;
+	int32_t offsets[Mesh::MaxAttributes];
+	int8_t batch_count;
+	Batch batches[0];
 };
 
 class Engine {
@@ -87,17 +95,69 @@ class Engine {
 	bool need_resize;
 
 	std::vector<Material> materials;
+	std::vector<MeshLoaded*> meshes_loaded;
+	std::vector<Model*> models;
 
 	std::vector<Render> render_list;
 	std::vector<Uniform> uniform_list;
 	std::vector<Attribute> attribute_list;
 
-	Model* model;
-
 	int width;
 	int height;
 
-	void collect_attributes(Render& render, Mesh* mesh) {
+	void load_mesh(const char* mesh_name) {
+		for(size_t i = 0; i < meshes_loaded.size(); i++) {
+			if(!strcmp(meshes_loaded[i]->name, mesh_name))
+				return;
+		}
+
+		Mesh* mesh = mesh_read(mesh_name);
+
+		MeshLoaded* mesh_loaded = (MeshLoaded*)malloc(sizeof(MeshLoaded) + sizeof(Batch)*mesh->batch_count);
+		strcpy(mesh_loaded->name, mesh_name);
+		mesh_loaded->batch_count = mesh->batch_count;
+		memcpy(mesh_loaded->batches, mesh->batches_pointer(), sizeof(Batch)*mesh->batch_count);
+
+		for(int i = 0; i < Mesh::MaxAttributes-1; i++) {
+			if(mesh->offsets[i] != -1)
+				mesh_loaded->offsets[i] = mesh->offsets[i] - mesh->index_size();
+			else
+				mesh_loaded->offsets[i] = -1;
+		}
+
+		glGenBuffers(1, &mesh_loaded->vertex_buffer);
+		glGenBuffers(1, &mesh_loaded->index_buffer);
+
+		glBindBuffer(GL_ARRAY_BUFFER, mesh_loaded->vertex_buffer);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh_loaded->index_buffer);
+
+		glBufferData(GL_ARRAY_BUFFER, mesh->vertex_size(), mesh->vertex_pointer(), GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->index_size(), mesh->index_pointer(), GL_STATIC_DRAW);
+
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+		Model* model = (Model*)malloc(sizeof(Model));
+		model->mesh = meshes_loaded.size();
+
+		size_t offset = materials.size();
+		for(int8_t i = 0; i < mesh_loaded->batch_count; i++) {
+			mesh_loaded->batches[i].material += offset;
+		}
+
+		int16_t material_count = mesh->material_count();
+		for(int16_t i = 0; i < material_count; i++) {
+			Material material = {shader};
+			materials.push_back(material);
+		}
+
+		meshes_loaded.push_back(mesh_loaded);
+		models.push_back(model);
+
+		mesh_destroy(mesh);
+	}
+
+	void collect_attributes(Render& render, const MeshLoaded* mesh_loaded) {
 		std::vector<Location> locations = shader_system.get_attributes(render.shader);
 
 		render.attribute_start = attribute_list.size();
@@ -109,7 +169,7 @@ class Engine {
 			Mesh::Attributes semantic = (Mesh::Attributes)location.semantic;
 
 			attribute_list[render.attribute_start+i].index = location.index;
-			attribute_list[render.attribute_start+i].pointer = mesh->get_pointer(semantic);
+			attribute_list[render.attribute_start+i].pointer = mesh_loaded->offsets[semantic];
 			attribute_list[render.attribute_start+i].size = Mesh::get_size(semantic);
 			attribute_list[render.attribute_start+i].stride = 0;
 		}
@@ -170,7 +230,7 @@ class Engine {
 		glClearColor(1.0, 1.0, 1.0, 1.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		if(model) {
+		if(!models.empty()) {
 			ang += 0.1;
 
 			glEnable(GL_CULL_FACE);
@@ -181,20 +241,25 @@ class Engine {
 			uniform_list.clear();
 			attribute_list.clear();
 
-			for(int i = 0; i < model->mesh->batch_count; i++) {
-				const Batch* batches = model->mesh->batches_pointer();
-				render_list.push_back(Render());
+			for(size_t j = 0; j < models.size(); j++) {
+				const Model* model = models[j];
+				const MeshLoaded* mesh_loaded = meshes_loaded[model->mesh];
 
-				Render& render = render_list.back();
+				for(int i = 0; i < mesh_loaded->batch_count; i++) {
+					render_list.push_back(Render());
 
-				render.index = model->mesh->index_pointer();
-				render.offset = batches[i].offset;
-				render.count = batches[i].count;
-				render.start = batches[i].start;
-				render.end = batches[i].end;
-				render.shader = materials[batches[i].material].shader;
-				collect_attributes(render, model->mesh);
-				collect_uniforms(render);
+					Render& render = render_list.back();
+
+					render.index_buffer = mesh_loaded->index_buffer;
+					render.vertex_buffer = mesh_loaded->vertex_buffer;
+					render.offset = mesh_loaded->batches[i].offset;
+					render.count = mesh_loaded->batches[i].count;
+					render.start = mesh_loaded->batches[i].start;
+					render.end = mesh_loaded->batches[i].end;
+					render.shader = materials[mesh_loaded->batches[i].material].shader;
+					collect_attributes(render, mesh_loaded);
+					collect_uniforms(render);
+				}
 			}
 
 			//render
@@ -203,6 +268,9 @@ class Engine {
 				Render& r = render_list[i];
 
 				shader_system.bind_shader(r.shader);
+
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, r.index_buffer);
+				glBindBuffer(GL_ARRAY_BUFFER, r.vertex_buffer);
 
 				for(int j = r.uniform_start; j < r.uniform_start+r.uniform_count; j++) {
 					Uniform& u = uniform_list[j];
@@ -232,10 +300,10 @@ class Engine {
 					const Attribute& attribute = attribute_list[j];
 
 					glEnableVertexAttribArray(attribute.index);
-					glVertexAttribPointer(attribute.index, attribute.size, GL_FLOAT, GL_FALSE, attribute.stride, attribute.pointer);
+					glVertexAttribPointer(attribute.index, attribute.size, GL_FLOAT, GL_FALSE, attribute.stride, (void*)attribute.pointer);
 				}
 
-				int16_t* ptr = (int16_t*)r.index;
+				uint16_t* ptr = 0;
 				glDrawRangeElements(GL_TRIANGLES, r.start, r.end, r.count, GL_UNSIGNED_SHORT, ptr + r.offset);
 			}
 		}
@@ -284,24 +352,8 @@ class Engine {
 						need_resize = true;
 						//swap_chain_resize(swap_chain, width, height);
 					} else if(!strcmp("load-mesh", type->string)) {
-						Value* _mesh = json_get_attribute(json.value, "mesh");
-
-						if(model && model->mesh) {
-							mesh_destroy(model->mesh);
-							free(model);
-						}
-
-						Mesh* mesh = mesh_read(_mesh->string);
-						int16_t material_count = mesh->material_count();
-
-						model = (Model*)malloc(sizeof(Model));
-						model->mesh = mesh;
-
-						for(int16_t i = 0; i < material_count; i++) {
-							Material material = {shader};
-
-							materials.push_back(material);
-						}
+						Value* mesh = json_get_attribute(json.value, "mesh");
+						load_mesh(mesh->string);
 					}
 				}
 
@@ -320,7 +372,6 @@ class Engine {
 	}
 public:
 	Engine() : task_manager(32) {
-		model = 0;
 		ang = 0;
 		running = false;
 		need_resize = false;
@@ -414,10 +465,6 @@ public:
 		fflush(stderr);
 
 		protocol_send_finish_message(client);
-
-		if(model->mesh)
-			mesh_destroy(model->mesh);
-		free(model);
 
 		client.close();
 		server.close();

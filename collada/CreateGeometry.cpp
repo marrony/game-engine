@@ -301,19 +301,8 @@ void CreateGeometry::save_mesh() {
 
 	size_t offset = indices.size() * sizeof(uint16_t);
 
-	attributeOffsets[Mesh::Batches] = offset;
-	offset += batches.size() * Mesh::get_stride(Mesh::Batches);
-
 	attributeOffsets[Mesh::Vertex] = offset;
 	offset += position.size() * Mesh::get_stride(Mesh::Vertex);
-
-	if(!boneIds.empty() && !weights.empty()) {
-		attributeOffsets[Mesh::BoneIds] = offset;
-		offset += position.size() * Mesh::get_stride(Mesh::BoneIds);
-
-		attributeOffsets[Mesh::Weigths] = offset;
-		offset += position.size() * Mesh::get_stride(Mesh::Weigths);
-	}
 
 	if(!normal.empty()) {
 		attributeOffsets[Mesh::Normal] = offset;
@@ -338,6 +327,17 @@ void CreateGeometry::save_mesh() {
 		offset += position.size() * Mesh::get_stride(Mesh::TexCoord);
 	}
 
+	if(!boneIds.empty() && !weights.empty()) {
+		attributeOffsets[Mesh::BoneIds] = offset;
+		offset += position.size() * Mesh::get_stride(Mesh::BoneIds);
+
+		attributeOffsets[Mesh::Weigths] = offset;
+		offset += position.size() * Mesh::get_stride(Mesh::Weigths);
+	}
+
+	attributeOffsets[Mesh::Batches] = offset;
+	offset += batches.size() * Mesh::get_stride(Mesh::Batches);
+
 	Mesh* mesh = (Mesh*)malloc(sizeof(Mesh) + offset);
 
 	mesh->vertex_count = (uint16_t)position.size();
@@ -347,9 +347,7 @@ void CreateGeometry::save_mesh() {
 	memcpy(mesh->offsets, attributeOffsets, sizeof(attributeOffsets));
 	memcpy(mesh->index_pointer(), indices.data(), mesh->index_count*sizeof(uint16_t));
 	memcpy(mesh->batches_pointer(), batches.data(), mesh->batch_count*Mesh::get_stride(Mesh::Batches));
-
-	if(mesh->offsets[Mesh::Vertex] != -1)
-		memcpy(mesh->get_pointer(Mesh::Vertex), position.data(), mesh->vertex_count*Mesh::get_stride(Mesh::Vertex));
+	memcpy(mesh->get_pointer(Mesh::Vertex), position.data(), mesh->vertex_count*Mesh::get_stride(Mesh::Vertex));
 
 	if(mesh->offsets[Mesh::Normal] != -1)
 		memcpy(mesh->get_pointer(Mesh::Normal), normal.data(), mesh->vertex_count*Mesh::get_stride(Mesh::Normal));
