@@ -118,7 +118,7 @@ class Engine {
 		mesh_loaded->batch_count = mesh->batch_count;
 		memcpy(mesh_loaded->batches, mesh->batches_pointer(), sizeof(Batch)*mesh->batch_count);
 
-		for(int i = 0; i < Mesh::MaxAttributes-1; i++) {
+		for(int i = 0; i < Mesh::MaxAttributes; i++) {
 			if(mesh->offsets[i] != -1)
 				mesh_loaded->offsets[i] = mesh->offsets[i] - mesh->index_size();
 			else

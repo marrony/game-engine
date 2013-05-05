@@ -31,14 +31,14 @@ struct Mesh {
 		TexCoord,
 		BoneIds,
 		Weigths,
-		Batches,
 		MaxAttributes
 	};
 
 	int32_t offsets[MaxAttributes];
+	int32_t batch_offset;
+	uint16_t batch_count;
 	uint16_t vertex_count;
 	uint16_t index_count;
-	uint16_t batch_count;
 	uint8_t data[0];
 
 	uint16_t* index_pointer() const {
@@ -50,7 +50,7 @@ struct Mesh {
 	}
 
 	Batch* batches_pointer() const {
-		return (Batch*)(data + offsets[Batches]);
+		return (Batch*)(data + batch_offset);
 	}
 
 	int32_t index_size() const {
@@ -59,13 +59,13 @@ struct Mesh {
 
 	int32_t vertex_size() const {
 		int32_t size = 0;
-		for(int i = 0; i < MaxAttributes-1; i++)
+		for(int i = 0; i < MaxAttributes; i++)
 			size += offsets[i] != -1 ? get_stride((Attributes)i)*vertex_count : 0;
 		return size;
 	}
 
 	int32_t batches_size() const {
-		return get_stride(Batches)*batch_count;
+		return sizeof(Batch)*batch_count;
 	}
 
 	float* get_pointer(Attributes attribute) const {
@@ -81,14 +81,13 @@ struct Mesh {
 				sizeof(float)*3,
 				sizeof(float)*2,
 				sizeof(float)*4,
-				sizeof(float)*4,
-				sizeof(Batch),
+				sizeof(float)*4
 		};
 		return stride[attribute];
 	}
 
 	static inline int16_t get_size(Attributes attribute) {
-		static int16_t size[] = {3, 3, 3, 3, 3, 2, 4, 4, 0};
+		static int16_t size[] = {3, 3, 3, 3, 3, 2, 4, 4};
 		return size[attribute];
 	}
 
