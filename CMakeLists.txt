@@ -25,3 +25,4 @@ include_directories(engine)
 add_subdirectory(tool)
 
 #install(TARGETS prog DESTINATION bin)
+add_executable(solver solver/solver.cpp)
