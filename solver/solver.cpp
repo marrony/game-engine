@@ -41,8 +41,10 @@
 #define CONVERGENCE_ESTIMATE  1.0f
 
 struct SimObject {
+	Vector3 m_position;
 	Vector3 m_velocity;
-	float m_invMass; //todo
+	Vector3 m_acceleration;
+	float m_invMass;
 };
 
 struct Jacobian {
@@ -90,10 +92,21 @@ int main(void) {
 	}
 
 	SimObject sim;
-	sim.m_velocity = vector::make(0.0f, -1.0f, 0.0f);
+	sim.m_position = vector::make(0.0f, 10.0f, 0.0f);
+	sim.m_velocity = vector::make(0.0f, 0.0f, 0.0f);
 	sim.m_invMass = 1.0f;
 
-	SOLVE_3D(jacobians, NUM_JACOBIANS, &sim, 1);
+	float delta = 0.001f;
+	while(true) {
+		sim.m_velocity += vector::make(0.0f, -9.8f, 0.0f) * delta;
+		sim.m_position += sim.m_velocity * delta;
+
+		if(sim.m_position.y <= 0) {
+			jacobians[0].m_constraint_force = (sim.m_position - vector::make(0, 0, 0)).length();
+			SOLVE_3D(jacobians, 1, &sim, 1);
+		}
+	}
+
 	return 0;
 }
 
