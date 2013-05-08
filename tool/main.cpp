@@ -30,7 +30,6 @@ Mesh* create_mesh() {
 	batch.count = 2;
 	batch.start = 0;
 	batch.end = 3;
-	batch.material = 0;
 
 	int vertex_size = sizeof(vertices);
 	int color_size = sizeof(colors);

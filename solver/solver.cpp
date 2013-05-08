@@ -94,7 +94,7 @@ int main(void) {
 	SimObject sim;
 	sim.m_position = vector::make(0.0f, 10.0f, 0.0f);
 	sim.m_velocity = vector::make(0.0f, 0.0f, 0.0f);
-	sim.m_invMass = 1.0f;
+	sim.m_invMass = 1.0f / 50.0f;
 
 	float delta = 0.001f;
 	while(true) {
@@ -193,20 +193,28 @@ void Solve3DVerbose(Jacobian *j, int num_jacobians, SimObject *o, int num_object
 		printf("\t\tVelocity = (%f %f %f)\n", o[x].m_velocity.x, o[x].m_velocity.y, o[x].m_velocity.z);
 	}
 
+	//W = M^-1
+	//      A*x   = b
+	//J*W*J^T*lam = -dot(J)*dot(q) - J*W*Q - ks*C - kd*dot(C)
+	//lam = (-dot(J)*dot(q) - J*W*Q - ks*C - kd*dot(C)) / (J*W*J^T)
+
 	printf("Preconditioning:\n");
 
 	// preconditioning
 	for (int x = 0; x < num_jacobians; x++) {
 		printf("\tJacobian (%d)\n", x);
 
+		//J*W
 		JM_1[x] = j[x].m_linear * o[j[x].m_object_index].m_invMass;
 
+		//J*dot(q)
 		float u = vector::dot(o[j[x].m_object_index].m_velocity, j[x].m_linear);
 		float v = 0;
 
 		b[x] = u + v;
 		b[x] = j[x].m_constraint_force - b[x];
 
+		//J*W*J^T
 		D[x] = vector::dot(JM_1[x], j[x].m_linear);
 		D[x] = D[x] + j[x].m_mixing_coefficient;
 		D[x] = 1.0f / D[x];

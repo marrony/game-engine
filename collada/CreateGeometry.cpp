@@ -219,7 +219,6 @@ void CreateGeometry::add_vertex_data(const std::vector<MeshVertex>& vertexArray,
 	batch.count = newIndices.size();
 	batch.start = lastVertexCount + *std::min_element(newIndices.begin(), newIndices.end());
 	batch.end = lastVertexCount + *std::max_element(newIndices.begin(), newIndices.end());
-	batch.material = material_index;
 	batches.push_back(batch);
 
 	for(size_t i = 0; i < newIndices.size(); i++) {

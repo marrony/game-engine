@@ -18,7 +18,6 @@ struct Batch {
 	uint16_t count;  //number os elements to draw
 	uint16_t start;  //minimum index in range [offset, offset+count]
 	uint16_t end;    //maximum index in range [offset, offset+count]
-	uint16_t material;
 };
 
 struct Mesh {
@@ -89,18 +88,6 @@ struct Mesh {
 	static inline int16_t get_size(Attributes attribute) {
 		static int16_t size[] = {3, 3, 3, 3, 3, 2, 4, 4};
 		return size[attribute];
-	}
-
-	int16_t material_count() const {
-		int16_t count = -1;
-
-		Batch* batches = batches_pointer();
-		for(int16_t i = 0; i < batch_count; i++) {
-			if(batches[i].material > count)
-				count = batches[i].material;
-		}
-
-		return count+1;
 	}
 
 	uint32_t sizeof_mesh() const {

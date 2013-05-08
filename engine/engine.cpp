@@ -22,6 +22,7 @@
 #include "matrix3.h"
 #include "matrix4.h"
 
+#include <algorithm>
 #include <cstring>
 #include <stdlib.h>
 #include <stdio.h>
@@ -52,25 +53,59 @@ struct Uniform {
 struct Material {
 	int32_t shader;
 	int8_t texture_count;
-	int32_t textures[16];
+	int16_t textures[16];
 };
 
 struct Model {
 	int32_t mesh;
+	int8_t material_count;
+	int16_t material[0];
 };
 
+const int MATERIAL_BITS = 20;
+const uint64_t MATERIAL_MASK = 0x00000000000fffffLL;
+const int DEPTH_BITS = 20;
+const uint64_t DEPTH_MASK    = 0x000000fffff00000LL;
+const int COMMAND_BITS = 1;
+const uint64_t COMMAND_MASK  = 0x0000010000000000LL;
+
 struct Render {
-	uint16_t offset;
-	uint16_t count;
-	uint16_t start;
-	uint16_t end;
-	uint32_t index_buffer;
-	uint32_t vertex_buffer;
-	int32_t shader;
-	int16_t attribute_start;
-	int16_t attribute_end;
-	int16_t uniform_start;
-	int16_t uniform_end;
+	enum CommandType {
+		ClearColor,
+		ClearDepth,
+		ClearColorAndDepth,
+	};
+
+	uint64_t sort_key;
+
+	union {
+		struct {
+			Batch batch;
+			uint32_t index_buffer;
+			uint32_t vertex_buffer;
+			int32_t shader;
+			int16_t attribute_start;
+			int16_t attribute_end;
+			int16_t uniform_start;
+			int16_t uniform_end;
+		};
+
+		struct {
+			CommandType command_type;
+			union {
+				struct {
+					Vector4 clear_color;
+					float clear_depth;
+				};
+			};
+		};
+	};
+};
+
+struct RenderListSort {
+	bool operator()(const Render& r0, const Render& r1) const {
+		return r0.sort_key < r1.sort_key;
+	}
 };
 
 struct MeshLoaded {
@@ -137,16 +172,16 @@ class Engine {
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-		Model* model = (Model*)malloc(sizeof(Model));
+		Model* model = (Model*)malloc(sizeof(Model) + sizeof(int16_t)*mesh_loaded->batch_count);
+		model->material_count = mesh_loaded->batch_count;
 		model->mesh = meshes_loaded.size();
 
 		size_t offset = materials.size();
 		for(int8_t i = 0; i < mesh_loaded->batch_count; i++) {
-			mesh_loaded->batches[i].material += offset;
+			model->material[i] = offset+i;
 		}
 
-		int16_t material_count = mesh->material_count();
-		for(int16_t i = 0; i < material_count; i++) {
+		for(int16_t i = 0; i < mesh->batch_count; i++) {
 			Material material = {shader};
 			materials.push_back(material);
 		}
@@ -232,8 +267,8 @@ class Engine {
 			need_resize = false;
 		}
 
-		glClearColor(1.0, 1.0, 1.0, 1.0);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+//		glClearColor(1.0, 1.0, 1.0, 1.0);
+//		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		if(!models.empty()) {
 			ang += 0.1;
@@ -246,6 +281,12 @@ class Engine {
 			uniform_list.clear();
 			attribute_list.clear();
 
+			render_list.push_back(Render());
+			render_list.back().sort_key = COMMAND_MASK;
+			render_list.back().command_type = Render::ClearColorAndDepth;
+			render_list.back().clear_color = vector::make(1.0, 1.0, 1.0, 1.0);
+			render_list.back().clear_depth = 1.0;
+
 			for(size_t j = 0; j < models.size(); j++) {
 				const Model* model = models[j];
 				const MeshLoaded* mesh_loaded = meshes_loaded[model->mesh];
@@ -255,60 +296,78 @@ class Engine {
 
 					Render& render = render_list.back();
 
+					render.sort_key = 0LL;
 					render.index_buffer = mesh_loaded->index_buffer;
 					render.vertex_buffer = mesh_loaded->vertex_buffer;
-					render.offset = mesh_loaded->batches[i].offset;
-					render.count = mesh_loaded->batches[i].count;
-					render.start = mesh_loaded->batches[i].start;
-					render.end = mesh_loaded->batches[i].end;
-					render.shader = materials[mesh_loaded->batches[i].material].shader;
+					render.batch = mesh_loaded->batches[i];
+					render.shader = materials[model->material[i]].shader;
 					collect_attributes(render, mesh_loaded);
 					collect_uniforms(render);
 				}
 			}
+
+			//std::sort(render_list.begin(), render_list.end(), RenderListSort());
 
 			//render
 
 			for(int i = 0; i < render_list.size(); i++) {
 				Render& r = render_list[i];
 
-				shader_system.bind_shader(r.shader);
-
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, r.index_buffer);
-				glBindBuffer(GL_ARRAY_BUFFER, r.vertex_buffer);
-
-				for(int j = r.uniform_start; j < r.uniform_end; j++) {
-					Uniform& u = uniform_list[j];
-
-					switch(u.type) {
-					case GL_FLOAT:
+				if((r.sort_key & COMMAND_MASK) != 0) {
+					switch(r.command_type) {
+					case Render::ClearColor:
+						glClearColor(r.clear_color.r, r.clear_color.g, r.clear_color.b, r.clear_color.a);
+						glClear(GL_COLOR_BUFFER_BIT);
 						break;
-					case GL_FLOAT_VEC2:
+					case Render::ClearDepth:
+						glClearDepth(r.clear_depth);
+						glClear(GL_DEPTH_BUFFER_BIT);
 						break;
-					case GL_FLOAT_VEC3:
-						glUniform3fv(u.index, 1, u.vec3.vector);
-						break;
-					case GL_FLOAT_VEC4:
-						break;
-					case GL_FLOAT_MAT2:
-						break;
-					case GL_FLOAT_MAT3:
-						glUniformMatrix3fv(u.index, 1, GL_FALSE, u.mat3.matrix);
-						break;
-					case GL_FLOAT_MAT4:
-						glUniformMatrix4fv(u.index, 1, GL_FALSE, u.mat4.matrix);
+					case Render::ClearColorAndDepth:
+						glClearColor(r.clear_color.r, r.clear_color.g, r.clear_color.b, r.clear_color.a);
+						glClearDepth(r.clear_depth);
+						glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 						break;
 					}
+				} else {
+					shader_system.bind_shader(r.shader);
+
+					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, r.index_buffer);
+					glBindBuffer(GL_ARRAY_BUFFER, r.vertex_buffer);
+
+					for(int j = r.uniform_start; j < r.uniform_end; j++) {
+						Uniform& u = uniform_list[j];
+
+						switch(u.type) {
+						case GL_FLOAT:
+							break;
+						case GL_FLOAT_VEC2:
+							break;
+						case GL_FLOAT_VEC3:
+							glUniform3fv(u.index, 1, u.vec3.vector);
+							break;
+						case GL_FLOAT_VEC4:
+							break;
+						case GL_FLOAT_MAT2:
+							break;
+						case GL_FLOAT_MAT3:
+							glUniformMatrix3fv(u.index, 1, GL_FALSE, u.mat3.matrix);
+							break;
+						case GL_FLOAT_MAT4:
+							glUniformMatrix4fv(u.index, 1, GL_FALSE, u.mat4.matrix);
+							break;
+						}
+					}
+
+					for(int j = r.attribute_start; j < r.attribute_end; j++) {
+						const Attribute& attribute = attribute_list[j];
+
+						glEnableVertexAttribArray(attribute.index);
+						glVertexAttribPointer(attribute.index, attribute.size, GL_FLOAT, GL_FALSE, attribute.stride, (char*)0 + attribute.pointer);
+					}
+
+					glDrawRangeElements(GL_TRIANGLES, r.batch.start, r.batch.end, r.batch.count, GL_UNSIGNED_SHORT, (uint16_t*)0 + r.batch.offset);
 				}
-
-				for(int j = r.attribute_start; j < r.attribute_end; j++) {
-					const Attribute& attribute = attribute_list[j];
-
-					glEnableVertexAttribArray(attribute.index);
-					glVertexAttribPointer(attribute.index, attribute.size, GL_FLOAT, GL_FALSE, attribute.stride, (char*)0 + attribute.pointer);
-				}
-
-				glDrawRangeElements(GL_TRIANGLES, r.start, r.end, r.count, GL_UNSIGNED_SHORT, (uint16_t*)0 + r.offset);
 			}
 
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
