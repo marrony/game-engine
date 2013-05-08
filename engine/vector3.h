@@ -118,15 +118,13 @@ struct Vector3 {
 		Vector3 v = {m, m, m};
 		return v;
 	}
-};
 
-namespace vector {
-	INLINE Vector3 make(float x, float y, float z) {
+	static INLINE Vector3 make(float x, float y, float z) {
 		Vector3 v = {x, y, z};
 		return v;
 	}
 
-	INLINE Vector3 cross(const Vector3& v0, const Vector3& v1) {
+	static INLINE Vector3 cross(const Vector3& v0, const Vector3& v1) {
 		/*
 		 * | i    j    j    |   +i*(v0.y*v1.z - v0.z*v1.y)   +i*(v0.y*v1.z - v0.z*v1.y)
 		 * | v0.x v0.y v0.z | = -j*(v0.x*v1.z - v0.z*v1.x) = +j*(v0.z*v1.x - v0.x*v1.z)
@@ -140,11 +138,11 @@ namespace vector {
 		return v;
 	}
 
-	INLINE float dot(const Vector3& v0, const Vector3& v1) {
+	static INLINE float dot(const Vector3& v0, const Vector3& v1) {
 		return v0.x*v1.x + v0.y*v1.y + v0.z*v1.z;
 	}
 
-	INLINE Vector3 max(const Vector3& v0, const Vector3& v1) {
+	static INLINE Vector3 max(const Vector3& v0, const Vector3& v1) {
 		float x = std::max(v0.x, v1.x);
 		float y = std::max(v0.y, v1.y);
 		float z = std::max(v0.z, v1.z);
@@ -153,7 +151,7 @@ namespace vector {
 		return v;
 	}
 
-	INLINE Vector3 min(const Vector3& v0, const Vector3& v1) {
+	static INLINE Vector3 min(const Vector3& v0, const Vector3& v1) {
 		float x = std::min(v0.x, v1.x);
 		float y = std::min(v0.y, v1.y);
 		float z = std::min(v0.z, v1.z);
@@ -162,7 +160,7 @@ namespace vector {
 		return v;
 	}
 
-	INLINE Vector3 abs(const Vector3& v) {
+	static INLINE Vector3 abs(const Vector3& v) {
 		float x = std::abs(v.x);
 		float y = std::abs(v.y);
 		float z = std::abs(v.z);
@@ -170,7 +168,7 @@ namespace vector {
 		Vector3 out = {x, y, z};
 		return out;
 	}
-}
+};
 
 INLINE bool operator>(const Vector3& v0, const Vector3& v1) {
 	return v0.x > v1.x && v0.y > v1.y && v0.z > v1.z;

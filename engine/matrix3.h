@@ -108,9 +108,9 @@ struct Matrix3 {
 	INLINE Matrix3 orthoNormalize() const {
 		Matrix3 ret;
 
-		Vector3 col0 = vector::make(m00, m10, m20).normalize();
-		Vector3 col1 = vector::make(m01, m11, m21).normalize();
-		Vector3 col2 = vector::make(m02, m12, m22).normalize();
+		Vector3 col0 = Vector3::make(m00, m10, m20).normalize();
+		Vector3 col1 = Vector3::make(m01, m11, m21).normalize();
+		Vector3 col2 = Vector3::make(m02, m12, m22).normalize();
 
 		ret.m00 = col0.x;
 		ret.m10 = col0.y;

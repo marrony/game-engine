@@ -329,7 +329,7 @@ INLINE Vector3 operator*(const Quaternion& q1, const Vector3& v) {
 
 	Quaternion vt = q1 * q0 * q1.invert();
 
-	return vector::make(vt.x, vt.y, vt.z);
+	return Vector3::make(vt.x, vt.y, vt.z);
 }
 
 #endif /* QUATERNION_H_ */

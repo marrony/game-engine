@@ -126,45 +126,46 @@ struct Vector4 {
 		Vector4 out = {m, m, m, m};
 		return out;
 	}
-};
 
-namespace vector {
-	INLINE Vector4 make(float x, float y, float z, float w) {
+	static INLINE Vector4 make(float x, float y, float z, float w) {
 		Vector4 out = {x, y, z, w};
 		return out;
 	}
 
-	INLINE float dot(const Vector4& v0, const Vector4& v1) {
+	static INLINE float dot(const Vector4& v0, const Vector4& v1) {
 		return v0.x*v1.x + v0.y*v1.y + v0.z*v1.z + v0.w*v1.w;
 	}
 
-	INLINE Vector4 max(const Vector4& v0, const Vector4& v1) {
+	static INLINE Vector4 max(const Vector4& v0, const Vector4& v1) {
 		float x = std::max(v0.x, v1.x);
 		float y = std::max(v0.y, v1.y);
 		float z = std::max(v0.z, v1.z);
 		float w = std::max(v0.w, v1.w);
 
-		return make(x, y, z, w);
+		Vector4 out = {x, y, z, w};
+		return out;
 	}
 
-	INLINE Vector4 min(const Vector4& v0, const Vector4& v1) {
+	static INLINE Vector4 min(const Vector4& v0, const Vector4& v1) {
 		float x = std::min(v0.x, v1.x);
 		float y = std::min(v0.y, v1.y);
 		float z = std::min(v0.z, v1.z);
 		float w = std::min(v0.w, v1.w);
 
-		return make(x, y, z, w);
+		Vector4 out = {x, y, z, w};
+		return out;
 	}
 
-	INLINE Vector4 abs(const Vector4& v) {
+	static INLINE Vector4 abs(const Vector4& v) {
 		float x = std::abs(v.x);
 		float y = std::abs(v.y);
 		float z = std::abs(v.z);
 		float w = std::abs(v.w);
 
-		return make(x, y, z, w);
+		Vector4 out = {x, y, z, w};
+		return out;
 	}
-}
+};
 
 INLINE bool operator>(const Vector4& v0, const Vector4& v1) {
 	return v0.x > v1.x && v0.y > v1.y && v0.z > v1.z && v0.w > v1.w;

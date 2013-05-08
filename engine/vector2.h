@@ -110,39 +110,37 @@ struct Vector2 {
 		Vector2 out = {m, m};
 		return out;
 	}
-};
 
-namespace vector {
-	INLINE Vector2 make(float x, float y) {
+	static INLINE Vector2 make(float x, float y) {
 		Vector2 out = {x, y};
 		return out;
 	}
 
-	INLINE float dot(const Vector2& v0, const Vector2& v1) {
+	static INLINE float dot(const Vector2& v0, const Vector2& v1) {
 		return v0.x*v1.x + v0.y*v1.y;
 	}
 
-	INLINE Vector2 max(const Vector2& v0, const Vector2& v1) {
+	static INLINE Vector2 max(const Vector2& v0, const Vector2& v1) {
 		float x = std::max(v0.x, v1.x);
 		float y = std::max(v0.y, v1.y);
 
 		return make(x, y);
 	}
 
-	INLINE Vector2 min(const Vector2& v0, const Vector2& v1) {
+	static INLINE Vector2 min(const Vector2& v0, const Vector2& v1) {
 		float x = std::min(v0.x, v1.x);
 		float y = std::min(v0.y, v1.y);
 
 		return make(x, y);
 	}
 
-	INLINE Vector2 abs(const Vector2& v) {
+	static INLINE Vector2 abs(const Vector2& v) {
 		float x = std::abs(v.x);
 		float y = std::abs(v.y);
 
 		return make(x, y);
 	}
-}
+};
 
 INLINE bool operator>(const Vector2& v0, const Vector2& v1) {
 	return v0.x > v1.x && v0.y > v1.y;

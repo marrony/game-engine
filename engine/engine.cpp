@@ -62,18 +62,29 @@ struct Model {
 	int16_t material[0];
 };
 
-const int MATERIAL_BITS = 20;
 const uint64_t MATERIAL_MASK = 0x00000000000fffffLL;
-const int DEPTH_BITS = 20;
 const uint64_t DEPTH_MASK    = 0x000000fffff00000LL;
-const int COMMAND_BITS = 1;
 const uint64_t COMMAND_MASK  = 0x0000010000000000LL;
+
+inline uint64_t MATERIAL_BITS(uint64_t material) {
+	return material & MATERIAL_MASK;
+}
+
+inline uint64_t DEPTH_BITS(uint64_t depth) {
+	return (depth << 20) & DEPTH_MASK;
+}
+
+inline uint64_t COMMAND_BITS(uint64_t cmd) {
+	return (cmd << 40) & COMMAND_MASK;
+}
 
 struct Render {
 	enum CommandType {
 		ClearColor,
 		ClearDepth,
 		ClearColorAndDepth,
+		DepthFunc,
+		Viewport
 	};
 
 	uint64_t sort_key;
@@ -96,6 +107,15 @@ struct Render {
 				struct {
 					Vector4 clear_color;
 					float clear_depth;
+				};
+
+				struct {
+					int depth_function;
+				};
+
+				struct {
+					float offset_x, offset_y;
+					float scale_width, scale_height;
 				};
 			};
 		};
@@ -217,8 +237,8 @@ class Engine {
 		};
 
 		Matrix4 projectionMatrix = Matrix4::perspectiveMatrix(60, (float)width/(float)height, 0.1, 1000);
-		Matrix4 viewMatrix = Matrix4::lookAtMatrix(vector::make(0, 0, 0), vector::make(0, 0, -1));
-		Matrix4 modelMatrix = Matrix4::transformationMatrix(Quaternion(vector::make(0, 1, 0), ang), cam[models.size() != 1], vector::make(1, 1, 1));
+		Matrix4 viewMatrix = Matrix4::lookAtMatrix(Vector3::make(0, 0, 0), Vector3::make(0, 0, -1));
+		Matrix4 modelMatrix = Matrix4::transformationMatrix(Quaternion(Vector3::make(0, 1, 0), ang), cam[models.size() != 1], Vector3::make(1, 1, 1));
 		Matrix4 modelViewMatrix = viewMatrix * modelMatrix;
 		Matrix3 normalMatrix = modelViewMatrix.upperLeft().inverse().transpose();
 
@@ -254,38 +274,43 @@ class Engine {
 				break;
 
 			case LightPosition:
-				uniform_list[render.uniform_start+j].vec3 = vector::make(0, 0, 0);
+				uniform_list[render.uniform_start+j].vec3 = Vector3::make(0, 0, 0);
 				break;
 			}
 		}
 	}
 
-	void render() {
+	void collect_render_commands() {
+		render_list.clear();
+		uniform_list.clear();
+		attribute_list.clear();
+
 		if(need_resize) {
 			swap_chain.resize(width, height);
-			glViewport(0, 0, width, height);
 			need_resize = false;
-		}
 
-//		glClearColor(1.0, 1.0, 1.0, 1.0);
-//		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			render_list.push_back(Render());
+			render_list.back().sort_key = COMMAND_BITS(1);
+			render_list.back().command_type = Render::Viewport;
+			render_list.back().offset_x = 0;
+			render_list.back().offset_y = 0;
+			render_list.back().scale_width = 1;
+			render_list.back().scale_height = 1;
+		}
 
 		if(!models.empty()) {
 			ang += 0.1;
 
-			glEnable(GL_CULL_FACE);
-			glEnable(GL_DEPTH_TEST);
-			glDepthFunc(GL_LEQUAL);
-
-			render_list.clear();
-			uniform_list.clear();
-			attribute_list.clear();
+			render_list.push_back(Render());
+			render_list.back().sort_key = COMMAND_BITS(1);
+			render_list.back().command_type = Render::ClearColorAndDepth;
+			render_list.back().clear_color = Vector4::make(1.0, 1.0, 1.0, 1.0);
+			render_list.back().clear_depth = 1.0;
 
 			render_list.push_back(Render());
-			render_list.back().sort_key = COMMAND_MASK;
-			render_list.back().command_type = Render::ClearColorAndDepth;
-			render_list.back().clear_color = vector::make(1.0, 1.0, 1.0, 1.0);
-			render_list.back().clear_depth = 1.0;
+			render_list.back().sort_key = COMMAND_BITS(1);
+			render_list.back().command_type = Render::DepthFunc;
+			render_list.back().depth_function = GL_LEQUAL;
 
 			for(size_t j = 0; j < models.size(); j++) {
 				const Model* model = models[j];
@@ -305,69 +330,78 @@ class Engine {
 					collect_uniforms(render);
 				}
 			}
+		}
 
-			//std::sort(render_list.begin(), render_list.end(), RenderListSort());
+		//std::sort(render_list.begin(), render_list.end(), RenderListSort());
+	}
 
-			//render
+	void render() {
+		glEnable(GL_CULL_FACE);
+		glEnable(GL_DEPTH_TEST);
 
-			for(int i = 0; i < render_list.size(); i++) {
-				Render& r = render_list[i];
+		for(size_t i = 0; i < render_list.size(); i++) {
+			Render& r = render_list[i];
 
-				if((r.sort_key & COMMAND_MASK) != 0) {
-					switch(r.command_type) {
-					case Render::ClearColor:
-						glClearColor(r.clear_color.r, r.clear_color.g, r.clear_color.b, r.clear_color.a);
-						glClear(GL_COLOR_BUFFER_BIT);
-						break;
-					case Render::ClearDepth:
-						glClearDepth(r.clear_depth);
-						glClear(GL_DEPTH_BUFFER_BIT);
-						break;
-					case Render::ClearColorAndDepth:
-						glClearColor(r.clear_color.r, r.clear_color.g, r.clear_color.b, r.clear_color.a);
-						glClearDepth(r.clear_depth);
-						glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-						break;
-					}
-				} else {
-					shader_system.bind_shader(r.shader);
-
-					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, r.index_buffer);
-					glBindBuffer(GL_ARRAY_BUFFER, r.vertex_buffer);
-
-					for(int j = r.uniform_start; j < r.uniform_end; j++) {
-						Uniform& u = uniform_list[j];
-
-						switch(u.type) {
-						case GL_FLOAT:
-							break;
-						case GL_FLOAT_VEC2:
-							break;
-						case GL_FLOAT_VEC3:
-							glUniform3fv(u.index, 1, u.vec3.vector);
-							break;
-						case GL_FLOAT_VEC4:
-							break;
-						case GL_FLOAT_MAT2:
-							break;
-						case GL_FLOAT_MAT3:
-							glUniformMatrix3fv(u.index, 1, GL_FALSE, u.mat3.matrix);
-							break;
-						case GL_FLOAT_MAT4:
-							glUniformMatrix4fv(u.index, 1, GL_FALSE, u.mat4.matrix);
-							break;
-						}
-					}
-
-					for(int j = r.attribute_start; j < r.attribute_end; j++) {
-						const Attribute& attribute = attribute_list[j];
-
-						glEnableVertexAttribArray(attribute.index);
-						glVertexAttribPointer(attribute.index, attribute.size, GL_FLOAT, GL_FALSE, attribute.stride, (char*)0 + attribute.pointer);
-					}
-
-					glDrawRangeElements(GL_TRIANGLES, r.batch.start, r.batch.end, r.batch.count, GL_UNSIGNED_SHORT, (uint16_t*)0 + r.batch.offset);
+			if((r.sort_key & COMMAND_MASK) != 0) {
+				switch(r.command_type) {
+				case Render::ClearColor:
+					glClearColor(r.clear_color.r, r.clear_color.g, r.clear_color.b, r.clear_color.a);
+					glClear(GL_COLOR_BUFFER_BIT);
+					break;
+				case Render::ClearDepth:
+					glClearDepth(r.clear_depth);
+					glClear(GL_DEPTH_BUFFER_BIT);
+					break;
+				case Render::ClearColorAndDepth:
+					glClearColor(r.clear_color.r, r.clear_color.g, r.clear_color.b, r.clear_color.a);
+					glClearDepth(r.clear_depth);
+					glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+					break;
+				case Render::DepthFunc:
+					glDepthFunc(r.depth_function);
+					break;
+				case Render::Viewport:
+					glViewport(width*r.offset_x, height*r.offset_y, width*r.scale_width, height*r.scale_height);
+					break;
 				}
+			} else {
+				shader_system.bind_shader(r.shader);
+
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, r.index_buffer);
+				glBindBuffer(GL_ARRAY_BUFFER, r.vertex_buffer);
+
+				for(int j = r.uniform_start; j < r.uniform_end; j++) {
+					Uniform& u = uniform_list[j];
+
+					switch(u.type) {
+					case GL_FLOAT:
+						break;
+					case GL_FLOAT_VEC2:
+						break;
+					case GL_FLOAT_VEC3:
+						glUniform3fv(u.index, 1, u.vec3.vector);
+						break;
+					case GL_FLOAT_VEC4:
+						break;
+					case GL_FLOAT_MAT2:
+						break;
+					case GL_FLOAT_MAT3:
+						glUniformMatrix3fv(u.index, 1, GL_FALSE, u.mat3.matrix);
+						break;
+					case GL_FLOAT_MAT4:
+						glUniformMatrix4fv(u.index, 1, GL_FALSE, u.mat4.matrix);
+						break;
+					}
+				}
+
+				for(int j = r.attribute_start; j < r.attribute_end; j++) {
+					const Attribute& attribute = attribute_list[j];
+
+					glEnableVertexAttribArray(attribute.index);
+					glVertexAttribPointer(attribute.index, attribute.size, GL_FLOAT, GL_FALSE, attribute.stride, (char*)0 + attribute.pointer);
+				}
+
+				glDrawRangeElements(GL_TRIANGLES, r.batch.start, r.batch.end, r.batch.count, GL_UNSIGNED_SHORT, (uint16_t*)0 + r.batch.offset);
 			}
 
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -390,6 +424,8 @@ class Engine {
 		swap_chain.process_events();
 
 		scene_graph.update();
+
+		collect_render_commands();
 
 		if(client.has_data()) {
 			Json json;
@@ -440,7 +476,7 @@ public:
 	Engine() : task_manager(32) {
 		ang = 0;
 		running = false;
-		need_resize = false;
+		need_resize = true;
 		shader = -1;
 
 		width = 0;

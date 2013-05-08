@@ -99,7 +99,7 @@ struct Matrix4 {
 	 * m30, m31, m32, m33
 	 */
 	INLINE Vector4 row(int index) const {
-		return vector::make(at(index, 0), at(index, 1), at(index, 2), at(index, 3));
+		return Vector4::make(at(index, 0), at(index, 1), at(index, 2), at(index, 3));
 	}
 
 	INLINE void row(int index, const Vector4& r) {
@@ -110,7 +110,7 @@ struct Matrix4 {
 	}
 
 	INLINE Vector4 column(int index) const {
-		return vector::make(at(0, index), at(1, index), at(2, index), at(3, index));
+		return Vector4::make(at(0, index), at(1, index), at(2, index), at(3, index));
 	}
 
 	INLINE void column(int index, const Vector4& c) {
@@ -279,7 +279,7 @@ struct Matrix4 {
 	 * m20, m21, m22, m23
 	 * m30, m31, m32, m33
 	 */
-	static INLINE Matrix4 transformationMatrix(const Quaternion& orientation, const Vector3& translation, const Vector3& scale = vector::make(1, 1, 1)) {
+	static INLINE Matrix4 transformationMatrix(const Quaternion& orientation, const Vector3& translation, const Vector3& scale = Vector3::make(1, 1, 1)) {
 		Matrix4 mat = rotationMatrix(orientation);
 
 		mat.m00 *= scale.x;  mat.m01 *= scale.x;  mat.m02 *= scale.x;  mat.m03 = translation.x;
@@ -361,32 +361,32 @@ struct Matrix4 {
 	}
 
 	static INLINE Matrix4 lookAtMatrix(const Vector3& eye, const Vector3& direction) {
-		Matrix4 matrix;
+		Vector3 x_dir, y_dir, z_dir;
 
-		Vector3 s, u, f;
-		Vector3 up = {0, 1, 0};
-
-		f = direction.normalize();
-		if(1.0 - std::abs(f.y) <= 0.005) {
-			s.x = 1.0;
-			s.y = 0.0;
-			s.z = 0.0;
+		z_dir = direction.normalize();
+		if(1.0 - std::abs(z_dir.y) <= 0.005) {
+			x_dir.x = 1.0;
+			x_dir.y = 0.0;
+			x_dir.z = 0.0;
 		} else {
-			s = vector::cross(f, up);
+			Vector3 up_dir = {0, 1, 0};
+			x_dir = Vector3::cross(z_dir, up_dir);
 		}
 
-		u = vector::cross(s, f);
+		y_dir = Vector3::cross(x_dir, z_dir);
 
-		f = -f;
+		z_dir = -z_dir;
+		Vector3 neg_eye = -eye;
 
-		float x = vector::dot(s, -eye);
-		float y = vector::dot(u, -eye);
-		float z = vector::dot(f, -eye);
+		float trans_x = Vector3::dot(x_dir, neg_eye);
+		float trans_y = Vector3::dot(y_dir, neg_eye);
+		float trans_z = Vector3::dot(z_dir, neg_eye);
 
-		matrix.m00 = s.x;  matrix.m01 = s.y;  matrix.m02 = s.z;  matrix.m03 = x;
-		matrix.m10 = u.x;  matrix.m11 = u.y;  matrix.m12 = u.z;  matrix.m13 = y;
-		matrix.m20 = f.x;  matrix.m21 = f.y;  matrix.m22 = f.z;  matrix.m23 = z;
-		matrix.m30 = 0;    matrix.m31 = 0;    matrix.m32 = 0;    matrix.m33 = 1;
+		Matrix4 matrix;
+		matrix.m00 = x_dir.x;  matrix.m01 = x_dir.y;  matrix.m02 = x_dir.z;  matrix.m03 = trans_x;
+		matrix.m10 = y_dir.x;  matrix.m11 = y_dir.y;  matrix.m12 = y_dir.z;  matrix.m13 = trans_y;
+		matrix.m20 = z_dir.x;  matrix.m21 = z_dir.y;  matrix.m22 = z_dir.z;  matrix.m23 = trans_z;
+		matrix.m30 = 0;        matrix.m31 = 0;        matrix.m32 = 0;        matrix.m33 = 1;
 
 		return matrix;
 	}
@@ -484,11 +484,11 @@ INLINE Vector4 operator*(const Matrix4& m, const Vector4& v) {
 }
 
 INLINE Vector3 operator|(const Matrix4& m, const Vector3& v) {
-	Vector4 result = m * vector::make(v.x, v.y, v.z, 1);
+	Vector4 result = m * Vector4::make(v.x, v.y, v.z, 1);
 
 	float inv = 1.0 / result.w;
 
-	return vector::make(result.x * inv, result.y * inv, result.z * inv);
+	return Vector3::make(result.x * inv, result.y * inv, result.z * inv);
 }
 
 #endif /* MATRIX4_H_ */
