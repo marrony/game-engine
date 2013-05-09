@@ -79,12 +79,23 @@ inline uint64_t COMMAND_BITS(uint64_t cmd) {
 }
 
 struct Render {
+	enum BoolType {
+		Ignore,
+		Enabled,
+		Disabled
+	};
+
 	enum CommandType {
 		ClearColor,
 		ClearDepth,
 		ClearColorAndDepth,
-		DepthFunc,
-		Viewport
+		Depth,
+		Viewport,
+		Cull,
+		//Alpha
+		//Blend
+		//Stencil
+		//Scissor
 	};
 
 	uint64_t sort_key;
@@ -110,6 +121,13 @@ struct Render {
 				};
 
 				struct {
+					int cull_face;
+					int face_mode;
+					int front_face;
+				};
+
+				struct {
+					int depth_test;
 					int depth_function;
 				};
 
@@ -309,8 +327,16 @@ class Engine {
 
 			render_list.push_back(Render());
 			render_list.back().sort_key = COMMAND_BITS(1);
-			render_list.back().command_type = Render::DepthFunc;
+			render_list.back().command_type = Render::Depth;
+			render_list.back().depth_test = Render::Enabled;
 			render_list.back().depth_function = GL_LEQUAL;
+
+			render_list.push_back(Render());
+			render_list.back().sort_key = COMMAND_BITS(1);
+			render_list.back().command_type = Render::Cull;
+			render_list.back().cull_face = Render::Enabled;
+			render_list.back().face_mode = GL_BACK;
+			render_list.back().front_face = GL_CCW;
 
 			for(size_t j = 0; j < models.size(); j++) {
 				const Model* model = models[j];
@@ -336,9 +362,6 @@ class Engine {
 	}
 
 	void render() {
-		glEnable(GL_CULL_FACE);
-		glEnable(GL_DEPTH_TEST);
-
 		for(size_t i = 0; i < render_list.size(); i++) {
 			Render& r = render_list[i];
 
@@ -357,11 +380,25 @@ class Engine {
 					glClearDepth(r.clear_depth);
 					glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 					break;
-				case Render::DepthFunc:
+				case Render::Depth:
+					if(r.depth_test == Render::Enabled)
+						glEnable(GL_DEPTH_TEST);
+					else if(r.depth_test == Render::Disabled)
+						glDisable(GL_DEPTH_TEST);
+
 					glDepthFunc(r.depth_function);
 					break;
 				case Render::Viewport:
 					glViewport(width*r.offset_x, height*r.offset_y, width*r.scale_width, height*r.scale_height);
+					break;
+				case Render::Cull:
+					if(r.cull_face == Render::Enabled)
+						glEnable(GL_CULL_FACE);
+					else if(r.cull_face == Render::Disabled)
+						glDisable(GL_CULL_FACE);
+
+					glCullFace(r.face_mode);
+					glFrontFace(r.front_face);
 					break;
 				}
 			} else {
