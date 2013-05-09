@@ -50,10 +50,26 @@ struct Uniform {
 	};
 };
 
-struct Material {
+struct Pass {
 	int32_t shader;
 	int8_t texture_count;
 	int16_t textures[16];
+
+	struct {
+		int cull_face;
+		int face_mode;
+		int front_face;
+	};
+
+	struct {
+		int depth_test;
+		int depth_function;
+	};
+};
+
+struct Material {
+	int8_t pass_count;
+	Pass passes[0];
 };
 
 struct Model {
@@ -62,12 +78,18 @@ struct Model {
 	int16_t material[0];
 };
 
-const uint64_t MATERIAL_MASK = 0x00000000000fffffLL;
+const uint64_t PASS_MASK     = 0x000000000000000fLL;
+const uint64_t MATERIAL_MASK = 0x00000000000ffff0LL;
 const uint64_t DEPTH_MASK    = 0x000000fffff00000LL;
 const uint64_t COMMAND_MASK  = 0x0000010000000000LL;
+const uint64_t SEQUENCE_MASK = 0x000000ffffffffffLL;
+
+inline uint64_t PASS_BITS(uint64_t pass) {
+	return pass & PASS_MASK;
+}
 
 inline uint64_t MATERIAL_BITS(uint64_t material) {
-	return material & MATERIAL_MASK;
+	return (material << 4) & MATERIAL_MASK;
 }
 
 inline uint64_t DEPTH_BITS(uint64_t depth) {
@@ -76,6 +98,10 @@ inline uint64_t DEPTH_BITS(uint64_t depth) {
 
 inline uint64_t COMMAND_BITS(uint64_t cmd) {
 	return (cmd << 40) & COMMAND_MASK;
+}
+
+inline uint64_t SEQUENCE_BITS(uint64_t sequence) {
+	return sequence & SEQUENCE_MASK;
 }
 
 struct Render {
@@ -89,9 +115,7 @@ struct Render {
 		ClearColor,
 		ClearDepth,
 		ClearColorAndDepth,
-		Depth,
 		Viewport,
-		Cull,
 		//Alpha
 		//Blend
 		//Stencil
@@ -105,7 +129,8 @@ struct Render {
 			Batch batch;
 			uint32_t index_buffer;
 			uint32_t vertex_buffer;
-			int32_t shader;
+			int32_t material_id;
+			int32_t pass_id;
 			int16_t attribute_start;
 			int16_t attribute_end;
 			int16_t uniform_start;
@@ -118,17 +143,6 @@ struct Render {
 				struct {
 					Vector4 clear_color;
 					float clear_depth;
-				};
-
-				struct {
-					int cull_face;
-					int face_mode;
-					int front_face;
-				};
-
-				struct {
-					int depth_test;
-					int depth_function;
 				};
 
 				struct {
@@ -167,7 +181,7 @@ class Engine {
 	bool running;
 	bool need_resize;
 
-	std::vector<Material> materials;
+	std::vector<Material*> materials;
 	std::vector<MeshLoaded*> meshes_loaded;
 	std::vector<Model*> models;
 
@@ -214,14 +228,8 @@ class Engine {
 		model->material_count = mesh_loaded->batch_count;
 		model->mesh = meshes_loaded.size();
 
-		size_t offset = materials.size();
 		for(int8_t i = 0; i < mesh_loaded->batch_count; i++) {
-			model->material[i] = offset+i;
-		}
-
-		for(int16_t i = 0; i < mesh->batch_count; i++) {
-			Material material = {shader};
-			materials.push_back(material);
+			model->material[i] = 0;
 		}
 
 		meshes_loaded.push_back(mesh_loaded);
@@ -231,7 +239,8 @@ class Engine {
 	}
 
 	void collect_attributes(Render& render, const MeshLoaded* mesh_loaded) {
-		std::vector<Location> locations = shader_system.get_attributes(render.shader);
+		const Material* material = materials[render.material_id];
+		const std::vector<Location> locations = shader_system.get_attributes(material->passes[render.pass_id].shader);
 
 		render.attribute_start = attribute_list.size();
 		render.attribute_end = render.attribute_start + locations.size();
@@ -260,7 +269,8 @@ class Engine {
 		Matrix4 modelViewMatrix = viewMatrix * modelMatrix;
 		Matrix3 normalMatrix = modelViewMatrix.upperLeft().inverse().transpose();
 
-		std::vector<Location> uniforms = shader_system.get_uniforms(render.shader);
+		const Material* material = materials[render.material_id];
+		const std::vector<Location> uniforms = shader_system.get_uniforms(material->passes[render.pass_id].shader);
 
 		render.uniform_start = uniform_list.size();
 		render.uniform_end = render.uniform_start + uniforms.size();
@@ -303,12 +313,14 @@ class Engine {
 		uniform_list.clear();
 		attribute_list.clear();
 
+		int sequence = 0;
+
 		if(need_resize) {
 			swap_chain.resize(width, height);
 			need_resize = false;
 
 			render_list.push_back(Render());
-			render_list.back().sort_key = COMMAND_BITS(1);
+			render_list.back().sort_key = COMMAND_BITS(1) | SEQUENCE_BITS(sequence++);
 			render_list.back().command_type = Render::Viewport;
 			render_list.back().offset_x = 0;
 			render_list.back().offset_y = 0;
@@ -316,44 +328,37 @@ class Engine {
 			render_list.back().scale_height = 1;
 		}
 
+		render_list.push_back(Render());
+		render_list.back().sort_key = COMMAND_BITS(1) | SEQUENCE_BITS(sequence++);
+		render_list.back().command_type = Render::ClearColorAndDepth;
+		render_list.back().clear_color = Vector4::make(1.0, 1.0, 1.0, 1.0);
+		render_list.back().clear_depth = 1.0;
+
 		if(!models.empty()) {
 			ang += 0.1;
-
-			render_list.push_back(Render());
-			render_list.back().sort_key = COMMAND_BITS(1);
-			render_list.back().command_type = Render::ClearColorAndDepth;
-			render_list.back().clear_color = Vector4::make(1.0, 1.0, 1.0, 1.0);
-			render_list.back().clear_depth = 1.0;
-
-			render_list.push_back(Render());
-			render_list.back().sort_key = COMMAND_BITS(1);
-			render_list.back().command_type = Render::Depth;
-			render_list.back().depth_test = Render::Enabled;
-			render_list.back().depth_function = GL_LEQUAL;
-
-			render_list.push_back(Render());
-			render_list.back().sort_key = COMMAND_BITS(1);
-			render_list.back().command_type = Render::Cull;
-			render_list.back().cull_face = Render::Enabled;
-			render_list.back().face_mode = GL_BACK;
-			render_list.back().front_face = GL_CCW;
 
 			for(size_t j = 0; j < models.size(); j++) {
 				const Model* model = models[j];
 				const MeshLoaded* mesh_loaded = meshes_loaded[model->mesh];
 
 				for(int i = 0; i < mesh_loaded->batch_count; i++) {
-					render_list.push_back(Render());
+					const int16_t material_id = model->material[i];
+					const Material* material = materials[material_id];
 
-					Render& render = render_list.back();
+					for(int pass_id = 0; pass_id < material->pass_count; pass_id++) {
+						render_list.push_back(Render());
 
-					render.sort_key = 0LL;
-					render.index_buffer = mesh_loaded->index_buffer;
-					render.vertex_buffer = mesh_loaded->vertex_buffer;
-					render.batch = mesh_loaded->batches[i];
-					render.shader = materials[model->material[i]].shader;
-					collect_attributes(render, mesh_loaded);
-					collect_uniforms(render);
+						Render& render = render_list.back();
+
+						render.sort_key = MATERIAL_BITS(material_id) | PASS_BITS(pass_id);
+						render.index_buffer = mesh_loaded->index_buffer;
+						render.vertex_buffer = mesh_loaded->vertex_buffer;
+						render.batch = mesh_loaded->batches[i];
+						render.material_id = material_id;
+						render.pass_id = pass_id;
+						collect_attributes(render, mesh_loaded);
+						collect_uniforms(render);
+					}
 				}
 			}
 		}
@@ -380,29 +385,29 @@ class Engine {
 					glClearDepth(r.clear_depth);
 					glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 					break;
-				case Render::Depth:
-					if(r.depth_test == Render::Enabled)
-						glEnable(GL_DEPTH_TEST);
-					else if(r.depth_test == Render::Disabled)
-						glDisable(GL_DEPTH_TEST);
-
-					glDepthFunc(r.depth_function);
-					break;
 				case Render::Viewport:
 					glViewport(width*r.offset_x, height*r.offset_y, width*r.scale_width, height*r.scale_height);
 					break;
-				case Render::Cull:
-					if(r.cull_face == Render::Enabled)
-						glEnable(GL_CULL_FACE);
-					else if(r.cull_face == Render::Disabled)
-						glDisable(GL_CULL_FACE);
-
-					glCullFace(r.face_mode);
-					glFrontFace(r.front_face);
-					break;
 				}
 			} else {
-				shader_system.bind_shader(r.shader);
+				const Material* material = materials[r.material_id];
+				const Pass* pass = material->passes+r.pass_id;
+				shader_system.bind_shader(pass->shader);
+
+				if(pass->cull_face == Render::Enabled)
+					glEnable(GL_CULL_FACE);
+				else if(pass->cull_face == Render::Disabled)
+					glDisable(GL_CULL_FACE);
+
+				glCullFace(pass->face_mode);
+				glFrontFace(pass->front_face);
+
+				if(pass->depth_test == Render::Enabled)
+					glEnable(GL_DEPTH_TEST);
+				else if(pass->depth_test == Render::Disabled)
+					glDisable(GL_DEPTH_TEST);
+
+				glDepthFunc(pass->depth_function);
 
 				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, r.index_buffer);
 				glBindBuffer(GL_ARRAY_BUFFER, r.vertex_buffer);
@@ -585,6 +590,25 @@ public:
 #undef STRINGFY
 
 		shader = shader_system.create_shader("teste", 2, sources);
+
+		Material* material = (Material*)malloc(sizeof(Material) + sizeof(Pass)*2);
+		material->pass_count = 2;
+
+		material->passes[0].shader = shader;
+		material->passes[0].cull_face = Render::Enabled;
+		material->passes[0].face_mode = GL_BACK;
+		material->passes[0].front_face = GL_CCW;
+		material->passes[0].depth_test = Render::Enabled;
+		material->passes[0].depth_function = GL_LEQUAL;
+
+		material->passes[1].shader = shader;
+		material->passes[1].cull_face = Render::Enabled;
+		material->passes[1].face_mode = GL_BACK;
+		material->passes[1].front_face = GL_CCW;
+		material->passes[1].depth_test = Render::Enabled;
+		material->passes[1].depth_function = GL_LEQUAL;
+
+		materials.push_back(material);
 	}
 
 	void run() {
