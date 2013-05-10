@@ -65,6 +65,12 @@ struct Pass {
 		int depth_test;
 		int depth_function;
 	};
+
+	struct {
+		int blend;
+		int blend_src;
+		int blend_dst;
+	};
 };
 
 struct Material {
@@ -409,6 +415,13 @@ class Engine {
 
 				glDepthFunc(pass->depth_function);
 
+				if(pass->blend == Render::Enabled)
+					glEnable(GL_BLEND);
+				else if(pass->blend == Render::Disabled)
+					glDisable(GL_BLEND);
+
+				glBlendFunc(pass->blend_src, pass->blend_dst);
+
 				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, r.index_buffer);
 				glBindBuffer(GL_ARRAY_BUFFER, r.vertex_buffer);
 
@@ -583,7 +596,8 @@ public:
 				vec3 light_dir = normalize(lightPosition - V.xyz);
 				vec3 normal = normalize(N);
 
-				gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0) * clamp(dot(normal, light_dir), 0, 1);
+				float shade = clamp(dot(normal, light_dir), 0, 1);
+				gl_FragColor = vec4(0.0, 1.0, 0.0, 0.5) * vec4(vec3(shade), 1);
 			}
 		);
 
@@ -600,6 +614,9 @@ public:
 		material->passes[0].front_face = GL_CCW;
 		material->passes[0].depth_test = Render::Enabled;
 		material->passes[0].depth_function = GL_LEQUAL;
+		material->passes[0].blend = Render::Enabled;
+		material->passes[0].blend_src = GL_SRC_ALPHA;
+		material->passes[0].blend_dst = GL_ONE;
 
 		material->passes[1].shader = shader;
 		material->passes[1].cull_face = Render::Enabled;
@@ -607,6 +624,9 @@ public:
 		material->passes[1].front_face = GL_CCW;
 		material->passes[1].depth_test = Render::Enabled;
 		material->passes[1].depth_function = GL_LEQUAL;
+		material->passes[1].blend = Render::Disabled;
+		material->passes[1].blend_src = GL_SRC_ALPHA;
+		material->passes[1].blend_dst = GL_ONE;
 
 		materials.push_back(material);
 	}
