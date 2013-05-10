@@ -56,20 +56,37 @@ struct Pass {
 	int16_t textures[16];
 
 	struct {
-		int cull_face;
-		int face_mode;
-		int front_face;
+		int8_t cull_face;
+		int16_t face_mode;
+		int16_t front_face;
 	};
 
 	struct {
-		int depth_test;
-		int depth_function;
+		int8_t depth_test;
+		int16_t depth_function;
 	};
 
 	struct {
-		int blend;
-		int blend_src;
-		int blend_dst;
+		int8_t blend;
+		int16_t blend_src;
+		int16_t blend_dst;
+		int16_t blend_equation;
+	};
+
+	struct {
+		int8_t scissor;
+		float scissor_offset_x, scissor_offset_y;
+		float scissor_width, scissor_height;
+	};
+
+	struct {
+		int8_t stencil;
+		int16_t stencil_function;
+		int32_t stencil_ref;
+		uint32_t stencil_mask;
+		int16_t stencil_fail;
+		int16_t stencil_depth_fail;
+		int16_t stencil_depth_pass;
 	};
 };
 
@@ -84,10 +101,16 @@ struct Model {
 	int16_t material[0];
 };
 
+enum CommandType {
+	PreDraw  = 0,
+	Draw     = 1,
+	PostDraw = 2,
+};
+
 const uint64_t PASS_MASK     = 0x000000000000000fLL;
 const uint64_t MATERIAL_MASK = 0x00000000000ffff0LL;
 const uint64_t DEPTH_MASK    = 0x000000fffff00000LL;
-const uint64_t COMMAND_MASK  = 0x0000010000000000LL;
+const uint64_t COMMAND_MASK  = 0x0000030000000000LL;
 const uint64_t SEQUENCE_MASK = 0x000000ffffffffffLL;
 
 inline uint64_t PASS_BITS(uint64_t pass) {
@@ -100,6 +123,10 @@ inline uint64_t MATERIAL_BITS(uint64_t material) {
 
 inline uint64_t DEPTH_BITS(uint64_t depth) {
 	return (depth << 20) & DEPTH_MASK;
+}
+
+inline bool IS_COMMAND(uint64_t key, uint64_t command_type) {
+	return (key & COMMAND_MASK) == (command_type << 40);
 }
 
 inline uint64_t COMMAND_BITS(uint64_t cmd) {
@@ -122,10 +149,6 @@ struct Render {
 		ClearDepth,
 		ClearColorAndDepth,
 		Viewport,
-		//Alpha
-		//Blend
-		//Stencil
-		//Scissor
 	};
 
 	uint64_t sort_key;
@@ -255,11 +278,12 @@ class Engine {
 		for(int i = 0; i < locations.size(); i++) {
 			const Location& location = locations[i];
 			Mesh::Attributes semantic = (Mesh::Attributes)location.semantic;
+			Attribute& attribute = attribute_list[render.attribute_start+i];
 
-			attribute_list[render.attribute_start+i].index = location.index;
-			attribute_list[render.attribute_start+i].pointer = mesh_loaded->offsets[semantic];
-			attribute_list[render.attribute_start+i].size = Mesh::get_size(semantic);
-			attribute_list[render.attribute_start+i].stride = 0;
+			attribute.index = location.index;
+			attribute.pointer = mesh_loaded->offsets[semantic];
+			attribute.size = Mesh::get_size(semantic);
+			attribute.stride = 0;
 		}
 	}
 
@@ -283,16 +307,18 @@ class Engine {
 
 		uniform_list.resize(render.uniform_end);
 		for(int j = 0; j < uniforms.size(); j++) {
-			uniform_list[render.uniform_start+j].index = uniforms[j].index;
-			uniform_list[render.uniform_start+j].type = uniforms[j].type;
+			Uniform& uniform = uniform_list[render.uniform_start+j];
+
+			uniform.index = uniforms[j].index;
+			uniform.type = uniforms[j].type;
 
 			switch(uniforms[j].semantic) {
 			case ProjectionMatrix:
-				uniform_list[render.uniform_start+j].mat4 = projectionMatrix;
+				uniform.mat4 = projectionMatrix;
 				break;
 
 			case ViewMatrix:
-				uniform_list[render.uniform_start+j].mat4 = viewMatrix;
+				uniform.mat4 = viewMatrix;
 				break;
 
 			case ModelMatrix:
@@ -300,15 +326,15 @@ class Engine {
 				break;
 
 			case ModelViewMatrix:
-				uniform_list[render.uniform_start+j].mat4 = modelViewMatrix;
+				uniform.mat4 = modelViewMatrix;
 				break;
 
 			case NormalMatrix:
-				uniform_list[render.uniform_start+j].mat3 = normalMatrix;
+				uniform.mat3 = normalMatrix;
 				break;
 
 			case LightPosition:
-				uniform_list[render.uniform_start+j].vec3 = Vector3::make(0, 0, 0);
+				uniform.vec3 = Vector3::make(0, 0, 0);
 				break;
 			}
 		}
@@ -326,7 +352,7 @@ class Engine {
 			need_resize = false;
 
 			render_list.push_back(Render());
-			render_list.back().sort_key = COMMAND_BITS(1) | SEQUENCE_BITS(sequence++);
+			render_list.back().sort_key = COMMAND_BITS(PreDraw) | SEQUENCE_BITS(sequence++);
 			render_list.back().command_type = Render::Viewport;
 			render_list.back().offset_x = 0;
 			render_list.back().offset_y = 0;
@@ -335,7 +361,7 @@ class Engine {
 		}
 
 		render_list.push_back(Render());
-		render_list.back().sort_key = COMMAND_BITS(1) | SEQUENCE_BITS(sequence++);
+		render_list.back().sort_key = COMMAND_BITS(PreDraw) | SEQUENCE_BITS(sequence++);
 		render_list.back().command_type = Render::ClearColorAndDepth;
 		render_list.back().clear_color = Vector4::make(1.0, 1.0, 1.0, 1.0);
 		render_list.back().clear_depth = 1.0;
@@ -356,7 +382,7 @@ class Engine {
 
 						Render& render = render_list.back();
 
-						render.sort_key = MATERIAL_BITS(material_id) | PASS_BITS(pass_id);
+						render.sort_key = COMMAND_BITS(Draw) | MATERIAL_BITS(material_id) | PASS_BITS(pass_id);
 						render.index_buffer = mesh_loaded->index_buffer;
 						render.vertex_buffer = mesh_loaded->vertex_buffer;
 						render.batch = mesh_loaded->batches[i];
@@ -369,14 +395,14 @@ class Engine {
 			}
 		}
 
-		//std::sort(render_list.begin(), render_list.end(), RenderListSort());
+		std::sort(render_list.begin(), render_list.end(), RenderListSort());
 	}
 
 	void render() {
 		for(size_t i = 0; i < render_list.size(); i++) {
 			Render& r = render_list[i];
 
-			if((r.sort_key & COMMAND_MASK) != 0) {
+			if(!IS_COMMAND(r.sort_key, Draw)) {
 				switch(r.command_type) {
 				case Render::ClearColor:
 					glClearColor(r.clear_color.r, r.clear_color.g, r.clear_color.b, r.clear_color.a);
@@ -400,27 +426,35 @@ class Engine {
 				const Pass* pass = material->passes+r.pass_id;
 				shader_system.bind_shader(pass->shader);
 
-				if(pass->cull_face == Render::Enabled)
+				if(pass->cull_face == Render::Enabled) {
 					glEnable(GL_CULL_FACE);
-				else if(pass->cull_face == Render::Disabled)
+
+					glCullFace(pass->face_mode);
+					glFrontFace(pass->front_face);
+				} else if(pass->cull_face == Render::Disabled)
 					glDisable(GL_CULL_FACE);
 
-				glCullFace(pass->face_mode);
-				glFrontFace(pass->front_face);
-
-				if(pass->depth_test == Render::Enabled)
+				if(pass->depth_test == Render::Enabled) {
 					glEnable(GL_DEPTH_TEST);
-				else if(pass->depth_test == Render::Disabled)
+
+					glDepthFunc(pass->depth_function);
+				} else if(pass->depth_test == Render::Disabled)
 					glDisable(GL_DEPTH_TEST);
 
-				glDepthFunc(pass->depth_function);
-
-				if(pass->blend == Render::Enabled)
+				if(pass->blend == Render::Enabled) {
 					glEnable(GL_BLEND);
-				else if(pass->blend == Render::Disabled)
+
+					glBlendFunc(pass->blend_src, pass->blend_dst);
+					glBlendEquation(pass->blend_equation);
+				} else if(pass->blend == Render::Disabled)
 					glDisable(GL_BLEND);
 
-				glBlendFunc(pass->blend_src, pass->blend_dst);
+				if(pass->scissor == Render::Enabled) {
+					glEnable(GL_SCISSOR_TEST);
+
+					glScissor(width*pass->scissor_offset_x, height*pass->scissor_offset_y, width*pass->scissor_width, height*pass->scissor_height);
+				} else if(pass->scissor == Render::Disabled)
+					glDisable(GL_SCISSOR_TEST);
 
 				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, r.index_buffer);
 				glBindBuffer(GL_ARRAY_BUFFER, r.vertex_buffer);
@@ -606,7 +640,7 @@ public:
 		shader = shader_system.create_shader("teste", 2, sources);
 
 		Material* material = (Material*)malloc(sizeof(Material) + sizeof(Pass)*2);
-		material->pass_count = 2;
+		material->pass_count = 1;
 
 		material->passes[0].shader = shader;
 		material->passes[0].cull_face = Render::Enabled;
@@ -616,7 +650,13 @@ public:
 		material->passes[0].depth_function = GL_LEQUAL;
 		material->passes[0].blend = Render::Enabled;
 		material->passes[0].blend_src = GL_SRC_ALPHA;
-		material->passes[0].blend_dst = GL_ONE;
+		material->passes[0].blend_dst = GL_ONE_MINUS_SRC_ALPHA;
+		material->passes[0].blend_equation = GL_FUNC_ADD;
+		material->passes[0].scissor = Render::Enabled;
+		material->passes[0].scissor_offset_x = 0.25f;
+		material->passes[0].scissor_offset_y = 0.25f;
+		material->passes[0].scissor_height = 0.5f;
+		material->passes[0].scissor_width = 0.5f;
 
 		material->passes[1].shader = shader;
 		material->passes[1].cull_face = Render::Enabled;
@@ -627,6 +667,7 @@ public:
 		material->passes[1].blend = Render::Disabled;
 		material->passes[1].blend_src = GL_SRC_ALPHA;
 		material->passes[1].blend_dst = GL_ONE;
+		material->passes[1].blend_equation = GL_FUNC_ADD;
 
 		materials.push_back(material);
 	}
