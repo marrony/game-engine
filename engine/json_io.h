@@ -13,4 +13,6 @@
 Json json_read(FILE* file);
 void json_write(FILE* file, const Json& json);
 
+void json_serialize(char* buffer, size_t size, const Json& json);
+
 #endif /* JSON_IO_H_ */

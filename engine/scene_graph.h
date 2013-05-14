@@ -23,18 +23,14 @@ public:
 		for(int i = 0; i < 10000; i++) {
 			local.push_back(m);
 			world.push_back(m);
-			parent.push_back(i - 1);
+			parent.push_back(i-1);
 		}
 	}
 
 	void update() {
-		for(size_t i = 0; i < local.size(); i++) {
+		for(size_t i = 1; i < local.size(); i++) {
 			int p = parent[i];
-
-			if(p == -1)
-				world[i] = local[i];
-			else
-				world[i] = world[p] * local[i];
+			world[i] = world[p] * local[i];
 		}
 	}
 };

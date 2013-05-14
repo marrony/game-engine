@@ -38,7 +38,7 @@ struct Array {
 struct Value {
 	Type type;
 	union {
-		char* string;
+		int string;
 		int integer;
 		double number;
 		Object object;
@@ -47,23 +47,28 @@ struct Value {
 };
 
 struct Pair {
-	char* name;
+	int name;
 	Value value;
 };
 
 struct Json {
-	Value value;
+	Value root;
+	const char* data;
+	int bytes_allocated;
+	int bytes_used;
 };
 
-Json json_parse(const char* data, int data_lenght);
+Json json_parse(const char* data, int data_lenght, bool clone_data = false);
 void json_free(Json& json);
 
 Value json_clone(const Value& value);
 
-Value* json_get_attribute(const Value& object, const char* attribute);
-void json_set_attribute(Value& object, const char* attribute, const Value& value);
+Value* json_get_attribute(const Json& json, const Value& object, const char* attribute);
+void json_set_attribute(Json& json, Value& object, const char* attribute, const Value& value);
 
-Value* json_get_at(const Value& array, int index);
-void json_set_at(Value& array, int index, const Value& value);
+Value* json_get_at(const Json& json, const Value& array, int index);
+void json_set_at(Json& json, Value& array, int index, const Value& value);
+
+Value json_create_string(Json& json, const char* str);
 
 #endif /* JSON_H_ */

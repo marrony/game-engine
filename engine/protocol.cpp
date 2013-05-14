@@ -83,7 +83,7 @@ bool protocol_recv_message(Socket sock, Json& json) {
 	if(protocol_recv_raw_packet(sock, buffer, sizeof(buffer), nbytes) > 0) {
 		buffer[nbytes] = 0;
 
-		json = json_parse(buffer, nbytes);
+		json = json_parse(buffer, nbytes, true);
 
 		return true;
 	}

@@ -202,7 +202,6 @@ class Engine {
 	TaskManager task_manager;
 	SceneGraph scene_graph;
 	ShaderSystem shader_system;
-	int32_t shader;
 	ServerSocket server;
 	Socket client;
 	SwapChain swap_chain;
@@ -258,7 +257,7 @@ class Engine {
 		model->mesh = meshes_loaded.size();
 
 		for(int8_t i = 0; i < mesh_loaded->batch_count; i++) {
-			model->material[i] = 0;
+			model->material[i] = i % materials.size();
 		}
 
 		meshes_loaded.push_back(mesh_loaded);
@@ -399,6 +398,9 @@ class Engine {
 	}
 
 	void render() {
+		glScissor(0, 0, width, height);
+		glViewport(0, 0, width, height);
+
 		for(size_t i = 0; i < render_list.size(); i++) {
 			Render& r = render_list[i];
 
@@ -522,17 +524,17 @@ class Engine {
 			if(!protocol_recv_message(client, json))
 				running = false;
 			else {
-				Value* type = json_get_attribute(json.value, "type");
+				Value* type = json_get_attribute(json, json.root, "type");
 
 				if(type) {
-					if(!strcmp("finish", type->string)) {
+					if(!strcmp("finish", json.data+type->string)) {
 						running = false;
 
-						fprintf(stderr, "type: %s\n", type->string);
+						fprintf(stderr, "type: %s\n", json.data+type->string);
 						fflush(stderr);
-					} else if(!strcmp("resize", type->string)) {
-						Value* width_value = json_get_attribute(json.value, "width");
-						Value* height_value = json_get_attribute(json.value, "height");
+					} else if(!strcmp("resize", json.data+type->string)) {
+						Value* width_value = json_get_attribute(json, json.root, "width");
+						Value* height_value = json_get_attribute(json, json.root, "height");
 
 						width = width_value->integer;
 						height = height_value->integer;
@@ -542,9 +544,9 @@ class Engine {
 
 						need_resize = true;
 						//swap_chain_resize(swap_chain, width, height);
-					} else if(!strcmp("load-mesh", type->string)) {
-						Value* mesh = json_get_attribute(json.value, "mesh");
-						load_mesh(mesh->string);
+					} else if(!strcmp("load-mesh", json.data+type->string)) {
+						Value* mesh = json_get_attribute(json, json.root, "mesh");
+						load_mesh(json.data+mesh->string);
 					}
 				}
 
@@ -566,7 +568,6 @@ public:
 		ang = 0;
 		running = false;
 		need_resize = true;
-		shader = -1;
 
 		width = 0;
 		height = 0;
@@ -586,9 +587,9 @@ public:
 		Json json;
 		protocol_recv_message(client, json);
 
-		Value* window_value = json_get_attribute(json.value, "window");
-		Value* width_value = json_get_attribute(json.value, "width");
-		Value* height_value = json_get_attribute(json.value, "height");
+		Value* window_value = json_get_attribute(json, json.root, "window");
+		Value* width_value = json_get_attribute(json, json.root, "width");
+		Value* height_value = json_get_attribute(json, json.root, "height");
 
 		width = width_value->integer;
 		height = height_value->integer;
@@ -598,10 +599,11 @@ public:
 
 #define STRINGFY(x) #x
 
-		Source sources[2];
+		Source sources0[2];
+		Source sources1[2];
 
-		sources[0].type = VertexShader;
-		sources[0].source = STRINGFY(
+		sources0[0].type = VertexShader;
+		sources0[0].source = STRINGFY(
 			uniform mat4 modelViewMatrix;
 			uniform mat4 projectionMatrix;
 			uniform mat3 normalMatrix;
@@ -619,8 +621,8 @@ public:
 			}
 		);
 
-		sources[1].type = FragmentShader;
-		sources[1].source = STRINGFY(
+		sources0[1].type = FragmentShader;
+		sources0[1].source = STRINGFY(
 			uniform vec3 lightPosition;
 
 			varying vec3 N;
@@ -635,41 +637,97 @@ public:
 			}
 		);
 
+		sources1[0].type = VertexShader;
+		sources1[0].source = STRINGFY(
+			uniform mat4 modelViewMatrix;
+			uniform mat4 projectionMatrix;
+			uniform mat3 normalMatrix;
+
+			attribute vec4 vPosition;
+			attribute vec3 vNormal;
+
+			varying vec3 N;
+			varying vec4 V;
+
+			void main() {
+				N = normalMatrix * vNormal;
+				V = modelViewMatrix * vPosition;
+				gl_Position = projectionMatrix * modelViewMatrix * vPosition;
+			}
+		);
+
+		sources1[1].type = FragmentShader;
+		sources1[1].source = STRINGFY(
+			uniform vec3 lightPosition;
+
+			varying vec3 N;
+			varying vec4 V;
+
+			void main() {
+				vec3 light_dir = normalize(lightPosition - V.xyz);
+				vec3 normal = normalize(N);
+
+				float shade = clamp(dot(normal, light_dir), 0, 1);
+				gl_FragColor = vec4(0.0, 0.0, 1.0, 0.5) * vec4(vec3(shade), 1);
+			}
+		);
+
 #undef STRINGFY
 
-		shader = shader_system.create_shader("teste", 2, sources);
+		int32_t shader0 = shader_system.create_shader("shader0", 2, sources0);
+		int32_t shader1 = shader_system.create_shader("shader1", 2, sources1);
 
-		Material* material = (Material*)malloc(sizeof(Material) + sizeof(Pass)*2);
-		material->pass_count = 1;
+		Material* material0 = (Material*)malloc(sizeof(Material) + sizeof(Pass)*2);
+		material0->pass_count = 1;
 
-		material->passes[0].shader = shader;
-		material->passes[0].cull_face = Render::Enabled;
-		material->passes[0].face_mode = GL_BACK;
-		material->passes[0].front_face = GL_CCW;
-		material->passes[0].depth_test = Render::Enabled;
-		material->passes[0].depth_function = GL_LEQUAL;
-		material->passes[0].blend = Render::Enabled;
-		material->passes[0].blend_src = GL_SRC_ALPHA;
-		material->passes[0].blend_dst = GL_ONE_MINUS_SRC_ALPHA;
-		material->passes[0].blend_equation = GL_FUNC_ADD;
-		material->passes[0].scissor = Render::Enabled;
-		material->passes[0].scissor_offset_x = 0.25f;
-		material->passes[0].scissor_offset_y = 0.25f;
-		material->passes[0].scissor_height = 0.5f;
-		material->passes[0].scissor_width = 0.5f;
+		material0->passes[0].shader = shader0;
+		material0->passes[0].cull_face = Render::Enabled;
+		material0->passes[0].face_mode = GL_BACK;
+		material0->passes[0].front_face = GL_CCW;
+		material0->passes[0].depth_test = Render::Enabled;
+		material0->passes[0].depth_function = GL_LEQUAL;
+		material0->passes[0].blend = Render::Enabled;
+		material0->passes[0].blend_src = GL_SRC_ALPHA;
+		material0->passes[0].blend_dst = GL_ONE_MINUS_SRC_ALPHA;
+		material0->passes[0].blend_equation = GL_FUNC_ADD;
+		material0->passes[0].scissor = Render::Ignore;
+		material0->passes[0].scissor_offset_x = 0.25f;
+		material0->passes[0].scissor_offset_y = 0.25f;
+		material0->passes[0].scissor_height = 0.5f;
+		material0->passes[0].scissor_width = 0.5f;
 
-		material->passes[1].shader = shader;
-		material->passes[1].cull_face = Render::Enabled;
-		material->passes[1].face_mode = GL_BACK;
-		material->passes[1].front_face = GL_CCW;
-		material->passes[1].depth_test = Render::Enabled;
-		material->passes[1].depth_function = GL_LEQUAL;
-		material->passes[1].blend = Render::Disabled;
-		material->passes[1].blend_src = GL_SRC_ALPHA;
-		material->passes[1].blend_dst = GL_ONE;
-		material->passes[1].blend_equation = GL_FUNC_ADD;
+		material0->passes[1].shader = shader0;
+		material0->passes[1].cull_face = Render::Enabled;
+		material0->passes[1].face_mode = GL_BACK;
+		material0->passes[1].front_face = GL_CCW;
+		material0->passes[1].depth_test = Render::Enabled;
+		material0->passes[1].depth_function = GL_LEQUAL;
+		material0->passes[1].blend = Render::Disabled;
+		material0->passes[1].blend_src = GL_SRC_ALPHA;
+		material0->passes[1].blend_dst = GL_ONE;
+		material0->passes[1].blend_equation = GL_FUNC_ADD;
 
-		materials.push_back(material);
+		materials.push_back(material0);
+
+		Material* material1 = (Material*)malloc(sizeof(Material) + sizeof(Pass)*2);
+		material1->pass_count = 1;
+
+		material1->passes[0].shader = shader1;
+		material1->passes[0].cull_face = Render::Disabled;
+		material1->passes[0].face_mode = GL_BACK;
+		material1->passes[0].front_face = GL_CCW;
+		material1->passes[0].depth_test = Render::Enabled;
+		material1->passes[0].depth_function = GL_LEQUAL;
+		material1->passes[0].blend = Render::Disabled;
+		material1->passes[0].blend_src = GL_SRC_ALPHA;
+		material1->passes[0].blend_dst = GL_ONE_MINUS_SRC_ALPHA;
+		material1->passes[0].blend_equation = GL_FUNC_ADD;
+		material1->passes[0].scissor = Render::Ignore;
+		material1->passes[0].scissor_offset_x = 0.25f;
+		material1->passes[0].scissor_offset_y = 0.25f;
+		material1->passes[0].scissor_height = 0.5f;
+		material1->passes[0].scissor_width = 0.5f;
+		materials.push_back(material1);
 	}
 
 	void run() {
