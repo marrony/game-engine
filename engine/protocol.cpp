@@ -59,11 +59,11 @@ void protocol_send_window_message(Socket sock, intptr_t window, int width, int h
 	json_set_attribute(json, json.root, "window", json_create_int(json, window));
 	json_set_attribute(json, json.root, "width", json_create_int(json, width));
 	json_set_attribute(json, json.root, "height", json_create_int(json, height));
-	json_serialize(json, buffer, MAX_PROTOCOL_PACKET_SIZE);
+	int nbytes = json_serialize(json, buffer, MAX_PROTOCOL_PACKET_SIZE);
 
 	json_free(json);
 
-	protocol_send_raw_packet(sock, buffer, strlen(buffer));
+	protocol_send_raw_packet(sock, buffer, nbytes);
 }
 
 void protocol_send_load_mesh_message(Socket sock, const char* mesh) {
@@ -75,11 +75,11 @@ void protocol_send_load_mesh_message(Socket sock, const char* mesh) {
 	json.root = json_create_object(json);
 	json_set_attribute(json, json.root, "type", json_create_string(json, "load-mesh"));
 	json_set_attribute(json, json.root, "mesh", json_create_string(json, mesh));
-	json_serialize(json, buffer, MAX_PROTOCOL_PACKET_SIZE);
+	int nbytes = json_serialize(json, buffer, MAX_PROTOCOL_PACKET_SIZE);
 
 	json_free(json);
 
-	protocol_send_raw_packet(sock, buffer, strlen(buffer));
+	protocol_send_raw_packet(sock, buffer, nbytes);
 }
 
 void protocol_send_finish_message(Socket sock) {
@@ -90,11 +90,11 @@ void protocol_send_finish_message(Socket sock) {
 
 	json.root = json_create_object(json);
 	json_set_attribute(json, json.root, "type", json_create_string(json, "finish"));
-	json_serialize(json, buffer, MAX_PROTOCOL_PACKET_SIZE);
+	int nbytes = json_serialize(json, buffer, MAX_PROTOCOL_PACKET_SIZE);
 
 	json_free(json);
 
-	protocol_send_raw_packet(sock, buffer, strlen(buffer));
+	protocol_send_raw_packet(sock, buffer, nbytes);
 }
 
 void protocol_send_resize_message(Socket sock, int width, int height) {
@@ -107,11 +107,11 @@ void protocol_send_resize_message(Socket sock, int width, int height) {
 	json_set_attribute(json, json.root, "type", json_create_string(json, "resize"));
 	json_set_attribute(json, json.root, "width", json_create_int(json, width));
 	json_set_attribute(json, json.root, "height", json_create_int(json, height));
-	json_serialize(json, buffer, MAX_PROTOCOL_PACKET_SIZE);
+	int nbytes = json_serialize(json, buffer, MAX_PROTOCOL_PACKET_SIZE);
 
 	json_free(json);
 
-	protocol_send_raw_packet(sock, buffer, strlen(buffer));
+	protocol_send_raw_packet(sock, buffer, nbytes);
 }
 
 bool protocol_recv_message(Socket sock, Json& json) {

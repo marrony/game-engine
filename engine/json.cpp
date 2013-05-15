@@ -605,5 +605,9 @@ int json_serialize(const Json& json, char* buffer, size_t size) {
 
 	json_print(json, printf_buffer, &json.root, 0);
 
-	return printf_buffer.begin - printf_buffer.buffer;
+	int nbytes = printf_buffer.begin - printf_buffer.buffer;
+
+	buffer[nbytes] = 0;
+
+	return nbytes;
 }

@@ -12,7 +12,7 @@
 
 struct Json;
 
-const int MAX_PROTOCOL_PACKET_SIZE = 512;
+const int MAX_PROTOCOL_PACKET_SIZE = 1024;
 
 int protocol_send_raw_packet(Socket socket, const void* packet, size_t size);
 int protocol_recv_raw_packet(Socket socket, void* packet, size_t max_size, size_t& bytes_recv);
