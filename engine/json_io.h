@@ -11,8 +11,8 @@
 #include <stdio.h>
 
 Json json_read(FILE* file);
-void json_write(FILE* file, const Json& json);
+void json_write(const Json& json, FILE* file);
 
-void json_serialize(char* buffer, size_t size, const Json& json);
+int json_serialize(const Json& json, char* buffer, size_t size);
 
 #endif /* JSON_IO_H_ */

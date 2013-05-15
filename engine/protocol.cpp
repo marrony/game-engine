@@ -6,6 +6,7 @@
  */
 #include "protocol.h"
 #include "json.h"
+#include "json_io.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -50,29 +51,66 @@ int protocol_recv_raw_packet(Socket socket, void* packet, size_t max_size, size_
 
 void protocol_send_window_message(Socket sock, intptr_t window, int width, int height) {
 	char buffer[MAX_PROTOCOL_PACKET_SIZE];
+	char data[MAX_PROTOCOL_PACKET_SIZE];
 
-	snprintf(buffer, sizeof(buffer), "{\"window\": %ld, \"width\": %d, \"height\": %d}", window, width, height);
+	Json json = json_initialize(data, MAX_PROTOCOL_PACKET_SIZE);
+
+	json.root = json_create_object(json);
+	json_set_attribute(json, json.root, "window", json_create_int(json, window));
+	json_set_attribute(json, json.root, "width", json_create_int(json, width));
+	json_set_attribute(json, json.root, "height", json_create_int(json, height));
+	json_serialize(json, buffer, MAX_PROTOCOL_PACKET_SIZE);
+
+	json_free(json);
+
 	protocol_send_raw_packet(sock, buffer, strlen(buffer));
 }
 
 void protocol_send_load_mesh_message(Socket sock, const char* mesh) {
 	char buffer[MAX_PROTOCOL_PACKET_SIZE];
+	char data[MAX_PROTOCOL_PACKET_SIZE];
 
-	snprintf(buffer, sizeof(buffer), "{\"type\": \"load-mesh\", \"mesh\": \"%s\"}", mesh);
+	Json json = json_initialize(data, MAX_PROTOCOL_PACKET_SIZE);
+
+	json.root = json_create_object(json);
+	json_set_attribute(json, json.root, "type", json_create_string(json, "load-mesh"));
+	json_set_attribute(json, json.root, "mesh", json_create_string(json, mesh));
+	json_serialize(json, buffer, MAX_PROTOCOL_PACKET_SIZE);
+
+	json_free(json);
+
 	protocol_send_raw_packet(sock, buffer, strlen(buffer));
 }
 
 void protocol_send_finish_message(Socket sock) {
 	char buffer[MAX_PROTOCOL_PACKET_SIZE];
+	char data[MAX_PROTOCOL_PACKET_SIZE];
 
-	snprintf(buffer, sizeof(buffer), "{\"type\": \"finish\"}");
+	Json json = json_initialize(data, MAX_PROTOCOL_PACKET_SIZE);
+
+	json.root = json_create_object(json);
+	json_set_attribute(json, json.root, "type", json_create_string(json, "finish"));
+	json_serialize(json, buffer, MAX_PROTOCOL_PACKET_SIZE);
+
+	json_free(json);
+
 	protocol_send_raw_packet(sock, buffer, strlen(buffer));
 }
 
 void protocol_send_resize_message(Socket sock, int width, int height) {
 	char buffer[MAX_PROTOCOL_PACKET_SIZE];
+	char data[MAX_PROTOCOL_PACKET_SIZE];
 
-	snprintf(buffer, sizeof(buffer), "{\"type\": \"resize\", \"width\": %d, \"height\": %d}", width, height);
+	Json json = json_initialize(data, MAX_PROTOCOL_PACKET_SIZE);
+
+	json.root = json_create_object(json);
+	json_set_attribute(json, json.root, "type", json_create_string(json, "resize"));
+	json_set_attribute(json, json.root, "width", json_create_int(json, width));
+	json_set_attribute(json, json.root, "height", json_create_int(json, height));
+	json_serialize(json, buffer, MAX_PROTOCOL_PACKET_SIZE);
+
+	json_free(json);
+
 	protocol_send_raw_packet(sock, buffer, strlen(buffer));
 }
 

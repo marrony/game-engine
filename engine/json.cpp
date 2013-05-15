@@ -20,17 +20,12 @@ struct Token {
 	int16_t end;
 };
 
-static int append_data(Json& json, const char* data) {
-	size_t len = strlen(data);
+static int json_append_data(Json& json, const char* data) {
+	size_t len = strlen(data) + 1;
 
-	if(json.bytes_used+len >= json.bytes_allocated) {
-		if(json.bytes_allocated == 0) {
-			json.bytes_allocated = ((json.bytes_used+len)*3)/2;
-			char* ptr = (char*)realloc(NULL, json.bytes_allocated);
-			strncpy(ptr, json.data, json.bytes_used);
-			json.data = ptr;
-		} else {
-			json.bytes_allocated = (json.bytes_allocated*3)/2;
+	if(!json.data || json.bytes_allocated > 0) {
+		if(json.bytes_used+len >= json.bytes_allocated) {
+			json.bytes_allocated = (json.bytes_used+len) * 2;
 			json.data = (const char*)realloc((void*)json.data, json.bytes_allocated);
 		}
 	}
@@ -365,6 +360,14 @@ static void free_value(Value& v) {
 	}
 }
 
+Json json_initialize(const char* data, size_t size) {
+	Json json = {{TP_INVALID}, 0};
+
+	json.data = data;
+
+	return json;
+}
+
 void json_free(Json& json) {
 	free_value(json.root);
 
@@ -420,7 +423,7 @@ void json_set_attribute(Json& json, Value& object, const char* attribute, const 
 
 		int index = object.object.size++;
 		object.object.fields = (Pair*)realloc(object.object.fields, sizeof(Pair) * object.object.size);
-		object.object.fields[index].name = append_data(json, attribute);
+		object.object.fields[index].name = json_append_data(json, attribute);
 		object.object.fields[index].value = value;
 	}
 }
@@ -444,11 +447,46 @@ void json_set_at(Json& json, Value& array, int index, const Value& value) {
 }
 
 Value json_create_string(Json& json, const char* str) {
-	int offset = append_data(json, str);
+	int offset = json_append_data(json, str);
 
 	Value value = {TP_STRING, offset};
 
 	return value;
+}
+
+Value json_create_int(Json& json, int value) {
+	Value v = JSON_INT(value);
+	return v;
+}
+
+Value json_create_number(Json& json, double value) {
+	Value v = JSON_NUMBER(value);
+	return v;
+}
+
+Value json_create_array(Json& json) {
+	Value v = JSON_ARRAY;
+	return v;
+}
+
+Value json_create_object(Json& json) {
+	Value v = JSON_OBJECT;
+	return v;
+}
+
+Value json_create_null(Json& json) {
+	Value v = JSON_NULL;
+	return v;
+}
+
+Value json_create_true(Json& json) {
+	Value v = JSON_TRUE;
+	return v;
+}
+
+Value json_create_false(Json& json) {
+	Value v = JSON_FALSE;
+	return v;
 }
 
 #if defined(MSDOS) || defined(OS2) || defined(WIN32) || defined(__CYGWIN__)
@@ -477,11 +515,6 @@ Json json_read(FILE* file) {
 	return json;
 }
 
-//static void json_print_ident(FILE* fp, int ident) {
-//	for(int i = 0; i < ident; i++)
-//		fprintf(fp, "\t");
-//}
-
 #include <stdarg.h>
 
 struct PrintfBuffer {
@@ -503,6 +536,11 @@ struct PrintfBuffer {
 	}
 };
 
+static void json_print_ident(PrintfBuffer& buffer, int ident) {
+	for(int i = 0; i < ident; i++)
+		buffer.snprintf("\t");
+}
+
 static void json_print(const Json& json, PrintfBuffer& buffer, const Value* value, int ident) {
 	switch(value->type) {
 	case TP_STRING:
@@ -515,27 +553,33 @@ static void json_print(const Json& json, PrintfBuffer& buffer, const Value* valu
 		buffer.snprintf("%lf", value->number);
 		break;
 	case TP_OBJECT:
-		buffer.snprintf("{\n");
+		buffer.snprintf("{");
+		//buffer.snprintf("\n");
 		for(int i = 0; i < value->object.size; i++) {
 			//json_print_ident(buffer, ident+1);
 			buffer.snprintf("\"%s\": ", json.data+value->object.fields[i].name);
 			json_print(json, buffer, &value->object.fields[i].value, ident+1);
-			if(i+1 < value->object.size)
-				buffer.snprintf(",\n");
+			if(i+1 < value->object.size) {
+				buffer.snprintf(",");
+				//buffer.snprintf("\n");
+			}
 		}
-		buffer.snprintf("\n");
+		//buffer.snprintf("\n");
 		//json_print_ident(fp, ident);
 		buffer.snprintf("}");
 		break;
 	case TP_ARRAY:
-		buffer.snprintf("[\n");
+		buffer.snprintf("[");
+		//buffer.snprintf("\n");
 		for(int i = 0; i < value->array.size; i++) {
 			//json_print_ident(fp, ident+1);
 			json_print(json, buffer, &value->array.values[i], ident+1);
-			if(i+1 < value->array.size)
-				buffer.snprintf(",\n");
+			if(i+1 < value->array.size) {
+				buffer.snprintf(",");
+				//buffer.snprintf("\n");
+			}
 		}
-		buffer.snprintf("\n");
+		//buffer.snprintf("\n");
 		//json_print_ident(ident);
 		buffer.snprintf("]");
 		break;
@@ -551,13 +595,15 @@ static void json_print(const Json& json, PrintfBuffer& buffer, const Value* valu
 	}
 }
 
-void json_write(FILE* file, const Json& json) {
+void json_write(const Json& json, FILE* file) {
 	//SET_BINARY_MODE(file);
 	//json_print(json, file, &json.root, 0);
 }
 
-void json_serialize(char* buffer, size_t size, const Json& json) {
+int json_serialize(const Json& json, char* buffer, size_t size) {
 	PrintfBuffer printf_buffer = {buffer, buffer, size};
 
 	json_print(json, printf_buffer, &json.root, 0);
+
+	return printf_buffer.begin - printf_buffer.buffer;
 }

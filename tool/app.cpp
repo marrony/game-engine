@@ -15,53 +15,56 @@ Application::Application(const char* title, int width, int height, bool fullscre
 #define STRINGFY(x) #x
 
 void protocol_send_create_material_message(Socket sock) {
-//	char buffer[MAX_PROTOCOL_PACKET_SIZE];
-//	char passes[MAX_PROTOCOL_PACKET_SIZE];
-//
-//	const char* vertex_shader = STRINGFY(
-//		uniform mat4 modelViewMatrix;
-//		uniform mat4 projectionMatrix;
-//		uniform mat3 normalMatrix;
-//
-//		attribute vec4 vPosition;
-//		attribute vec3 vNormal;
-//
-//		varying vec3 N;
-//		varying vec4 V;
-//
-//		void main() {
-//			N = normalMatrix * vNormal;
-//			V = modelViewMatrix * vPosition;
-//			gl_Position = projectionMatrix * modelViewMatrix * vPosition;
-//		}
-//	);
-//
-//	const char* fragment_shader = STRINGFY(
-//		uniform vec3 lightPosition;
-//
-//		varying vec3 N;
-//		varying vec4 V;
-//
-//		void main() {
-//			vec3 light_dir = normalize(lightPosition - V.xyz);
-//			vec3 normal = normalize(N);
-//
-//			float shade = clamp(dot(normal, light_dir), 0, 1);
-//			gl_FragColor = vec4(0.0, 1.0, 0.0, 0.5) * vec4(vec3(shade), 1);
-//		}
-//	);
-//
-//	snprintf(passes, sizeof(passes), "{}");
-//	snprintf(buffer, sizeof(buffer), "{\"type\": \"create-material\", \"fragment-shader\": \"%s\", \"vertex-shader\": \"%s\", \"pass\": [%s]}", fragment_shader, vertex_shader, passes);
-//	protocol_send_raw_packet(sock, buffer, strlen(buffer));
+	char buffer[MAX_PROTOCOL_PACKET_SIZE];
+	char data[MAX_PROTOCOL_PACKET_SIZE];
 
-	Json json = {{TP_ARRAY}, 0};
+	const char* vertex_shader = STRINGFY(
+		uniform mat4 modelViewMatrix;
+		uniform mat4 projectionMatrix;
+		uniform mat3 normalMatrix;
 
-	Value value = {TP_INT, 123};
-	json_set_at(json, json.root, 0, value);
+		attribute vec4 vPosition;
+		attribute vec3 vNormal;
 
-	char buffer[512];
-	json_serialize(buffer, 512, json);
+		varying vec3 N;
+		varying vec4 V;
+
+		void main() {
+			N = normalMatrix * vNormal;
+			V = modelViewMatrix * vPosition;
+			gl_Position = projectionMatrix * modelViewMatrix * vPosition;
+		}
+	);
+
+	const char* fragment_shader = STRINGFY(
+		uniform vec3 lightPosition;
+
+		varying vec3 N;
+		varying vec4 V;
+
+		void main() {
+			vec3 light_dir = normalize(lightPosition - V.xyz);
+			vec3 normal = normalize(N);
+
+			float shade = clamp(dot(normal, light_dir), 0, 1);
+			gl_FragColor = vec4(0.0, 1.0, 0.0, 0.5) * vec4(vec3(shade), 1);
+		}
+	);
+
+	Json json = json_initialize(data, MAX_PROTOCOL_PACKET_SIZE);
+	json.root = json_create_object(json);
+
+	Value passes = json_create_array(json);
+
+	json_set_attribute(json, json.root, "type", json_create_string(json, "create-material"));
+	json_set_attribute(json, json.root, "fragment-shader", json_create_string(json, fragment_shader));
+	json_set_attribute(json, json.root, "vertex-shader", json_create_string(json, vertex_shader));
+
+	json_serialize(json, buffer, MAX_PROTOCOL_PACKET_SIZE);
+
+	json_free(json);
+
+	protocol_send_raw_packet(sock, buffer, strlen(buffer));
 }
 
 #undef STRINGFY
