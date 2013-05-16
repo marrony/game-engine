@@ -16,6 +16,10 @@ class SwapChain {
 	HWND window;
 	HDC hdc;
 	HGLRC hglrc;
+#elif ANDROID
+	EGLDisplay display;
+	EGLSurface surface;
+	EGLContext context;
 #else
 	Window parent;
 	Window window;

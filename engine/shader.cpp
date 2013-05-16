@@ -52,9 +52,11 @@ static uint32_t compile_shader(const Source& source) {
 		glType = GL_FRAGMENT_SHADER;
 		break;
 
+#ifndef ANDROID
 	case GeometryShader:
 		glType = GL_GEOMETRY_SHADER;
 		break;
+#endif
 
 	default:
 		return (uint32_t)-1;

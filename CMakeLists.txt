@@ -4,25 +4,32 @@ project(x11-win32)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
-if(UNIX)
+if(UNIX AND NOT DEFINED ANDROID)
 find_package(X11 REQUIRED)
 set(LIBRARIES ${X11_LIBRARIES})
-endif(UNIX)
+endif(UNIX AND NOT DEFINED ANDROID)
 
 if(WIN32)
 set(LIBRARIES ws2_32)
 endif(WIN32)
 
+if(NOT DEFINED ANDROID)
 set(CMAKE_THREAD_PREFER_PTHREAD)
 find_package(Threads REQUIRED)
+endif(NOT DEFINED ANDROID)
 
 add_subdirectory(tinyxml)
+
+if(NOT ANDROID)
 add_subdirectory(collada)
+endif(NOT ANDROID)
 
 add_subdirectory(engine)
 include_directories(engine)
 
 add_subdirectory(tool)
 
+file(GLOB solver_srcs solver/*.cpp)
+
 #install(TARGETS prog DESTINATION bin)
-add_executable(solver solver/solver.cpp)
+add_executable(solver ${solver_srcs})

@@ -19,11 +19,9 @@ typedef int socklen_t;
 #include <netinet/in.h>
 #endif
 
-#include <sys/unistd.h>
-#include <sys/fcntl.h>
-
 #include <stdlib.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <stddef.h>
 
 int socket_create_server(short port);

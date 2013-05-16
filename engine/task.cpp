@@ -197,8 +197,10 @@ TaskManager::TaskManager(int max_tasks) {
 }
 
 TaskManager::~TaskManager() {
+#ifndef ANDROID
 	for(int32_t i = 0; i < NUMBER_OF_THREADS; i++)
 		pthread_cancel(thread_ids[i]);
+#endif
 
 	pthread_mutex_destroy(&mutex);
 	pthread_cond_destroy(&task_reconfigure);

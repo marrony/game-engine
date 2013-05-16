@@ -411,12 +411,12 @@ class Engine {
 					glClear(GL_COLOR_BUFFER_BIT);
 					break;
 				case Render::ClearDepth:
-					glClearDepth(r.clear_depth);
+					glClearDepthf(r.clear_depth);
 					glClear(GL_DEPTH_BUFFER_BIT);
 					break;
 				case Render::ClearColorAndDepth:
 					glClearColor(r.clear_color.r, r.clear_color.g, r.clear_color.b, r.clear_color.a);
-					glClearDepth(r.clear_depth);
+					glClearDepthf(r.clear_depth);
 					glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 					break;
 				case Render::Viewport:
@@ -492,7 +492,11 @@ class Engine {
 					glVertexAttribPointer(attribute.index, attribute.size, GL_FLOAT, GL_FALSE, attribute.stride, (char*)0 + attribute.pointer);
 				}
 
+#ifdef ANDROID
+				glDrawElements(GL_TRIANGLES, r.batch.count, GL_UNSIGNED_SHORT, (uint16_t*)0 + r.batch.offset);
+#else
 				glDrawRangeElements(GL_TRIANGLES, r.batch.start, r.batch.end, r.batch.count, GL_UNSIGNED_SHORT, (uint16_t*)0 + r.batch.offset);
+#endif
 			}
 
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -762,6 +766,11 @@ int get_argument(int argc, char* argv[], const char* arg_name) {
 	return -1;
 }
 
+#ifdef ANDROID
+void android_main(struct android_app* state) {
+        app_dummy();
+}
+#else
 int main(int argc, char* argv[]) {
 	int port = get_argument(argc, argv, "--port");
 
@@ -773,3 +782,4 @@ int main(int argc, char* argv[]) {
 
 	return 0;
 }
+#endif
