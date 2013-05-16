@@ -18,7 +18,7 @@ file(GLOB NATIVE_APP_GLUE ${ANDROID_NDK}/sources/android/native_app_glue/*.c)
 add_library(native_app_glue STATIC ${NATIVE_APP_GLUE})
 include_directories(${ANDROID_NDK}/sources/android/native_app_glue)
 include_directories(${ANDROID_NDK}/sources/android)
-set(LIBRARIES android GLESv2 log native_app_glue)
+set(LIBRARIES android EGL GLESv2 log native_app_glue)
 endif(ANDROID)
 
 add_library(socket_static STATIC socket.cpp)
@@ -30,7 +30,7 @@ add_library(protocol_static STATIC protocol.cpp)
 if(ANDROID)
 add_library(engine SHARED engine.cpp)
 else(ANDROID)
-add_executable(engine engine.cpp)
+add_executable(engine main.cpp engine.cpp)
 endif(ANDROID)
 
 target_link_libraries(

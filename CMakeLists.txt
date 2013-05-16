@@ -27,7 +27,13 @@ endif(NOT ANDROID)
 add_subdirectory(engine)
 include_directories(engine)
 
+if(NOT ANDROID)
 add_subdirectory(tool)
+endif(NOT ANDROID)
+
+if(ANDROID)
+add_subdirectory(android)
+endif(ANDROID)
 
 file(GLOB solver_srcs solver/*.cpp)
 
