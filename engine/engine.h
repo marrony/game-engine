@@ -169,11 +169,8 @@ class Engine {
 	TaskManager task_manager;
 	SceneGraph scene_graph;
 	ShaderSystem shader_system;
-	ServerSocket server;
-	Socket client;
 	SwapChain swap_chain;
 	float ang;
-	bool running;
 	bool need_resize;
 
 	std::vector<Material*> materials;
@@ -186,8 +183,6 @@ class Engine {
 
 	int width;
 	int height;
-
-	void load_mesh(const char* mesh_name);
 
 	void collect_attributes(Render& render, const MeshLoaded* mesh_loaded);
 
@@ -214,11 +209,13 @@ class Engine {
 public:
 	Engine();
 
-	void initialize(short port);
+	void load_mesh(const char* mesh_name);
+	void resize(int width, int height);
 
-	void run();
-
+	void initialize(WindowID handle, int width, int height);
 	void finalize();
+
+	void runOneFrame();
 };
 
 #endif /* ENGINE_H_ */

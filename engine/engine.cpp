@@ -110,6 +110,12 @@ void Engine::load_mesh(const char* mesh_name) {
 	mesh_destroy(mesh);
 }
 
+void Engine::resize(int width, int height) {
+	this->width = width;
+	this->height = height;
+	need_resize = true;
+}
+
 void Engine::collect_attributes(Render& render, const MeshLoaded* mesh_loaded) {
 	const Material* material = materials[render.material_id];
 	const std::vector<Location> locations = shader_system.get_attributes(material->passes[render.pass_id].shader);
@@ -361,42 +367,6 @@ void Engine::update() {
 	scene_graph.update();
 
 	collect_render_commands();
-
-	if(client.has_data()) {
-		Json json;
-
-		if(!protocol_recv_message(client, json))
-			running = false;
-		else {
-			Value* type = json_get_attribute(json, json.root, "type");
-
-			if(type) {
-				if(!strcmp("finish", json.data+type->string)) {
-					running = false;
-
-					fprintf(stderr, "type: %s\n", json.data+type->string);
-					fflush(stderr);
-				} else if(!strcmp("resize", json.data+type->string)) {
-					Value* width_value = json_get_attribute(json, json.root, "width");
-					Value* height_value = json_get_attribute(json, json.root, "height");
-
-					width = width_value->integer;
-					height = height_value->integer;
-
-					fprintf(stderr, "resize %dx%d\n", width, height);
-					fflush(stderr);
-
-					need_resize = true;
-					//swap_chain_resize(swap_chain, width, height);
-				} else if(!strcmp("load-mesh", json.data+type->string)) {
-					Value* mesh = json_get_attribute(json, json.root, "mesh");
-					load_mesh(json.data+mesh->string);
-				}
-			}
-
-			json_free(json);
-		}
-	}
 }
 
 WorkItem Engine::update_task() {
@@ -406,36 +376,17 @@ WorkItem Engine::update_task() {
 
 Engine::Engine() : task_manager(32) {
 	ang = 0;
-	running = false;
 	need_resize = true;
 
 	width = 0;
 	height = 0;
 }
 
-void Engine::initialize(short port) {
-	server.create(port);
+void Engine::initialize(WindowID handle, int width, int height) {
+	this->width = width;
+	this->height = height;
 
-	fprintf(stderr, "waint for connection\n");
-	fflush(stderr);
-
-	client = server.accept();
-
-	fprintf(stderr, "connected: %d\n", *(int*)&client);
-	fflush(stderr);
-
-	Json json;
-	protocol_recv_message(client, json);
-
-	Value* window_value = json_get_attribute(json, json.root, "window");
-	Value* width_value = json_get_attribute(json, json.root, "width");
-	Value* height_value = json_get_attribute(json, json.root, "height");
-
-	width = width_value->integer;
-	height = height_value->integer;
-	swap_chain.create((WindowID)(intptr_t)window_value->integer, width, height);
-
-	json_free(json);
+	swap_chain.create(handle, width, height);
 
 #define STRINGFY(x) #x
 
@@ -570,14 +521,11 @@ void Engine::initialize(short port) {
 	materials.push_back(material1);
 }
 
-void Engine::run() {
-	running = true;
-	while(running) {
-		TaskId update = task_manager.add(update_task(), INVALID_ID, pthread_self());
-		TaskId render = task_manager.add(render_task(), update, pthread_self());
+void Engine::runOneFrame() {
+	TaskId update = task_manager.add(update_task(), INVALID_ID, pthread_self());
+	TaskId render = task_manager.add(render_task(), update, pthread_self());
 
-		task_manager.wait(update);
-	}
+	task_manager.wait(update);
 }
 
 void Engine::finalize() {
@@ -585,9 +533,4 @@ void Engine::finalize() {
 
 	fprintf(stderr, "finish engine\n");
 	fflush(stderr);
-
-	protocol_send_finish_message(client);
-
-	client.close();
-	server.close();
 }
