@@ -16,13 +16,20 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
-LOCAL_MODULE := engine
+LOCAL_MODULE := engine-android
 
-#LOCAL_C_INCLUDES := $(LOCAL_PATH)/../engine/inc \
-#	$(LOCAL_PATH)/../game/inc \
-#	$(LOCAL_PATH)/../tinyxml/inc
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/../engine/
 
-LOCAL_SRC_FILES := android_main.cpp
+LOCAL_SRC_FILES := ../android/main.cpp \
+	../engine/engine.cpp \
+	../engine/json.cpp \
+	../engine/protocol.cpp \
+	../engine/shader.cpp \
+	../engine/socket.cpp \
+	../engine/stream.cpp \
+	../engine/swap_chain.cpp \
+	../engine/task.cpp
+
 
 LOCAL_LDLIBS    := -llog -landroid -lEGL -lGLESv2
 LOCAL_STATIC_LIBRARIES := android_native_app_glue
