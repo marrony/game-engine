@@ -8,20 +8,47 @@
 #include "engine.h"
 #include "opengl.h"
 
+static void handle_cmd(struct android_app* app, int32_t cmd) {
+	Engine* engine = (Engine*)app->userData;
+
+	switch (cmd) {
+	case APP_CMD_SAVE_STATE:
+		// the OS asked us to save the state of the app
+		break;
+
+	case APP_CMD_INIT_WINDOW:
+		// get the window ready for showing
+		engine->initialize(app->window, 0, 0);
+
+		engine->load_mesh("/storage/sdcard0/teste.mesh");
+
+		break;
+
+	case APP_CMD_TERM_WINDOW:
+		// clean up the window because it is being hidden/closed
+		break;
+
+	case APP_CMD_LOST_FOCUS:
+		// if the app lost focus, avoid unnecessary processing (like monitoring the accelerometer)
+		break;
+
+	case APP_CMD_GAINED_FOCUS:
+		// bring back a certain functionality, like monitoring the accelerometer
+		break;
+	}
+}
+
 void android_main(struct android_app* state) {
 	app_dummy();
 
 	Engine engine;
 
 	state->userData = &engine;
-	//state->onAppCmd = engine_handle_cmd;
+	state->onAppCmd = handle_cmd;
 	//state->onInputEvent = engine_handle_input;
 
-	engine.initialize(state->window, 0, 0);
-
-	engine.load_mesh("/storage/sdcard0/teste.mesh");
-
-	while (true) {
+	bool running = true;
+	while (running) {
 		// Read all pending events.
 		int ident;
 		int events;
@@ -50,8 +77,10 @@ void android_main(struct android_app* state) {
 //			}
 
 			// Check if we are exiting.
-			if (state->destroyRequested != 0)
+			if (state->destroyRequested != 0) {
+				running = false;
 				break;
+			}
 		}
 
 		engine.runOneFrame();

@@ -247,9 +247,42 @@ void Engine::collect_render_commands() {
 	std::sort(render_list.begin(), render_list.end(), RenderListSort());
 }
 
+#ifdef ANDROID
+#include <android/log.h>
+#define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "native-activity", __VA_ARGS__))
+#define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, "native-activity", __VA_ARGS__))
+
+void get_error() {
+	switch(glGetError()) {
+	case GL_INVALID_ENUM:
+		LOGW("GL_INVALID_ENUM"); break;
+
+	case GL_INVALID_FRAMEBUFFER_OPERATION:
+		LOGW("GL_INVALID_FRAMEBUFFER_OPERATION"); break;
+
+	case GL_INVALID_VALUE:
+		LOGW("GL_INVALID_VALUE"); break;
+
+	case GL_INVALID_OPERATION:
+		LOGW("GL_INVALID_OPERATION"); break;
+
+	case GL_OUT_OF_MEMORY:
+		LOGW("GL_OUT_OF_MEMORY"); break;
+
+	case GL_NO_ERROR:
+		LOGW("GL_NO_ERROR"); break;
+	}
+}
+#else
+void get_error() {
+}
+#endif
+
 void Engine::render() {
 	glScissor(0, 0, width, height);
+	get_error();
 	glViewport(0, 0, width, height);
+	get_error();
 
 	for(size_t i = 0; i < render_list.size(); i++) {
 		Render& r = render_list[i];
@@ -258,58 +291,87 @@ void Engine::render() {
 			switch(r.command_type) {
 			case Render::ClearColor:
 				glClearColor(r.clear_color.r, r.clear_color.g, r.clear_color.b, r.clear_color.a);
+				get_error();
 				glClear(GL_COLOR_BUFFER_BIT);
+				get_error();
 				break;
 			case Render::ClearDepth:
 				glClearDepthf(r.clear_depth);
+				get_error();
 				glClear(GL_DEPTH_BUFFER_BIT);
+				get_error();
 				break;
 			case Render::ClearColorAndDepth:
 				glClearColor(r.clear_color.r, r.clear_color.g, r.clear_color.b, r.clear_color.a);
+				get_error();
 				glClearDepthf(r.clear_depth);
+				get_error();
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+				get_error();
 				break;
 			case Render::Viewport:
 				glViewport(width*r.offset_x, height*r.offset_y, width*r.scale_width, height*r.scale_height);
+				get_error();
 				break;
 			}
 		} else {
 			const Material* material = materials[r.material_id];
 			const Pass* pass = material->passes+r.pass_id;
 			shader_system.bind_shader(pass->shader);
+			get_error();
 
 			if(pass->cull_face == Render::Enabled) {
 				glEnable(GL_CULL_FACE);
+				get_error();
 
 				glCullFace(pass->face_mode);
+				get_error();
 				glFrontFace(pass->front_face);
+				get_error();
 			} else if(pass->cull_face == Render::Disabled)
 				glDisable(GL_CULL_FACE);
 
+			get_error();
+
 			if(pass->depth_test == Render::Enabled) {
 				glEnable(GL_DEPTH_TEST);
+				get_error();
 
 				glDepthFunc(pass->depth_function);
+				get_error();
 			} else if(pass->depth_test == Render::Disabled)
 				glDisable(GL_DEPTH_TEST);
 
+			get_error();
+
 			if(pass->blend == Render::Enabled) {
 				glEnable(GL_BLEND);
+				get_error();
 
 				glBlendFunc(pass->blend_src, pass->blend_dst);
+				get_error();
 				glBlendEquation(pass->blend_equation);
+				get_error();
 			} else if(pass->blend == Render::Disabled)
 				glDisable(GL_BLEND);
 
+			get_error();
+
 			if(pass->scissor == Render::Enabled) {
 				glEnable(GL_SCISSOR_TEST);
+				get_error();
 
 				glScissor(width*pass->scissor_offset_x, height*pass->scissor_offset_y, width*pass->scissor_width, height*pass->scissor_height);
+				get_error();
 			} else if(pass->scissor == Render::Disabled)
 				glDisable(GL_SCISSOR_TEST);
 
+			get_error();
+
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, r.index_buffer);
+			get_error();
 			glBindBuffer(GL_ARRAY_BUFFER, r.vertex_buffer);
+			get_error();
 
 			for(int j = r.uniform_start; j < r.uniform_end; j++) {
 				Uniform& u = uniform_list[j];
@@ -333,27 +395,42 @@ void Engine::render() {
 					glUniformMatrix4fv(u.index, 1, GL_FALSE, u.mat4.matrix);
 					break;
 				}
+
+				get_error();
 			}
 
 			for(int j = r.attribute_start; j < r.attribute_end; j++) {
 				const Attribute& attribute = attribute_list[j];
 
 				glEnableVertexAttribArray(attribute.index);
+				get_error();
 				glVertexAttribPointer(attribute.index, attribute.size, GL_FLOAT, GL_FALSE, attribute.stride, (char*)0 + attribute.pointer);
+				get_error();
 			}
 
 #ifdef ANDROID
 			glDrawElements(GL_TRIANGLES, r.batch.count, GL_UNSIGNED_SHORT, (uint16_t*)0 + r.batch.offset);
+			get_error();
 #else
 			glDrawRangeElements(GL_TRIANGLES, r.batch.start, r.batch.end, r.batch.count, GL_UNSIGNED_SHORT, (uint16_t*)0 + r.batch.offset);
 #endif
+
+			for(int j = r.attribute_start; j < r.attribute_end; j++) {
+				const Attribute& attribute = attribute_list[j];
+
+				glDisableVertexAttribArray(attribute.index);
+				get_error();
+			}
 		}
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+		get_error();
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		get_error();
 	}
 
 	swap_chain.swap_buffers();
+	get_error();
 }
 
 WorkItem Engine::render_task() {
@@ -388,6 +465,11 @@ void Engine::initialize(WindowID handle, int width, int height) {
 
 	swap_chain.create(handle, width, height);
 
+#ifdef ANDROID
+	this->width = swap_chain.width;
+	this->height = swap_chain.height;
+#endif
+
 #define STRINGFY(x) #x
 
 	Source sources0[2];
@@ -414,6 +496,8 @@ void Engine::initialize(WindowID handle, int width, int height) {
 
 	sources0[1].type = FragmentShader;
 	sources0[1].source = STRINGFY(
+		//precision mediump float;
+
 		uniform vec3 lightPosition;
 
 		varying vec3 N;
@@ -423,7 +507,7 @@ void Engine::initialize(WindowID handle, int width, int height) {
 			vec3 light_dir = normalize(lightPosition - V.xyz);
 			vec3 normal = normalize(N);
 
-			float shade = clamp(dot(normal, light_dir), 0, 1);
+			float shade = /*clamp(*/dot(normal, light_dir)/*, 0, 1)*/;
 			gl_FragColor = vec4(0.0, 1.0, 0.0, 0.5) * vec4(vec3(shade), 1);
 		}
 	);
@@ -449,6 +533,8 @@ void Engine::initialize(WindowID handle, int width, int height) {
 
 	sources1[1].type = FragmentShader;
 	sources1[1].source = STRINGFY(
+		//precision mediump float;
+
 		uniform vec3 lightPosition;
 
 		varying vec3 N;
@@ -458,7 +544,7 @@ void Engine::initialize(WindowID handle, int width, int height) {
 			vec3 light_dir = normalize(lightPosition - V.xyz);
 			vec3 normal = normalize(N);
 
-			float shade = clamp(dot(normal, light_dir), 0, 1);
+			float shade = /*clamp(*/dot(normal, light_dir)/*, 0, 1)*/;
 			gl_FragColor = vec4(0.0, 0.0, 1.0, 0.5) * vec4(vec3(shade), 1);
 		}
 	);
@@ -477,7 +563,7 @@ void Engine::initialize(WindowID handle, int width, int height) {
 	material0->passes[0].front_face = GL_CCW;
 	material0->passes[0].depth_test = Render::Enabled;
 	material0->passes[0].depth_function = GL_LEQUAL;
-	material0->passes[0].blend = Render::Enabled;
+	material0->passes[0].blend = Render::Disabled;
 	material0->passes[0].blend_src = GL_SRC_ALPHA;
 	material0->passes[0].blend_dst = GL_ONE_MINUS_SRC_ALPHA;
 	material0->passes[0].blend_equation = GL_FUNC_ADD;
@@ -504,7 +590,7 @@ void Engine::initialize(WindowID handle, int width, int height) {
 	material1->pass_count = 1;
 
 	material1->passes[0].shader = shader1;
-	material1->passes[0].cull_face = Render::Disabled;
+	material1->passes[0].cull_face = Render::Enabled;
 	material1->passes[0].face_mode = GL_BACK;
 	material1->passes[0].front_face = GL_CCW;
 	material1->passes[0].depth_test = Render::Enabled;

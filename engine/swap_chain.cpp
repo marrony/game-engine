@@ -102,6 +102,11 @@ void SwapChain::resize(int width, int height) {
 }
 
 #elif ANDROID
+
+#include <android/log.h>
+#define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "native-activity", __VA_ARGS__))
+#define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, "native-activity", __VA_ARGS__))
+
 void SwapChain::create(WindowID handle, int width, int height) {
 	/*
 	 * Here specify the attributes of the desired configuration.
@@ -113,6 +118,8 @@ void SwapChain::create(WindowID handle, int width, int height) {
 		EGL_BLUE_SIZE, 8,
 		EGL_GREEN_SIZE, 8,
 		EGL_RED_SIZE, 8,
+		EGL_DEPTH_SIZE, 24,
+		EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
 		EGL_NONE
 	};
 
@@ -138,15 +145,40 @@ void SwapChain::create(WindowID handle, int width, int height) {
 	ANativeWindow_setBuffersGeometry(handle, 0, 0, format);
 
 	surface = eglCreateWindowSurface(display, config, handle, NULL);
-	context = eglCreateContext(display, config, NULL, NULL);
+	const EGLint attrib_list[] = {EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE};
+	context = eglCreateContext(display, config, NULL, attrib_list);
 
 	if (eglMakeCurrent(display, surface, surface, context) == EGL_FALSE) {
+		switch(glGetError()) {
+		case EGL_BAD_DISPLAY:
+			LOGW("EGL_BAD_DISPLAY"); break;
+		case EGL_NOT_INITIALIZED:
+			LOGW("EGL_NOT_INITIALIZED"); break;
+		case EGL_BAD_SURFACE:
+			LOGW("EGL_BAD_SURFACE"); break;
+		case EGL_BAD_CONTEXT:
+			LOGW("EGL_BAD_CONTEXT"); break;
+		case EGL_BAD_MATCH:
+			LOGW("EGL_BAD_MATCH"); break;
+		case EGL_BAD_ACCESS:
+			LOGW("EGL_BAD_ACCESS"); break;
+		case EGL_BAD_NATIVE_PIXMAP:
+			LOGW("EGL_BAD_NATIVE_PIXMAP"); break;
+		case EGL_BAD_NATIVE_WINDOW:
+			LOGW("EGL_BAD_NATIVE_WINDOW"); break;
+		case EGL_BAD_CURRENT_SURFACE:
+			LOGW("EGL_BAD_CURRENT_SURFACE"); break;
+		case EGL_BAD_ALLOC:
+			LOGW("EGL_BAD_ALLOC"); break;
+		case EGL_CONTEXT_LOST:
+			LOGW("EGL_CONTEXT_LOST"); break;
+		}
 		//LOGW("Unable to eglMakeCurrent");
 		return;
 	}
 
-	//eglQuerySurface(display, surface, EGL_WIDTH, &w);
-	//eglQuerySurface(display, surface, EGL_HEIGHT, &h);
+	eglQuerySurface(display, surface, EGL_WIDTH, &this->width);
+	eglQuerySurface(display, surface, EGL_HEIGHT, &this->height);
 }
 
 void SwapChain::destroy() {

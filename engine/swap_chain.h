@@ -10,7 +10,7 @@
 
 #include "opengl.h"
 
-class SwapChain {
+struct SwapChain {
 #ifdef WIN32
 	HWND parent;
 	HWND window;
@@ -20,6 +20,8 @@ class SwapChain {
 	EGLDisplay display;
 	EGLSurface surface;
 	EGLContext context;
+	int width;
+	int height;
 #else
 	Window parent;
 	Window window;
