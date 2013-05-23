@@ -20,7 +20,7 @@ static void handle_cmd(struct android_app* app, int32_t cmd) {
 		// get the window ready for showing
 		engine->initialize(app->window, 0, 0);
 
-		engine->load_mesh("/storage/sdcard0/teste.mesh");
+		engine->load_mesh("/mnt/sdcard/teste.mesh");
 
 		break;
 

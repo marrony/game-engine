@@ -2,6 +2,7 @@
 all:
 	ndk-build V=1 -B NDK_LOG=1 NDK_DEBUG=1
 	ant debug
+	adb uninstall com.example.native_activity
 	adb install -r bin/NativeActivity-debug-unaligned.apk
 
 clean:
@@ -14,5 +15,8 @@ debug:
 release:
 	ndk-build V=1 -B NDK_LOG=1 NDK_DEBUG=0
 	ant
+	adb uninstall com.example.native_activity
 	adb install -r bin/NativeActivity-unaligned.apk
-		
+	
+start:
+	adb shell am start -n com.example.native_activity/android.app.NativeActivity
