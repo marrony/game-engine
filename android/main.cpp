@@ -7,6 +7,7 @@
 
 #include "engine.h"
 #include "opengl.h"
+#include <android/asset_manager.h>
 
 static void handle_cmd(struct android_app* app, int32_t cmd) {
 	Engine* engine = (Engine*)app->userData;
@@ -17,10 +18,20 @@ static void handle_cmd(struct android_app* app, int32_t cmd) {
 		break;
 
 	case APP_CMD_INIT_WINDOW:
+		{
 		// get the window ready for showing
 		engine->initialize(app->window, 0, 0);
 
 		engine->load_mesh("/mnt/sdcard/teste.mesh");
+//
+//		AAsset* asset = AAssetManager_open(app->activity->assetManager, "teste.mesh", AASSET_MODE_STREAMING);
+//
+//		off_t length = AAsset_getLength(asset);
+//		Mesh* mesh = (Mesh*)malloc(length);
+//		AAsset_read(asset, mesh, length);
+//
+//		AAsset_close(asset);
+		}
 
 		break;
 
