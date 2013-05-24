@@ -104,6 +104,11 @@ void Engine::load_mesh(const char* mesh_name) {
 		model->material[i] = i % materials.size();
 	}
 
+	model->node = scene_graph.create_node();
+
+	Matrix4 m = Matrix4::translateMatrix(Vector3::make(0, -5, -150));
+	scene_graph.transform_node(model->node, m);
+
 	meshes_loaded.push_back(mesh_loaded);
 	models.push_back(model);
 
@@ -136,7 +141,7 @@ void Engine::collect_attributes(Render& render, const MeshLoaded* mesh_loaded) {
 	}
 }
 
-void Engine::collect_uniforms(Render& render) {
+void Engine::collect_uniforms(Render& render, int32_t node) {
 	Vector3 cam[] = {
 			{0, -5, -10},
 			{0, -5, -200},
@@ -144,7 +149,7 @@ void Engine::collect_uniforms(Render& render) {
 
 	Matrix4 projectionMatrix = Matrix4::perspectiveMatrix(60, (float)width/(float)height, 0.1, 1000);
 	Matrix4 viewMatrix = Matrix4::lookAtMatrix(Vector3::make(0, 0, 0), Vector3::make(0, 0, -1));
-	Matrix4 modelMatrix = Matrix4::transformationMatrix(Quaternion(Vector3::make(0, 1, 0), ang), cam[models.size() != 1], Vector3::make(1, 1, 1));
+	Matrix4 modelMatrix = scene_graph.get_world_matrix(node); // Matrix4::transformationMatrix(Quaternion(Vector3::make(0, 1, 0), ang), cam[models.size() != 1], Vector3::make(1, 1, 1));
 	Matrix4 modelViewMatrix = viewMatrix * modelMatrix;
 	Matrix3 normalMatrix = modelViewMatrix.upperLeft().inverse().transpose();
 
@@ -216,8 +221,6 @@ void Engine::collect_render_commands() {
 	render_list.back().clear_depth = 1.0;
 
 	if(!models.empty()) {
-		ang += 0.1;
-
 		for(size_t j = 0; j < models.size(); j++) {
 			const Model* model = models[j];
 			const MeshLoaded* mesh_loaded = meshes_loaded[model->mesh];
@@ -238,7 +241,7 @@ void Engine::collect_render_commands() {
 					render.material_id = material_id;
 					render.pass_id = pass_id;
 					collect_attributes(render, mesh_loaded);
-					collect_uniforms(render);
+					collect_uniforms(render, model->node);
 				}
 			}
 		}
@@ -441,6 +444,18 @@ WorkItem Engine::render_task() {
 void Engine::update() {
 	swap_chain.process_events();
 
+	Vector3 axis[] = {
+			{0, 0, 1},
+			{0, 1, 0},
+			{1, 0, 0},
+	};
+
+	for(size_t i = 0; i < models.size(); i++) {
+		int32_t node = models[i]->node;
+		Matrix4 rotationMatrix = Matrix4::rotationMatrix(Quaternion(axis[i%3], 0.1));
+		scene_graph.transform_node(node, rotationMatrix);
+	}
+
 	scene_graph.update();
 
 	collect_render_commands();
@@ -451,8 +466,7 @@ WorkItem Engine::update_task() {
 	return item;
 }
 
-Engine::Engine() : task_manager(32) {
-	ang = 0;
+Engine::Engine() {
 	need_resize = true;
 
 	width = 0;
@@ -464,6 +478,8 @@ void Engine::initialize(WindowID handle, int width, int height) {
 	this->height = height;
 
 	swap_chain.create(handle, width, height);
+
+	task_manager.initialize(32);
 
 #ifdef ANDROID
 	this->width = swap_chain.width;
@@ -496,7 +512,7 @@ void Engine::initialize(WindowID handle, int width, int height) {
 
 	sources0[1].type = FragmentShader;
 	sources0[1].source = STRINGFY(
-		precision mediump float;
+		//precision mediump float;
 
 		uniform vec3 lightPosition;
 
@@ -533,7 +549,7 @@ void Engine::initialize(WindowID handle, int width, int height) {
 
 	sources1[1].type = FragmentShader;
 	sources1[1].source = STRINGFY(
-		precision mediump float;
+		//precision mediump float;
 
 		uniform vec3 lightPosition;
 
@@ -615,6 +631,8 @@ void Engine::runOneFrame() {
 }
 
 void Engine::finalize() {
+	task_manager.finalize();
+
 	swap_chain.destroy();
 
 	fprintf(stderr, "finish engine\n");

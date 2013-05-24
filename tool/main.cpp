@@ -231,7 +231,8 @@ WorkItem inifinity_task() {
 }
 
 void test_task_manager() {
-	task_manager = new TaskManager(32);
+	task_manager = new TaskManager();
+	task_manager->initialize(32);
 
 	fprintf(stdout, "main thread: %lx\n", pthread_self());
 	fflush(stdout);

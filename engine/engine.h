@@ -100,6 +100,7 @@ struct Material {
 
 struct Model {
 	int32_t mesh;
+	int32_t node;
 	int8_t material_count;
 	int16_t material[0];
 };
@@ -170,7 +171,6 @@ class Engine {
 	SceneGraph scene_graph;
 	ShaderSystem shader_system;
 	SwapChain swap_chain;
-	float ang;
 	bool need_resize;
 
 	std::vector<Material*> materials;
@@ -186,7 +186,7 @@ class Engine {
 
 	void collect_attributes(Render& render, const MeshLoaded* mesh_loaded);
 
-	void collect_uniforms(Render& render);
+	void collect_uniforms(Render& render, int32_t node);
 
 	void collect_render_commands();
 

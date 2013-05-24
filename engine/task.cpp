@@ -181,7 +181,12 @@ void TaskManager::_add_child(TaskId parent_id, TaskId child_id) {
 static void empty_function(TaskId task_id, WorkItem& item) {
 }
 
-TaskManager::TaskManager(int max_tasks) {
+TaskManager::TaskManager() {
+	tasks = 0;
+	last_id = 0;
+}
+
+void TaskManager::initialize(int max_tasks) {
 	tasks = (Task*)malloc(sizeof(Task) * max_tasks);
 	last_id = 0;
 
@@ -196,7 +201,7 @@ TaskManager::TaskManager(int max_tasks) {
 	}
 }
 
-TaskManager::~TaskManager() {
+void TaskManager::finalize() {
 #ifndef ANDROID
 	for(int32_t i = 0; i < NUMBER_OF_THREADS; i++)
 		pthread_cancel(thread_ids[i]);

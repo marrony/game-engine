@@ -64,8 +64,10 @@ class TaskManager {
 	void _finish_add(TaskId task_id);
 	void _add_child(TaskId parent_id, TaskId child_id);
 public:
-	TaskManager(int max_tasks);
-	~TaskManager();
+	TaskManager();
+
+	void initialize(int max_tasks);
+	void finalize();
 
 	TaskId add(size_t count, const WorkItem* items, TaskId dependency = INVALID_ID, pthread_t thread = INVALID_THREAD);
 	TaskId add(const WorkItem& item, TaskId dependency = INVALID_ID, pthread_t thread = INVALID_THREAD);

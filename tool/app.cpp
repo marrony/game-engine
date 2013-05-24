@@ -87,7 +87,8 @@ int Application::run() {
 
 	protocol_send_window_message(sock, (intptr_t)window, width, height);
 	protocol_send_create_material_message(sock);
-	protocol_send_load_mesh_message(sock, "teste.mesh");
+	protocol_send_load_mesh_message(sock, "Seymour_triangulate.dae.mesh");
+	protocol_send_load_mesh_message(sock, "duck_triangulate.dae.mesh");
 
 	running = true;
 	while (running) {

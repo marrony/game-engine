@@ -15,24 +15,21 @@
 class SceneGraph {
 	std::vector<Matrix4> local;
 	std::vector<Matrix4> world;
-	std::vector<int> parent;
+	std::vector<int32_t> parents;
 public:
-	SceneGraph() {
-		Matrix4 m = MATRIX4_IDENTITY;
+	static const int32_t ROOT = 1;
 
-		for(int i = 0; i < 10000; i++) {
-			local.push_back(m);
-			world.push_back(m);
-			parent.push_back(i-1);
-		}
-	}
+	SceneGraph();
 
-	void update() {
-		for(size_t i = 1; i < local.size(); i++) {
-			int p = parent[i];
-			world[i] = world[p] * local[i];
-		}
-	}
+	void update();
+
+	Matrix4 get_local_matrix(int32_t node) const;
+	Matrix4 get_world_matrix(int32_t node) const;
+
+	int32_t create_node(int32_t parent = ROOT);
+	void destroy_node(int32_t node);
+
+	void transform_node(int32_t node, const Matrix4& m);
 };
 
 #endif /* SCENE_GRAPH_H_ */
