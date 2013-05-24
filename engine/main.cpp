@@ -7,9 +7,9 @@
 #include "engine.h"
 
 enum Endian {
-	LITTLEENDIAN,
-	BIGENDIAN,
-	NONIEEE
+	LittleEndian,
+	BigEndian,
+	NonIeee
 };
 
 Endian detect_endianess() {
@@ -22,11 +22,11 @@ Endian detect_endianess() {
 	convert.f = 1.0;
 
 	if (convert.i[1] == 0x3FF00000)
-		return LITTLEENDIAN;
+		return LittleEndian;
 	else if (convert.i[0] == 0x3FF00000)
-		return BIGENDIAN;
+		return BigEndian;
 	else
-		return NONIEEE;
+		return NonIeee;
 }
 
 int get_argument(int argc, char* argv[], const char* arg_name) {

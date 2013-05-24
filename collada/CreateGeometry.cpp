@@ -12,7 +12,7 @@
 #include "mesh.h"
 #include "mesh_io.h"
 
-CreateGeometry::CreateGeometry() {
+CreateGeometry::CreateGeometry(const std::string& output) : output(output) {
 }
 
 CreateGeometry::~CreateGeometry() {
@@ -370,6 +370,6 @@ void CreateGeometry::save_mesh() {
 	if(mesh->offsets[Mesh::Weigths] != -1)
 		memcpy(mesh->get_pointer(Mesh::Weigths), weights.data(), mesh->vertex_count*Mesh::get_stride(Mesh::Weigths));
 
-	mesh_write("teste.mesh", mesh);
+	mesh_write(output.c_str(), mesh);
 	mesh_destroy(mesh);
 }

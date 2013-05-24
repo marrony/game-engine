@@ -496,7 +496,7 @@ void Engine::initialize(WindowID handle, int width, int height) {
 
 	sources0[1].type = FragmentShader;
 	sources0[1].source = STRINGFY(
-		//precision mediump float;
+		precision mediump float;
 
 		uniform vec3 lightPosition;
 
@@ -533,7 +533,7 @@ void Engine::initialize(WindowID handle, int width, int height) {
 
 	sources1[1].type = FragmentShader;
 	sources1[1].source = STRINGFY(
-		//precision mediump float;
+		precision mediump float;
 
 		uniform vec3 lightPosition;
 

@@ -20,3 +20,7 @@ release:
 	
 start:
 	adb shell am start -n com.example.native_activity/android.app.NativeActivity
+
+dev:
+	adb shell am start -n com.android.settings/com.android.settings.DevelopmentSettings
+

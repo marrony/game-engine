@@ -65,10 +65,12 @@ class CreateGeometry : public Visitor,
 	std::vector<std::string> materials;
 	std::vector<Batch> batches;
 
+	std::string output;
+
 	void add_vertex_data(const std::vector<MeshVertex>& vertexArray, const std::vector<uint16_t>& newIndices, const std::string& material, int flags);
 	void save_mesh();
 public:
-	CreateGeometry();
+	CreateGeometry(const std::string& output);
 	virtual ~CreateGeometry();
 
 	virtual void visit(ColladaGeometry* geometry);

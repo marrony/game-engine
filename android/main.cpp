@@ -22,7 +22,8 @@ static void handle_cmd(struct android_app* app, int32_t cmd) {
 		// get the window ready for showing
 		engine->initialize(app->window, 0, 0);
 
-		engine->load_mesh("/mnt/sdcard/teste.mesh");
+		engine->load_mesh("/mnt/sdcard/Seymour_triangulate.dae.mesh");
+		engine->load_mesh("/mnt/sdcard/duck_triangulate.dae.mesh");
 //
 //		AAsset* asset = AAssetManager_open(app->activity->assetManager, "teste.mesh", AASSET_MODE_STREAMING);
 //

@@ -35,19 +35,25 @@ bool load_from_file(const char* filename, ColladaDocument& colladaDocument) {
 	return true;
 }
 
-int main(int argc, char* argv[]) {
+void compile(const char* file) {
 	ColladaDocument colladaDocument;
 
-	if(!load_from_file(argv[1], colladaDocument))
-		return 1;
+	if(!load_from_file(file, colladaDocument))
+		return;
 
 	std::vector<ColladaGeometry*>& items = colladaDocument.libraryGeometries->getItems();
 	for(size_t i = 0; i < items.size(); i++) {
 		ColladaGeometry* geometry = items[i];
 
-		CreateGeometry createGeometry;
+		std::string output = file;
+		CreateGeometry createGeometry(output + ".mesh");
 		geometry->accept(&createGeometry);
 	}
+}
+
+int main(int argc, char* argv[]) {
+	for(int i = 1; i < argc; i++)
+		compile(argv[i]);
 
 	return 0;
 }
