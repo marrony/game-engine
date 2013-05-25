@@ -167,6 +167,7 @@ struct MeshLoaded {
 };
 
 class Engine {
+	bool initialized;
 	TaskManager task_manager;
 	SceneGraph scene_graph;
 	ShaderSystem shader_system;
@@ -215,7 +216,7 @@ public:
 	void initialize(WindowID handle, int width, int height);
 	void finalize();
 
-	void runOneFrame();
+	void run_one_frame();
 };
 
 #endif /* ENGINE_H_ */

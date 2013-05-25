@@ -95,7 +95,7 @@ void android_main(struct android_app* state) {
 			}
 		}
 
-		engine.runOneFrame();
+		engine.run_one_frame();
 	}
 
 	engine.finalize();

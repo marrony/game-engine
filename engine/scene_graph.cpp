@@ -44,7 +44,7 @@ int32_t SceneGraph::create_node(int32_t parent) {
 
 	Matrix4 m = MATRIX4_IDENTITY;
 
-	if(index < parent || index >= parents.size()) {
+	if(index <= parent || index >= parents.size()) {
 		index = parents.size();
 
 		local.push_back(m);

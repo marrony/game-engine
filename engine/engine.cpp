@@ -142,14 +142,9 @@ void Engine::collect_attributes(Render& render, const MeshLoaded* mesh_loaded) {
 }
 
 void Engine::collect_uniforms(Render& render, int32_t node) {
-	Vector3 cam[] = {
-			{0, -5, -10},
-			{0, -5, -200},
-	};
-
 	Matrix4 projectionMatrix = Matrix4::perspectiveMatrix(60, (float)width/(float)height, 0.1, 1000);
 	Matrix4 viewMatrix = Matrix4::lookAtMatrix(Vector3::make(0, 0, 0), Vector3::make(0, 0, -1));
-	Matrix4 modelMatrix = scene_graph.get_world_matrix(node); // Matrix4::transformationMatrix(Quaternion(Vector3::make(0, 1, 0), ang), cam[models.size() != 1], Vector3::make(1, 1, 1));
+	Matrix4 modelMatrix = scene_graph.get_world_matrix(node);
 	Matrix4 modelViewMatrix = viewMatrix * modelMatrix;
 	Matrix3 normalMatrix = modelViewMatrix.upperLeft().inverse().transpose();
 
@@ -467,6 +462,7 @@ WorkItem Engine::update_task() {
 }
 
 Engine::Engine() {
+	initialized = false;
 	need_resize = true;
 
 	width = 0;
@@ -512,7 +508,7 @@ void Engine::initialize(WindowID handle, int width, int height) {
 
 	sources0[1].type = FragmentShader;
 	sources0[1].source = STRINGFY(
-		//precision mediump float;
+		precision mediump float;
 
 		uniform vec3 lightPosition;
 
@@ -549,7 +545,7 @@ void Engine::initialize(WindowID handle, int width, int height) {
 
 	sources1[1].type = FragmentShader;
 	sources1[1].source = STRINGFY(
-		//precision mediump float;
+		precision mediump float;
 
 		uniform vec3 lightPosition;
 
@@ -621,13 +617,17 @@ void Engine::initialize(WindowID handle, int width, int height) {
 	material1->passes[0].scissor_height = 0.5f;
 	material1->passes[0].scissor_width = 0.5f;
 	materials.push_back(material1);
+
+	initialized = true;
 }
 
-void Engine::runOneFrame() {
-	TaskId update = task_manager.add(update_task(), INVALID_ID, pthread_self());
-	TaskId render = task_manager.add(render_task(), update, pthread_self());
+void Engine::run_one_frame() {
+	if(initialized) {
+		TaskId update = task_manager.add(update_task(), INVALID_ID, pthread_self());
+		TaskId render = task_manager.add(render_task(), update, pthread_self());
 
-	task_manager.wait(update);
+		task_manager.wait(update);
+	}
 }
 
 void Engine::finalize() {

@@ -107,7 +107,7 @@ int main(int argc, char* argv[]) {
 			}
 		}
 
-		engine.runOneFrame();
+		engine.run_one_frame();
 	}
 
 	engine.finalize();

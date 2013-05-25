@@ -10,6 +10,8 @@
 
 #include "matrix4.h"
 
+#include <stdint.h>
+
 #include <vector>
 
 class SceneGraph {
