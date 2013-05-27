@@ -462,7 +462,6 @@ WorkItem Engine::update_task() {
 }
 
 Engine::Engine() {
-	initialized = false;
 	need_resize = true;
 
 	width = 0;
@@ -508,8 +507,6 @@ void Engine::initialize(WindowID handle, int width, int height) {
 
 	sources0[1].type = FragmentShader;
 	sources0[1].source = STRINGFY(
-		precision mediump float;
-
 		uniform vec3 lightPosition;
 
 		varying vec3 N;
@@ -545,8 +542,6 @@ void Engine::initialize(WindowID handle, int width, int height) {
 
 	sources1[1].type = FragmentShader;
 	sources1[1].source = STRINGFY(
-		precision mediump float;
-
 		uniform vec3 lightPosition;
 
 		varying vec3 N;
@@ -617,17 +612,13 @@ void Engine::initialize(WindowID handle, int width, int height) {
 	material1->passes[0].scissor_height = 0.5f;
 	material1->passes[0].scissor_width = 0.5f;
 	materials.push_back(material1);
-
-	initialized = true;
 }
 
 void Engine::run_one_frame() {
-	if(initialized) {
-		TaskId update = task_manager.add(update_task(), INVALID_ID, pthread_self());
-		TaskId render = task_manager.add(render_task(), update, pthread_self());
+	TaskId update = task_manager.add(update_task(), INVALID_ID, pthread_self());
+	TaskId render = task_manager.add(render_task(), update, pthread_self());
 
-		task_manager.wait(update);
-	}
+	task_manager.wait(update);
 }
 
 void Engine::finalize() {

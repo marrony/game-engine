@@ -35,6 +35,8 @@ if(ANDROID)
 add_subdirectory(android)
 endif(ANDROID)
 
+add_subdirectory(lua)
+
 file(GLOB solver_srcs solver/*.cpp)
 
 #install(TARGETS prog DESTINATION bin)

@@ -9,6 +9,8 @@
 #include "opengl.h"
 #include <android/asset_manager.h>
 
+bool initialized = false;
+
 static void handle_cmd(struct android_app* app, int32_t cmd) {
 	Engine* engine = (Engine*)app->userData;
 
@@ -24,6 +26,8 @@ static void handle_cmd(struct android_app* app, int32_t cmd) {
 
 		engine->load_mesh("/mnt/sdcard/Seymour_triangulate.dae.mesh");
 		engine->load_mesh("/mnt/sdcard/duck_triangulate.dae.mesh");
+
+		initialized = true;
 //
 //		AAsset* asset = AAssetManager_open(app->activity->assetManager, "teste.mesh", AASSET_MODE_STREAMING);
 //
@@ -50,31 +54,21 @@ static void handle_cmd(struct android_app* app, int32_t cmd) {
 	}
 }
 
-void android_main(struct android_app* state) {
-	app_dummy();
+bool process_events(struct android_app* state) {
+	// Read all pending events.
+	int ident;
+	int events;
+	struct android_poll_source* source;
 
-	Engine engine;
+	// If not animating, we will block forever waiting for events.
+	// If animating, we loop until all events are read, then continue
+	// to draw the next frame of animation.
+	while ((ident = ALooper_pollAll(0, NULL, &events, (void**) &source)) >= 0) {
 
-	state->userData = &engine;
-	state->onAppCmd = handle_cmd;
-	//state->onInputEvent = engine_handle_input;
-
-	bool running = true;
-	while (running) {
-		// Read all pending events.
-		int ident;
-		int events;
-		struct android_poll_source* source;
-
-		// If not animating, we will block forever waiting for events.
-		// If animating, we loop until all events are read, then continue
-		// to draw the next frame of animation.
-		while ((ident = ALooper_pollAll(0, NULL, &events, (void**) &source)) >= 0) {
-
-			// Process this event.
-			if (source != NULL) {
-				source->process(state, source);
-			}
+		// Process this event.
+		if (source != NULL) {
+			source->process(state, source);
+		}
 
 //			// If a sensor has data, process it now.
 //			if (ident == LOOPER_ID_USER) {
@@ -88,13 +82,28 @@ void android_main(struct android_app* state) {
 //				}
 //			}
 
-			// Check if we are exiting.
-			if (state->destroyRequested != 0) {
-				running = false;
-				break;
-			}
+		// Check if we are exiting.
+		if (state->destroyRequested != 0) {
+			return false;
 		}
+	}
 
+	return true;
+}
+
+void android_main(struct android_app* state) {
+	app_dummy();
+
+	Engine engine;
+
+	state->userData = &engine;
+	state->onAppCmd = handle_cmd;
+	//state->onInputEvent = engine_handle_input;
+
+	while(!initialized)
+		process_events(state);
+
+	while (process_events(state)) {
 		engine.run_one_frame();
 	}
 

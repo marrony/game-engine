@@ -62,9 +62,19 @@ static uint32_t compile_shader(const Source& source) {
 		return (uint32_t)-1;
 	}
 
+	const char* src[2] = {source.source};
+	int count = 1;
+
+#ifdef ANDROID
+	if(glType == GL_FRAGMENT_SHADER) {
+		src[0] = "precision mediump float;\n";
+		src[1] = source.source;
+		count = 2;
+	}
+#endif
+
 	uint32_t shader_id = glCreateShader(glType);
-	const char* src = source.source;
-	glShaderSource(shader_id, 1, &src, 0);
+	glShaderSource(shader_id, count, src, NULL);
 	glCompileShader(shader_id);
 
 	int status = 0;

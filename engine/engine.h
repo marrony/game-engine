@@ -167,7 +167,6 @@ struct MeshLoaded {
 };
 
 class Engine {
-	bool initialized;
 	TaskManager task_manager;
 	SceneGraph scene_graph;
 	ShaderSystem shader_system;
