@@ -31,6 +31,8 @@
 #include <stdio.h>
 #include <sys/stat.h>
 
+#include "lua.hpp"
+
 struct Attribute {
 	int32_t index;
 	int32_t size;
@@ -167,6 +169,11 @@ struct MeshLoaded {
 };
 
 class Engine {
+	static int model_count(lua_State *L);
+	static int get_node(lua_State *L);
+	static int rotate_node(lua_State *L);
+
+	lua_State* lua;
 	TaskManager task_manager;
 	SceneGraph scene_graph;
 	ShaderSystem shader_system;

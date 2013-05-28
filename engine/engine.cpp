@@ -439,17 +439,20 @@ WorkItem Engine::render_task() {
 void Engine::update() {
 	swap_chain.process_events();
 
-	Vector3 axis[] = {
-			{0, 0, 1},
-			{0, 1, 0},
-			{1, 0, 0},
-	};
+//	Vector3 axis[] = {
+//			{0, 0, 1},
+//			{0, 1, 0},
+//			{1, 0, 0},
+//	};
+//
+//	for(size_t i = 0; i < models.size(); i++) {
+//		int32_t node = models[i]->node;
+//		Matrix4 rotationMatrix = Matrix4::rotationMatrix(Quaternion(axis[i%3], 0.1));
+//		scene_graph.transform_node(node, rotationMatrix);
+//	}
 
-	for(size_t i = 0; i < models.size(); i++) {
-		int32_t node = models[i]->node;
-		Matrix4 rotationMatrix = Matrix4::rotationMatrix(Quaternion(axis[i%3], 0.1));
-		scene_graph.transform_node(node, rotationMatrix);
-	}
+	lua_getglobal(lua, "update");
+	lua_call(lua, 0, 0);
 
 	scene_graph.update();
 
@@ -462,13 +465,71 @@ WorkItem Engine::update_task() {
 }
 
 Engine::Engine() {
+	lua = NULL;
 	need_resize = true;
 
 	width = 0;
 	height = 0;
 }
 
+static void set_engine(lua_State* lua, Engine* engine) {
+	lua_pushstring(lua, "engine_pointer");
+	lua_pushlightuserdata(lua, engine);
+	lua_settable(lua, LUA_REGISTRYINDEX);
+}
+
+static Engine* get_engine(lua_State* lua) {
+	lua_pushstring(lua, "engine_pointer");
+	lua_gettable(lua, LUA_REGISTRYINDEX);
+	return (Engine*)lua_topointer(lua, -1);
+}
+
+int Engine::model_count(lua_State *L) {
+	Engine* engine = get_engine(L);
+	lua_pushinteger(L, engine->models.size());
+	return 1;
+}
+
+int Engine::get_node(lua_State *L) {
+	int model = luaL_checkinteger(L, 1);
+
+	Engine* engine = get_engine(L);
+	lua_pushinteger(L, engine->models[model-1]->node);
+	return 1;
+}
+
+int Engine::rotate_node(lua_State *L) {
+	Vector3 axis[] = {
+			{1, 0, 0},
+			{0, 0, 1},
+			{0, 1, 0},
+	};
+
+	int node = luaL_checkinteger(L, 1);
+	int axis_idx = luaL_checkinteger(L, 2);
+	double ang = luaL_checknumber(L, 3);
+
+	Engine* engine = get_engine(L);
+
+	Matrix4 rotationMatrix = Matrix4::rotationMatrix(Quaternion(axis[axis_idx], ang));
+	engine->scene_graph.transform_node(node, rotationMatrix);
+
+	return 0;
+}
+
 void Engine::initialize(WindowID handle, int width, int height) {
+	lua = luaL_newstate();
+	luaL_openlibs(lua);
+
+	set_engine(lua, this);
+
+	lua_register(lua, "model_count", model_count);
+	lua_register(lua, "get_node", get_node);
+	lua_register(lua, "rotate_node", rotate_node);
+
+	if(luaL_dofile(lua, "test.lua") != 0)
+		printf("erro");
+
 	this->width = width;
 	this->height = height;
 
@@ -625,6 +686,8 @@ void Engine::finalize() {
 	task_manager.finalize();
 
 	swap_chain.destroy();
+
+	lua_close(lua);
 
 	fprintf(stderr, "finish engine\n");
 	fflush(stderr);

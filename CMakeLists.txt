@@ -24,6 +24,16 @@ if(NOT ANDROID)
 add_subdirectory(collada)
 endif(NOT ANDROID)
 
+include_directories(LuaJIT/src)
+
+add_custom_target(
+    luajit
+    COMMAND make CCDEBUG=-g
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/LuaJIT
+)
+
+set(LUAJIT_LIBRARIES ${CMAKE_SOURCE_DIR}/LuaJIT/src/libluajit.a dl)
+
 add_subdirectory(engine)
 include_directories(engine)
 
