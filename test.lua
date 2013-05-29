@@ -1,5 +1,16 @@
-print("Hello World from Lua")
+--print("Hello World from Lua")
+--
+--print_c("Hello World from C\n")
+--
+--print(my_sin(1))
 
-print_c("Hello World from C\n")
+--for k,v in pairs(_G) do
+--	print(k, v)
+--end
 
-print(my_sin(1))
+local count = 0
+while 1 do
+	count = count + 1;
+	print("Count of:", count);
+	coroutine.yield();
+end

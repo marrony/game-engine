@@ -65,40 +65,53 @@ inline uint64_t SEQUENCE_BITS(uint64_t sequence) {
 }
 
 void Engine::load_mesh(const char* mesh_name) {
+	MeshLoaded* mesh_loaded = NULL;
+	int32_t mesh_index = 0;
+
 	for(size_t i = 0; i < meshes_loaded.size(); i++) {
-		if(!strcmp(meshes_loaded[i]->name, mesh_name))
-			return;
+		if(!strcmp(meshes_loaded[i]->name, mesh_name)) {
+			mesh_loaded = meshes_loaded[i];
+			mesh_index = i;
+			break;
+		}
 	}
 
-	Mesh* mesh = mesh_read(mesh_name);
+	if(!mesh_loaded) {
+		Mesh* mesh = mesh_read(mesh_name);
 
-	MeshLoaded* mesh_loaded = (MeshLoaded*)malloc(sizeof(MeshLoaded) + sizeof(Batch)*mesh->batch_count);
-	strcpy(mesh_loaded->name, mesh_name);
-	mesh_loaded->batch_count = mesh->batch_count;
-	memcpy(mesh_loaded->batches, mesh->batches_pointer(), sizeof(Batch)*mesh->batch_count);
+		mesh_loaded = (MeshLoaded*)malloc(sizeof(MeshLoaded) + sizeof(Batch)*mesh->batch_count);
+		strcpy(mesh_loaded->name, mesh_name);
+		mesh_loaded->batch_count = mesh->batch_count;
+		memcpy(mesh_loaded->batches, mesh->batches_pointer(), sizeof(Batch)*mesh->batch_count);
 
-	for(int i = 0; i < Mesh::MaxAttributes; i++) {
-		if(mesh->offsets[i] != -1)
-			mesh_loaded->offsets[i] = mesh->offsets[i] - mesh->index_size();
-		else
-			mesh_loaded->offsets[i] = -1;
+		for(int i = 0; i < Mesh::MaxAttributes; i++) {
+			if(mesh->offsets[i] != -1)
+				mesh_loaded->offsets[i] = mesh->offsets[i] - mesh->index_size();
+			else
+				mesh_loaded->offsets[i] = -1;
+		}
+
+		glGenBuffers(1, &mesh_loaded->vertex_buffer);
+		glGenBuffers(1, &mesh_loaded->index_buffer);
+
+		glBindBuffer(GL_ARRAY_BUFFER, mesh_loaded->vertex_buffer);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh_loaded->index_buffer);
+
+		glBufferData(GL_ARRAY_BUFFER, mesh->vertex_size(), mesh->vertex_pointer(), GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->index_size(), mesh->index_pointer(), GL_STATIC_DRAW);
+
+		mesh_destroy(mesh);
+
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+		mesh_index = meshes_loaded.size();
+		meshes_loaded.push_back(mesh_loaded);
 	}
-
-	glGenBuffers(1, &mesh_loaded->vertex_buffer);
-	glGenBuffers(1, &mesh_loaded->index_buffer);
-
-	glBindBuffer(GL_ARRAY_BUFFER, mesh_loaded->vertex_buffer);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh_loaded->index_buffer);
-
-	glBufferData(GL_ARRAY_BUFFER, mesh->vertex_size(), mesh->vertex_pointer(), GL_STATIC_DRAW);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->index_size(), mesh->index_pointer(), GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 	Model* model = (Model*)malloc(sizeof(Model) + sizeof(int16_t)*mesh_loaded->batch_count);
 	model->material_count = mesh_loaded->batch_count;
-	model->mesh = meshes_loaded.size();
+	model->mesh = mesh_index;
 
 	for(int8_t i = 0; i < mesh_loaded->batch_count; i++) {
 		model->material[i] = i % materials.size();
@@ -109,10 +122,7 @@ void Engine::load_mesh(const char* mesh_name) {
 	Matrix4 m = Matrix4::translateMatrix(Vector3::make(0, -5, -150));
 	scene_graph.transform_node(model->node, m);
 
-	meshes_loaded.push_back(mesh_loaded);
 	models.push_back(model);
-
-	mesh_destroy(mesh);
 }
 
 void Engine::resize(int width, int height) {
@@ -438,18 +448,6 @@ WorkItem Engine::render_task() {
 
 void Engine::update() {
 	swap_chain.process_events();
-
-//	Vector3 axis[] = {
-//			{0, 0, 1},
-//			{0, 1, 0},
-//			{1, 0, 0},
-//	};
-//
-//	for(size_t i = 0; i < models.size(); i++) {
-//		int32_t node = models[i]->node;
-//		Matrix4 rotationMatrix = Matrix4::rotationMatrix(Quaternion(axis[i%3], 0.1));
-//		scene_graph.transform_node(node, rotationMatrix);
-//	}
 
 	lua_getglobal(lua, "update");
 	lua_call(lua, 0, 0);
