@@ -12,6 +12,7 @@ add_library(engine-android SHARED main.cpp)
 
 target_link_libraries(
     engine-android engine_static json_static socket_static protocol_static
+    ${LUA_LIBRARIES}
     ${OPENGL_LIBRARIES}
     ${GLEW_LIBRARY}
     ${CMAKE_THREAD_LIBS_INIT}

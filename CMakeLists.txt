@@ -24,15 +24,40 @@ if(NOT ANDROID)
 add_subdirectory(collada)
 endif(NOT ANDROID)
 
+if(ANDROID OR WIN32)
+include_directories(lua/src)
+set(LUA_LIBRARIES lua_static)
+add_subdirectory(lua)
+#message("====================== ${ANDROID_TOOLCHAIN_ROOT}/bin/${ANDROID_TOOLCHAIN_MACHINE_NAME}-")
+#message("====================== ANDROID_TOOLCHAIN_MACHINE_NAME ${ANDROID_TOOLCHAIN_MACHINE_NAME}")
+#message("====================== ANDROID_TOOLCHAIN_ROOT ${ANDROID_TOOLCHAIN_ROOT}")
+#message("====================== ANDROID_GCC_TOOLCHAIN_NAME ${ANDROID_GCC_TOOLCHAIN_NAME}")
+#message("====================== ANDROID_NDK ${ANDROID_NDK}")
+#message("====================== ANDROID_SYSROOT ${ANDROID_SYSROOT}")
+#message("====================== ANDROID_NDK_TOOLCHAINS_SUBPATH ${ANDROID_NDK_TOOLCHAINS_SUBPATH}")
+#message("====================== ANDROID_NDK_TOOLCHAINS_PATH ${ANDROID_NDK_TOOLCHAINS_PATH}")
+#message("====================== ANDROID_TOOLCHAIN_NAME ${ANDROID_TOOLCHAIN_NAME}")
+#message("====================== ANDROID_CXX_FLAGS ${ANDROID_CXX_FLAGS}")
+#set(NDKP "${ANDROID_TOOLCHAIN_ROOT}/bin/${ANDROID_TOOLCHAIN_MACHINE_NAME}-")
+#set(NDKF "--sysroot=${ANDROID_SYSROOT}")
+#set(LUAJIT_BUILDFLAGS "${LUAJIT_BUILDFLAGS} HOST_CC='gcc -m32' CROSS=${NDKP} TARGET_FLAGS='${NDKF}'")
+else(ANDROID OR WIN32)
 include_directories(LuaJIT/src)
+
+set(LUAJIT_BUILDFLAGS "BUILDMODE=static CCDEBUG=-g")
 
 add_custom_target(
     luajit
-    COMMAND make CCDEBUG=-g
+    COMMAND make ${LUAJIT_BUILDFLAGS}
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/LuaJIT
 )
 
-set(LUAJIT_LIBRARIES ${CMAKE_SOURCE_DIR}/LuaJIT/src/libluajit.a dl)
+set(LUA_LIBRARIES ${CMAKE_SOURCE_DIR}/LuaJIT/src/libluajit.a)
+
+if(NOT WIN32)
+set(LUA_LIBRARIES ${LUA_LIBRARIES} dl)
+endif(NOT WIN32)
+endif(ANDROID OR WIN32)
 
 add_subdirectory(engine)
 include_directories(engine)
@@ -44,8 +69,6 @@ endif(NOT ANDROID)
 if(ANDROID)
 add_subdirectory(android)
 endif(ANDROID)
-
-add_subdirectory(lua)
 
 file(GLOB solver_srcs solver/*.cpp)
 

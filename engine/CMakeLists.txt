@@ -27,7 +27,7 @@ if(NOT ANDROID)
 add_executable(engine main.cpp)
 target_link_libraries(
     engine engine_static json_static socket_static protocol_static
-    ${LUAJIT_LIBRARIES}
+    ${LUA_LIBRARIES}
     ${OPENGL_LIBRARIES}
     ${GLEW_LIBRARY}
     ${CMAKE_THREAD_LIBS_INIT}

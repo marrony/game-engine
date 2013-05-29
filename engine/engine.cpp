@@ -527,7 +527,7 @@ void Engine::initialize(WindowID handle, int width, int height) {
 	lua_register(lua, "get_node", get_node);
 	lua_register(lua, "rotate_node", rotate_node);
 
-	if(luaL_dofile(lua, "test.lua") != 0)
+	if(luaL_dofile(lua, "update.lua") != 0)
 		printf("erro");
 
 	this->width = width;
