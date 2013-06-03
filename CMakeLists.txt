@@ -24,10 +24,11 @@ if(NOT ANDROID)
 add_subdirectory(collada)
 endif(NOT ANDROID)
 
-if(ANDROID OR WIN32)
 include_directories(lua/src)
-set(LUA_LIBRARIES lua_static)
 add_subdirectory(lua)
+set(LUA_LIBRARIES lua_static)
+
+#if(ANDROID OR WIN32)
 #message("====================== ${ANDROID_TOOLCHAIN_ROOT}/bin/${ANDROID_TOOLCHAIN_MACHINE_NAME}-")
 #message("====================== ANDROID_TOOLCHAIN_MACHINE_NAME ${ANDROID_TOOLCHAIN_MACHINE_NAME}")
 #message("====================== ANDROID_TOOLCHAIN_ROOT ${ANDROID_TOOLCHAIN_ROOT}")
@@ -41,23 +42,23 @@ add_subdirectory(lua)
 #set(NDKP "${ANDROID_TOOLCHAIN_ROOT}/bin/${ANDROID_TOOLCHAIN_MACHINE_NAME}-")
 #set(NDKF "--sysroot=${ANDROID_SYSROOT}")
 #set(LUAJIT_BUILDFLAGS "${LUAJIT_BUILDFLAGS} HOST_CC='gcc -m32' CROSS=${NDKP} TARGET_FLAGS='${NDKF}'")
-else(ANDROID OR WIN32)
-include_directories(LuaJIT/src)
-
-set(LUAJIT_BUILDFLAGS "BUILDMODE=static CCDEBUG=-g")
-
-add_custom_target(
-    luajit
-    COMMAND make ${LUAJIT_BUILDFLAGS}
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/LuaJIT
-)
-
-set(LUA_LIBRARIES ${CMAKE_SOURCE_DIR}/LuaJIT/src/libluajit.a)
-
-if(NOT WIN32)
-set(LUA_LIBRARIES ${LUA_LIBRARIES} dl)
-endif(NOT WIN32)
-endif(ANDROID OR WIN32)
+#else(ANDROID OR WIN32)
+#include_directories(LuaJIT/src)
+#
+#set(LUAJIT_BUILDFLAGS "BUILDMODE=static CCDEBUG=-g")
+#
+#add_custom_target(
+#    luajit
+#    COMMAND make ${LUAJIT_BUILDFLAGS}
+#    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/LuaJIT
+#)
+#
+#set(LUA_LIBRARIES ${CMAKE_SOURCE_DIR}/LuaJIT/src/libluajit.a)
+#
+#if(NOT WIN32)
+#set(LUA_LIBRARIES ${LUA_LIBRARIES} dl)
+#endif(NOT WIN32)
+#endif(ANDROID OR WIN32)
 
 add_subdirectory(engine)
 include_directories(engine)

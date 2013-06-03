@@ -20,15 +20,15 @@ static int my_sin(lua_State *L) {
 	return 1;
 }
 
-#ifndef LUA_GLOBALSINDEX
-#define LUA_GLOBALSINDEX 0
-#error não deveria ter acontecido
-#endif
-
-#ifndef LUA_ENVIRONINDEX
-#define LUA_ENVIRONINDEX 0
-#error não deveria ter acontecido
-#endif
+//#ifndef LUA_GLOBALSINDEX
+//#define LUA_GLOBALSINDEX 0
+//#error não deveria ter acontecido
+//#endif
+//
+//#ifndef LUA_ENVIRONINDEX
+//#define LUA_ENVIRONINDEX 0
+//#error não deveria ter acontecido
+//#endif
 
 lua_State *lua_create_thread(lua_State *L) {
 	lua_State *thread = lua_newthread(L);
