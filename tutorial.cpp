@@ -54,15 +54,46 @@ lua_State *lua_create_thread(lua_State *L) {
 	 * setmetatable(tab0, tab0)
 	 * _G = tab0
 	 */
-//	lua_newtable(thread);                       //[tab0]
-//	lua_pushvalue(thread, -1);                  //[tab0, tab0]
-//	lua_pushliteral(thread, "__index");         //[tab0, tab0, "__index"]
-//	lua_pushvalue(thread, LUA_GLOBALSINDEX);    //[tab0, tab0, "__index", _G]
-//	lua_settable(thread, -3);                   //[tab0, tab0] -- tab0["__index"] = _G
-//	lua_setmetatable(thread, -2);               //[tab0] -- setmetatable(tab0, tab0)
-//	lua_replace(thread, LUA_GLOBALSINDEX);      //[] -- _G = tab0
+	lua_newtable(thread);                       //[tab0]
+	lua_pushvalue(thread, -1);                  //[tab0, tab0]
+	lua_pushliteral(thread, "__index");         //[tab0, tab0, "__index"]
+	lua_pushvalue(thread, LUA_GLOBALSINDEX);    //[tab0, tab0, "__index", _G]
+	lua_settable(thread, -3);                   //[tab0, tab0] -- tab0["__index"] = _G
+	lua_setmetatable(thread, -2);               //[tab0] -- setmetatable(tab0, tab0)
+	lua_replace(thread, LUA_GLOBALSINDEX);      //[] -- _G = tab0
 
 	return thread;
+}
+
+void Teste_new(lua_State* L, const char* name) {
+	lua_getglobal(L, "Teste");
+	lua_getfield(L, -1, "new");
+	lua_getglobal(L, "Teste");
+	lua_newtable(L);
+	lua_pushstring(L, name);
+	lua_setfield(L, -2, "name");
+	lua_call(L, 2, 1);
+}
+
+void DerivedTeste_new(lua_State* L, const char* name, const char* derived_attr) {
+	lua_getglobal(L, "DerivedTeste");
+	lua_getfield(L, -1, "new");
+	lua_getglobal(L, "DerivedTeste");
+	lua_newtable(L);
+	lua_pushstring(L, name);
+	lua_setfield(L, -2, "name");
+	lua_pushstring(L, derived_attr);
+	lua_setfield(L, -2, "derived_attr");
+	lua_call(L, 2, 1);
+}
+
+void update(lua_State* L, const char* obj) {
+	lua_getglobal(L, obj);
+	lua_getmetatable(L, -1);
+	lua_remove(L, -2);
+	lua_getfield(L, -1, "update");
+	lua_getglobal(L, obj);
+	lua_call(L, 1, 0);
 }
 
 int main(int argc, char *argv[]) {
@@ -76,51 +107,33 @@ int main(int argc, char *argv[]) {
 	lua_setglobal(L, "my_sin");
 
 	luaL_dofile(L, "test.lua");
-//	luaL_loadfile(L, "test.lua");
-//	lua_setglobal(L, "teste");
 
-//	lua_pushstring(L, "L");
-//	lua_setglobal(L, "str");
+	DerivedTeste_new(L, "obj0 in L", "my derived attribute");
+	lua_setglobal(L, "obj0");
 
 	lua_State* state0 = lua_create_thread(L);
 	lua_State* state1 = lua_create_thread(L);
 
-//	lua_pushstring(state0, "state0");
-//	lua_setglobal(state0, "str");
-//
-//	lua_pushstring(state1, "state1");
-//	lua_setglobal(state1, "str");
+	Teste_new(state0, "obj in state0");
+	lua_setglobal(state0, "obj");
 
-	lua_getglobal(state0, "Teste");
-	lua_getfield(state0, -1, "teste");
-	lua_newtable(state0);
-	lua_setglobal(state0, "teste0");
-	lua_getglobal(state0, "teste0");
-	lua_call(state0, 1, 0);
+	Teste_new(state1, "obj in state1");
+	lua_setglobal(state1, "obj");
 
-	lua_getglobal(state1, "Teste");
-	lua_getfield(state1, -1, "teste");
-	lua_newtable(state1);
-	lua_setglobal(state1, "teste1");
-	lua_getglobal(state1, "teste1");
-	lua_call(state1, 1, 0);
+	update(L, "obj0");
+	update(state0, "obj");
+	update(state1, "obj");
+	fflush(stdout);
 
-	lua_getglobal(state0, "Teste");
-	lua_getfield(state0, -1, "teste");
-	lua_getglobal(state0, "teste0");
-	lua_call(state0, 1, 0);
+	update(L, "obj0");
+	update(state0, "obj");
+	update(state1, "obj");
+	fflush(stdout);
 
-	lua_getglobal(state1, "Teste");
-	lua_getfield(state1, -1, "teste");
-	lua_getglobal(state1, "teste1");
-	lua_call(state1, 1, 0);
-
-	lua_resume(state0, 0);
-	lua_resume(state1, 0);
-	lua_resume(state0, 0);
-	lua_resume(state1, 0);
-	lua_resume(state0, 0);
-	lua_resume(state1, 0);
+	update(L, "obj0");
+	update(state0, "obj");
+	update(state1, "obj");
+	fflush(stdout);
 
 	lua_close(L);
 

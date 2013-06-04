@@ -9,21 +9,25 @@
 --end
 
 local count = 0
---while 1 do
---	count = count + 1;
---	print("Count of:", count);
---	coroutine.yield();
---end
 
-Teste = {}
+Teste = {test = 0, name = "none"}
 
-function Teste:teste()
+function Teste:new(obj)
+	obj = obj or {}
+	setmetatable(obj, self)
+	self.__index = self
+	return obj
+end
+
+function Teste:update()
 	count = count + 1;
-	
-	if not self.test then
-		self.test = 0
-	end
-	
 	self.test = self.test + 1
-	print("Count of:", count, self.test);
+	print("Count of ", self.name, count, self.test)
+end
+
+DerivedTeste = Teste:new({derived_attr = "derived attribute"})
+
+function DerivedTeste:update()
+	Teste.update(self)
+	print(self.name, self.derived_attr, self.test)
 end
