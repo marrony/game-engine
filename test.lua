@@ -9,8 +9,21 @@
 --end
 
 local count = 0
-while 1 do
+--while 1 do
+--	count = count + 1;
+--	print("Count of:", count);
+--	coroutine.yield();
+--end
+
+Teste = {}
+
+function Teste:teste()
 	count = count + 1;
-	print("Count of:", count);
-	coroutine.yield();
+	
+	if not self.test then
+		self.test = 0
+	end
+	
+	self.test = self.test + 1
+	print("Count of:", count, self.test);
 end
