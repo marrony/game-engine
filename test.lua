@@ -1,12 +1,8 @@
 --print("Hello World from Lua")
---
---print_c("Hello World from C\n")
---
---print(my_sin(1))
 
---for k,v in pairs(_G) do
---	print(k, v)
---end
+print_c("Hello World from C\n")
+
+print(my_sin(1))
 
 local count = 0
 

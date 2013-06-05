@@ -9,13 +9,44 @@
 
 #include <math.h>
 
+void print_stack(lua_State* L) {
+	int n = lua_gettop(L);
+
+	lua_Debug debug;
+	lua_pushvalue(L, -(n+1));
+	lua_getinfo(L, ">n", &debug);
+
+	if(debug.name)
+		fprintf(stdout, "%s()\n", debug.name);
+
+	for(int i = n; i >= 1; i--) {
+		switch(int type = lua_type(L, i)) {
+		case LUA_TSTRING:
+			fprintf(stdout, "%d: %s\n", i, lua_tostring(L, i));
+			break;
+		case LUA_TBOOLEAN:
+			fprintf(stdout, "%d: %s\n", i, lua_toboolean(L, i) ? "true" : "false");
+			break;
+		case LUA_TNUMBER:
+			fprintf(stdout, "%d: %lf\n", i, lua_tonumber(L, i));
+			break;
+		default:
+			fprintf(stdout, "%d: %s\n", i, lua_typename(L, type));
+			break;
+		}
+	}
+	fflush(stdout);
+}
+
 static int print_c(lua_State *L) {
+	print_stack(L);
 	const char* str = lua_tostring(L, 1);
 	printf("%s", str);
 	return 0;
 }
 
 static int my_sin(lua_State *L) {
+	print_stack(L);
 	lua_pushnumber(L, sin(lua_tonumber(L, 1)));
 	return 1;
 }
@@ -94,42 +125,6 @@ void update(lua_State* L, const char* obj) {
 	lua_getfield(L, -1, "update");
 	lua_getglobal(L, obj);
 	lua_call(L, 1, 0);
-}
-
-void print_stack(lua_State* L) {
-	int n = lua_gettop(L);
-
-	for(int i = n; i >= 1; i--) {
-		switch(lua_type(L, i)) {
-		case LUA_TSTRING:
-			fprintf(stdout, "%s\n", lua_tostring(L, i));
-			break;
-		case LUA_TBOOLEAN:
-			fprintf(stdout, "%d\n", lua_toboolean(L, i));
-			break;
-		case LUA_TNUMBER:
-			fprintf(stdout, "%lf\n", lua_tonumber(L, i));
-			break;
-		case LUA_TFUNCTION:
-			fprintf(stdout, "function\n");
-			break;
-		case LUA_TNIL:
-			fprintf(stdout, "nil\n");
-			break;
-		case LUA_TTABLE:
-			fprintf(stdout, "table\n");
-			break;
-		case LUA_TTHREAD:
-			fprintf(stdout, "thread\n");
-			break;
-		case LUA_TUSERDATA:
-			fprintf(stdout, "userdata\n");
-			break;
-		case LUA_TLIGHTUSERDATA:
-			fprintf(stdout, "light userdata\n");
-			break;
-		}
-	}
 }
 
 int main(int argc, char *argv[]) {
