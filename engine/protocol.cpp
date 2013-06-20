@@ -8,6 +8,9 @@
 #include "json.h"
 #include "json_io.h"
 
+#include "quaternion.h"
+#include "vector3.h"
+
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -72,9 +75,30 @@ void protocol_send_load_mesh_message(Socket sock, const char* mesh) {
 
 	Json json = json_initialize(data, MAX_PROTOCOL_PACKET_SIZE);
 
+	Value translation = json_create_array(json);
+	Value orientation = json_create_array(json);
+	Value scale = json_create_array(json);
+
+	json_set_at(json, translation, 0, json_create_number(json, 0));
+	json_set_at(json, translation, 1, json_create_number(json, -5));
+	json_set_at(json, translation, 2, json_create_number(json, -150));
+
+	json_set_at(json, scale, 0, json_create_number(json, 1));
+	json_set_at(json, scale, 1, json_create_number(json, 1));
+	json_set_at(json, scale, 2, json_create_number(json, 1));
+
+	Quaternion qt = Quaternion::make(Vector3::make(0, 0, 1), 0);
+	json_set_at(json, orientation, 0, json_create_number(json, qt.s));
+	json_set_at(json, orientation, 1, json_create_number(json, qt.x));
+	json_set_at(json, orientation, 2, json_create_number(json, qt.y));
+	json_set_at(json, orientation, 3, json_create_number(json, qt.z));
+
 	json.root = json_create_object(json);
-	json_set_attribute(json, json.root, "type", json_create_string(json, "load-mesh"));
+	json_set_attribute(json, json.root, "type", json_create_string(json, "create-model"));
 	json_set_attribute(json, json.root, "mesh", json_create_string(json, mesh));
+	json_set_attribute(json, json.root, "translation", translation);
+	json_set_attribute(json, json.root, "orientation", orientation);
+	json_set_attribute(json, json.root, "scale", scale);
 	int nbytes = json_serialize(json, buffer, MAX_PROTOCOL_PACKET_SIZE);
 
 	json_free(json);

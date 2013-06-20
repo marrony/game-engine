@@ -39,21 +39,16 @@ public:
 		};
 	};
 
-	INLINE Quaternion() {
+	static INLINE Quaternion make(float s, float x, float y, float z) {
+		Quaternion qt = {s, x, y, z};
+		return qt;
 	}
 
-	INLINE Quaternion(float _s, float _x, float _y, float _z) :
-		s(_s), x(_x), y(_y), z(_z) {
-	}
-
-	INLINE Quaternion(const Vector3& axis, float angle) {
+	static INLINE Quaternion make(const Vector3& axis, float angle) {
 		const float si = std::sin(angle*0.5);
 		const float co = std::cos(angle*0.5);
-
-		s = co;
-		x = axis.x * si;
-		y = axis.y * si;
-		z = axis.z * si;
+		Quaternion qt = {co, axis.x * si, axis.y * si, axis.z * si};
+		return qt;
 	}
 
 //	INLINE Quaternion(const EulerAngle& angles) {
@@ -78,7 +73,7 @@ public:
 //	}
 
 	INLINE Quaternion conjugate() const {
-		return Quaternion(s, -x, -y, -z);
+		return Quaternion::make(s, -x, -y, -z);
 	}
 
 	/**
@@ -94,7 +89,7 @@ public:
 		float _y = -y * invLength;
 		float _z = -z * invLength;
 
-		return Quaternion(_s, _x, _y, _z);
+		return Quaternion::make(_s, _x, _y, _z);
 	}
 
 	INLINE Quaternion normalize() const {
@@ -105,7 +100,7 @@ public:
 		float _y = y * invLength;
 		float _z = z * invLength;
 
-		return Quaternion(_s, _x, _y, _z);
+		return Quaternion::make(_s, _x, _y, _z);
 	}
 
 	INLINE float length() const {
@@ -113,7 +108,7 @@ public:
 	}
 
 	INLINE Quaternion operator-() const {
-		return Quaternion(-s, -x, -y, -z);
+		return Quaternion::make(-s, -x, -y, -z);
 	}
 
 	INLINE Quaternion& operator+=(const Quaternion& other) {
@@ -217,7 +212,7 @@ public:
 			qz = 0.25 * S;
 		}
 
-		return Quaternion(qs, qx, qy, qz);
+		return Quaternion::make(qs, qx, qy, qz);
 	}
 };
 
@@ -231,7 +226,7 @@ INLINE Quaternion exp(const Quaternion& q, float exp) {
 		float alpha2 = alpha * exp;
 		float mult = std::sin(alpha2) / std::sin(alpha);
 
-		return Quaternion(std::cos(alpha), q.x * mult, q.y * mult, q.z * mult);
+		return Quaternion::make(std::cos(alpha), q.x * mult, q.y * mult, q.z * mult);
 	} else {
 		return q;
 	}
@@ -270,7 +265,7 @@ INLINE Quaternion slerp(const Quaternion& q0, const Quaternion& q2, float t) {
 		k1 = std::sin(t * omega) * sinOmegaInv;
 	}
 
-	return Quaternion(
+	return Quaternion::make(
 			q0.s * k0 + q1.s * k1,
 			q0.x * k0 + q1.x * k1,
 			q0.y * k0 + q1.y * k1,
@@ -284,7 +279,7 @@ INLINE Quaternion operator+(const Quaternion& q1, const Quaternion& q2) {
 	float _y = q1.y + q2.y;
 	float _z = q1.z + q2.z;
 
-	return Quaternion(_s, _x, _y, _z);
+	return Quaternion::make(_s, _x, _y, _z);
 }
 
 INLINE Quaternion operator*(const Quaternion& q1, float k) {
@@ -293,7 +288,7 @@ INLINE Quaternion operator*(const Quaternion& q1, float k) {
 	float _y = q1.y * k;
 	float _z = q1.z * k;
 
-	return Quaternion(_s, _x, _y, _z);
+	return Quaternion::make(_s, _x, _y, _z);
 }
 
 INLINE Quaternion operator*(float k, const Quaternion& q1) {
@@ -302,7 +297,7 @@ INLINE Quaternion operator*(float k, const Quaternion& q1) {
 	float _y = q1.y * k;
 	float _z = q1.z * k;
 
-	return Quaternion(_s, _x, _y, _z);
+	return Quaternion::make(_s, _x, _y, _z);
 }
 
 INLINE Quaternion operator/(const Quaternion& q1, float k) {
@@ -312,7 +307,7 @@ INLINE Quaternion operator/(const Quaternion& q1, float k) {
 	float _y = q1.y * invK;
 	float _z = q1.z * invK;
 
-	return Quaternion(_s, _x, _y, _z);
+	return Quaternion::make(_s, _x, _y, _z);
 }
 
 INLINE Quaternion operator*(const Quaternion& q1, const Quaternion& q2) {
@@ -321,11 +316,11 @@ INLINE Quaternion operator*(const Quaternion& q1, const Quaternion& q2) {
 	float _y = q1.s*q2.y - q1.x*q2.z + q1.y*q2.s + q1.z*q2.x;
 	float _z = q1.s*q2.z + q1.x*q2.y - q1.y*q2.x + q1.z*q2.s;
 
-	return Quaternion(_s, _x, _y, _z);
+	return Quaternion::make(_s, _x, _y, _z);
 }
 
 INLINE Vector3 operator*(const Quaternion& q1, const Vector3& v) {
-	Quaternion q0(0, v.x, v.y, v.z);
+	Quaternion q0 = Quaternion::make(0, v.x, v.y, v.z);
 
 	Quaternion vt = q1 * q0 * q1.invert();
 

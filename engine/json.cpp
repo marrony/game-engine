@@ -460,7 +460,9 @@ Value json_create_int(Json& json, int value) {
 }
 
 Value json_create_number(Json& json, double value) {
-	Value v = JSON_NUMBER(value);
+	Value v; // = JSON_NUMBER(value);
+	v.type = TP_NUMBER;
+	v.number = value;
 	return v;
 }
 
@@ -550,7 +552,7 @@ static void json_print(const Json& json, PrintfBuffer& buffer, const Value* valu
 		buffer.snprintf("%d", value->integer);
 		break;
 	case TP_NUMBER:
-		buffer.snprintf("%lf", value->number);
+		buffer.snprintf("%f", value->number);
 		break;
 	case TP_OBJECT:
 		buffer.snprintf("{");

@@ -64,7 +64,42 @@ inline uint64_t SEQUENCE_BITS(uint64_t sequence) {
 	return sequence & SEQUENCE_MASK;
 }
 
-void Engine::load_mesh(const char* mesh_name) {
+int32_t Engine::load_mesh(const char* mesh_name) {
+	Mesh* mesh = mesh_read(mesh_name);
+
+	MeshLoaded* mesh_loaded = (MeshLoaded*)malloc(sizeof(MeshLoaded) + sizeof(Batch)*mesh->batch_count);
+	strcpy(mesh_loaded->name, mesh_name);
+	mesh_loaded->batch_count = mesh->batch_count;
+	memcpy(mesh_loaded->batches, mesh->batches_pointer(), sizeof(Batch)*mesh->batch_count);
+
+	for(int i = 0; i < Mesh::MaxAttributes; i++) {
+		if(mesh->offsets[i] != -1)
+			mesh_loaded->offsets[i] = mesh->offsets[i] - mesh->index_size();
+		else
+			mesh_loaded->offsets[i] = -1;
+	}
+
+	glGenBuffers(1, &mesh_loaded->vertex_buffer);
+	glGenBuffers(1, &mesh_loaded->index_buffer);
+
+	glBindBuffer(GL_ARRAY_BUFFER, mesh_loaded->vertex_buffer);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh_loaded->index_buffer);
+
+	glBufferData(GL_ARRAY_BUFFER, mesh->vertex_size(), mesh->vertex_pointer(), GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->index_size(), mesh->index_pointer(), GL_STATIC_DRAW);
+
+	mesh_destroy(mesh);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+	int32_t mesh_index = meshes_loaded.size();
+	meshes_loaded.push_back(mesh_loaded);
+
+	return mesh_index;
+}
+
+int32_t Engine::create_model(const char* mesh_name) {
 	MeshLoaded* mesh_loaded = NULL;
 	int32_t mesh_index = 0;
 
@@ -77,52 +112,27 @@ void Engine::load_mesh(const char* mesh_name) {
 	}
 
 	if(!mesh_loaded) {
-		Mesh* mesh = mesh_read(mesh_name);
-
-		mesh_loaded = (MeshLoaded*)malloc(sizeof(MeshLoaded) + sizeof(Batch)*mesh->batch_count);
-		strcpy(mesh_loaded->name, mesh_name);
-		mesh_loaded->batch_count = mesh->batch_count;
-		memcpy(mesh_loaded->batches, mesh->batches_pointer(), sizeof(Batch)*mesh->batch_count);
-
-		for(int i = 0; i < Mesh::MaxAttributes; i++) {
-			if(mesh->offsets[i] != -1)
-				mesh_loaded->offsets[i] = mesh->offsets[i] - mesh->index_size();
-			else
-				mesh_loaded->offsets[i] = -1;
-		}
-
-		glGenBuffers(1, &mesh_loaded->vertex_buffer);
-		glGenBuffers(1, &mesh_loaded->index_buffer);
-
-		glBindBuffer(GL_ARRAY_BUFFER, mesh_loaded->vertex_buffer);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh_loaded->index_buffer);
-
-		glBufferData(GL_ARRAY_BUFFER, mesh->vertex_size(), mesh->vertex_pointer(), GL_STATIC_DRAW);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->index_size(), mesh->index_pointer(), GL_STATIC_DRAW);
-
-		mesh_destroy(mesh);
-
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-		mesh_index = meshes_loaded.size();
-		meshes_loaded.push_back(mesh_loaded);
+		mesh_index = load_mesh(mesh_name);
+		mesh_loaded = meshes_loaded[mesh_index];
 	}
 
 	Model* model = (Model*)malloc(sizeof(Model) + sizeof(int16_t)*mesh_loaded->batch_count);
 	model->material_count = mesh_loaded->batch_count;
+	model->node = scene_graph.create_node();
 	model->mesh = mesh_index;
 
-	for(int8_t i = 0; i < mesh_loaded->batch_count; i++) {
+	for(int8_t i = 0; i < mesh_loaded->batch_count; i++)
 		model->material[i] = i % materials.size();
-	}
 
-	model->node = scene_graph.create_node();
-
-	Matrix4 m = Matrix4::translateMatrix(Vector3::make(0, -5, -150));
-	scene_graph.transform_node(model->node, m);
-
+	int32_t model_index = models.size();
 	models.push_back(model);
+	return model_index;
+}
+
+void Engine::transform_model(int32_t model, const Matrix4& m) {
+	if(model < 0 || model >= models.size()) return;
+
+	scene_graph.transform_node(models[model]->node, m);
 }
 
 void Engine::resize(int width, int height) {
@@ -509,7 +519,7 @@ int Engine::rotate_node(lua_State *L) {
 
 	Engine* engine = get_engine(L);
 
-	Matrix4 rotationMatrix = Matrix4::rotationMatrix(Quaternion(axis[axis_idx], ang));
+	Matrix4 rotationMatrix = Matrix4::rotationMatrix(Quaternion::make(axis[axis_idx], ang));
 	engine->scene_graph.transform_node(node, rotationMatrix);
 
 	return 0;

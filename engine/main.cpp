@@ -97,9 +97,32 @@ int main(int argc, char* argv[]) {
 
 						engine.resize(width, height);
 						//swap_chain_resize(swap_chain, width, height);
-					} else if(!strcmp("load-mesh", json.data+type->string)) {
+					} else if(!strcmp("create-model", json.data+type->string)) {
 						Value* mesh = json_get_attribute(json, json.root, "mesh");
-						engine.load_mesh(json.data+mesh->string);
+						Value* translation = json_get_attribute(json, json.root, "translation");
+						Value* orientation = json_get_attribute(json, json.root, "orientation");
+						Value* scale = json_get_attribute(json, json.root, "scale");
+
+						Value* translation_x = json_get_at(json, *translation, 0);
+						Value* translation_y = json_get_at(json, *translation, 1);
+						Value* translation_z = json_get_at(json, *translation, 2);
+
+						Value* scale_x = json_get_at(json, *scale, 0);
+						Value* scale_y = json_get_at(json, *scale, 1);
+						Value* scale_z = json_get_at(json, *scale, 2);
+
+						Value* orientation_s = json_get_at(json, *orientation, 0);
+						Value* orientation_x = json_get_at(json, *orientation, 1);
+						Value* orientation_y = json_get_at(json, *orientation, 2);
+						Value* orientation_z = json_get_at(json, *orientation, 3);
+
+						Quaternion ori = Quaternion::make(orientation_s->number, orientation_x->number, orientation_y->number, orientation_z->number);
+						Vector3 sc = Vector3::make(scale_x->number, scale_y->number, scale_z->number);
+						Vector3 tr = Vector3::make(translation_x->number, translation_y->number, translation_z->number);
+
+						Matrix4 m = Matrix4::transformationMatrix(ori, tr, sc);
+						int32_t model = engine.create_model(json.data+mesh->string);
+						engine.transform_model(model, m);
 					}
 				}
 

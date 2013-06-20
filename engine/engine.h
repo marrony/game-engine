@@ -213,10 +213,13 @@ class Engine {
 		((Engine*)item.data)->update();
 	}
 
+	int32_t load_mesh(const char* mesh_name);
 public:
 	Engine();
 
-	void load_mesh(const char* mesh_name);
+	int32_t create_model(const char* mesh_name);
+	void transform_model(int32_t model, const Matrix4& m);
+
 	void resize(int width, int height);
 
 	void initialize(WindowID handle, int width, int height);
