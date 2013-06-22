@@ -19,7 +19,7 @@ endif(NOT ANDROID)
 
 add_library(socket_static STATIC socket.cpp)
 add_library(json_static STATIC json.cpp)
-add_library(engine_static STATIC engine.cpp swap_chain.cpp shader.cpp task.cpp scene_graph.cpp)
+add_library(engine_static STATIC engine.cpp swap_chain.cpp shader.cpp task.cpp entity.cpp scene_graph.cpp)
 add_library(stream_static STATIC stream.cpp)
 add_library(protocol_static STATIC protocol.cpp)
 

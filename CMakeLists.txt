@@ -79,3 +79,5 @@ add_executable(solver ${solver_srcs})
 add_executable(lua-tutorial tutorial.cpp)
 target_link_libraries(lua-tutorial ${LUA_LIBRARIES})
 #add_dependencies(lua-tutorial luajit)
+
+add_executable(spikes spikes.cpp)

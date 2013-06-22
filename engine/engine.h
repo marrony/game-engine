@@ -16,6 +16,7 @@
 #include "mesh_io.h"
 #include "task.h"
 #include "scene_graph.h"
+#include "entity.h"
 #include "shader.h"
 
 #include "vector2.h"
@@ -177,6 +178,7 @@ class Engine {
 	TaskManager task_manager;
 	SceneGraph scene_graph;
 	ShaderSystem shader_system;
+	EntitySystem entity_system;
 	SwapChain swap_chain;
 	bool need_resize;
 

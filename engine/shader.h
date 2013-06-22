@@ -41,6 +41,8 @@ struct Location {
 	uint32_t type;
 };
 
+class EntitySystem;
+
 class ShaderSystem {
 	struct Shader {
 		const char* name;
@@ -52,6 +54,9 @@ class ShaderSystem {
 
 	std::vector<Shader> shaders;
 public:
+	void initialize(EntitySystem& entity_system);
+	void finalize();
+
 	int32_t create_shader(const char* name, size_t source_count, const Source* sources);
 	int32_t load_shader(const char* filename);
 	int32_t find_shader(const char* name);

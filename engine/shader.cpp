@@ -7,6 +7,7 @@
 
 #include "shader.h"
 #include "opengl.h"
+#include "entity.h"
 #include "mesh.h"
 
 #include <string.h>
@@ -91,6 +92,13 @@ static uint32_t compile_shader(const Source& source) {
 	}
 
 	return shader_id;
+}
+
+void ShaderSystem::initialize(EntitySystem& entity_system) {
+	entity_system.create_entity("");
+}
+
+void ShaderSystem::finalize() {
 }
 
 int32_t ShaderSystem::create_shader(const char* name, size_t source_count, const Source* sources) {

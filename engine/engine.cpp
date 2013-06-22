@@ -543,6 +543,8 @@ void Engine::initialize(WindowID handle, int width, int height) {
 
 	swap_chain.create(handle, width, height);
 
+	shader_system.initialize(entity_system);
+
 	task_manager.initialize(32);
 
 #ifdef ANDROID
