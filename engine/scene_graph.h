@@ -33,6 +33,10 @@ public:
 	Matrix4 get_local_matrix(int32_t node) const;
 	Matrix4 get_world_matrix(int32_t node) const;
 
+	const std::vector<Matrix4>& get_world_matrices() const {
+		return world;
+	}
+
 	int32_t create_node(int32_t parent = ROOT);
 	void destroy_node(int32_t node);
 

@@ -69,7 +69,7 @@ void protocol_send_window_message(Socket sock, intptr_t window, int width, int h
 	protocol_send_raw_packet(sock, buffer, nbytes);
 }
 
-void protocol_send_load_mesh_message(Socket sock, const char* mesh) {
+void protocol_send_load_mesh_message(Socket sock, const char* entity, const char* mesh) {
 	char buffer[MAX_PROTOCOL_PACKET_SIZE];
 	char data[MAX_PROTOCOL_PACKET_SIZE];
 
@@ -96,6 +96,7 @@ void protocol_send_load_mesh_message(Socket sock, const char* mesh) {
 	json.root = json_create_object(json);
 	json_set_attribute(json, json.root, "type", json_create_string(json, "create-model"));
 	json_set_attribute(json, json.root, "mesh", json_create_string(json, mesh));
+	json_set_attribute(json, json.root, "entity", json_create_string(json, entity));
 	json_set_attribute(json, json.root, "translation", translation);
 	json_set_attribute(json, json.root, "orientation", orientation);
 	json_set_attribute(json, json.root, "scale", scale);

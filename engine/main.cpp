@@ -99,6 +99,7 @@ int main(int argc, char* argv[]) {
 						//swap_chain_resize(swap_chain, width, height);
 					} else if(!strcmp("create-model", json.data+type->string)) {
 						Value* mesh = json_get_attribute(json, json.root, "mesh");
+						Value* entity_name = json_get_attribute(json, json.root, "entity");
 						Value* translation = json_get_attribute(json, json.root, "translation");
 						Value* orientation = json_get_attribute(json, json.root, "orientation");
 						Value* scale = json_get_attribute(json, json.root, "scale");
@@ -120,8 +121,11 @@ int main(int argc, char* argv[]) {
 						Vector3 sc = Vector3::make(scale_x->number, scale_y->number, scale_z->number);
 						Vector3 tr = Vector3::make(translation_x->number, translation_y->number, translation_z->number);
 
+						int32_t entity = engine.create_entity(json.data+entity_name->string);
+						engine.create_model(entity, json.data+mesh->string);
+						engine.create_node(entity);
+
 						Matrix4 m = Matrix4::transformationMatrix(ori, tr, sc);
-						int32_t entity = engine.create_model(json.data+mesh->string);
 						engine.transform_model(entity, m);
 					}
 				}

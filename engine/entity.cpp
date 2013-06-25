@@ -21,7 +21,7 @@ int32_t EntitySystem::register_component(const char* component_type) {
 	return index;
 }
 
-int32_t EntitySystem::create_entity(const char* entity_name) {
+int32_t EntitySystem::create_entity(const std::string& entity_name) {
 	int32_t id = entities.size();
 
 	entities.push_back(entity_name);

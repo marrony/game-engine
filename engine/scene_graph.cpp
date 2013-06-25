@@ -6,6 +6,7 @@
  */
 
 #include "scene_graph.h"
+#include "entity.h"
 
 void SceneGraph::initialize(EntitySystem& entity_system) {
 	Matrix4 m = MATRIX4_IDENTITY;

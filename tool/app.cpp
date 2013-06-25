@@ -87,9 +87,9 @@ int Application::run() {
 
 	protocol_send_window_message(sock, (intptr_t)window, width, height);
 	protocol_send_create_material_message(sock);
-	protocol_send_load_mesh_message(sock, "Seymour_triangulate.dae.mesh");
-	protocol_send_load_mesh_message(sock, "Seymour_triangulate.dae.mesh");
-	protocol_send_load_mesh_message(sock, "duck_triangulate.dae.mesh");
+	protocol_send_load_mesh_message(sock, "entity0", "Seymour_triangulate.dae.mesh");
+	protocol_send_load_mesh_message(sock, "entity1", "Seymour_triangulate.dae.mesh");
+	protocol_send_load_mesh_message(sock, "entity2", "duck_triangulate.dae.mesh");
 
 	running = true;
 	while (running) {
@@ -138,7 +138,7 @@ void Application::on_key_up(AppKeyCode key) {
 		return;
 
 	if(key == KEY_F1)
-		protocol_send_load_mesh_message(sock, "duck_triangulate.mesh");
+		protocol_send_load_mesh_message(sock, "entity-teste", "duck_triangulate.mesh");
 
 	keys_pressed[key] = false;
 }

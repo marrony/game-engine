@@ -6,6 +6,10 @@
  */
 
 #include "render.h"
+#include "entity.h"
+#include "scene_graph.h"
+#include "mesh_io.h"
+#include "swap_chain.h"
 
 enum CommandType {
 	PreDraw  = 0,
@@ -74,6 +78,214 @@ void get_error() {
 }
 #endif
 
+void RenderSystem::initialize(EntitySystem& entity_system, SwapChain* swap_chain) {
+	MODEL_TYPE = entity_system.register_component("Model");
+
+	need_resize = true;
+	this->swap_chain = swap_chain;
+
+#define STRINGFY(x) #x
+
+	Source sources0[2];
+	Source sources1[2];
+
+	sources0[0].type = VertexShader;
+	sources0[0].source = STRINGFY(
+		uniform mat4 modelViewMatrix;
+		uniform mat4 projectionMatrix;
+		uniform mat3 normalMatrix;
+
+		attribute vec4 vPosition;
+		attribute vec3 vNormal;
+
+		varying vec3 N;
+		varying vec4 V;
+
+		void main() {
+			N = normalMatrix * vNormal;
+			V = modelViewMatrix * vPosition;
+			gl_Position = projectionMatrix * modelViewMatrix * vPosition;
+		}
+	);
+
+	sources0[1].type = FragmentShader;
+	sources0[1].source = STRINGFY(
+		uniform vec3 lightPosition;
+
+		varying vec3 N;
+		varying vec4 V;
+
+		void main() {
+			vec3 light_dir = normalize(lightPosition - V.xyz);
+			vec3 normal = normalize(N);
+
+			float shade = /*clamp(*/dot(normal, light_dir)/*, 0, 1)*/;
+			gl_FragColor = vec4(0.0, 1.0, 0.0, 0.5) * vec4(vec3(shade), 1);
+		}
+	);
+
+	sources1[0].type = VertexShader;
+	sources1[0].source = STRINGFY(
+		uniform mat4 modelViewMatrix;
+		uniform mat4 projectionMatrix;
+		uniform mat3 normalMatrix;
+
+		attribute vec4 vPosition;
+		attribute vec3 vNormal;
+
+		varying vec3 N;
+		varying vec4 V;
+
+		void main() {
+			N = normalMatrix * vNormal;
+			V = modelViewMatrix * vPosition;
+			gl_Position = projectionMatrix * modelViewMatrix * vPosition;
+		}
+	);
+
+	sources1[1].type = FragmentShader;
+	sources1[1].source = STRINGFY(
+		uniform vec3 lightPosition;
+
+		varying vec3 N;
+		varying vec4 V;
+
+		void main() {
+			vec3 light_dir = normalize(lightPosition - V.xyz);
+			vec3 normal = normalize(N);
+
+			float shade = /*clamp(*/dot(normal, light_dir)/*, 0, 1)*/;
+			gl_FragColor = vec4(0.0, 0.0, 1.0, 0.5) * vec4(vec3(shade), 1);
+		}
+	);
+
+#undef STRINGFY
+
+	int32_t shader0 = shader_system.create_shader("shader0", 2, sources0);
+	int32_t shader1 = shader_system.create_shader("shader1", 2, sources1);
+
+	Material* material0 = (Material*)malloc(sizeof(Material) + sizeof(Pass)*2);
+	material0->pass_count = 1;
+
+	material0->passes[0].shader = shader0;
+	material0->passes[0].cull_face = Render::Enabled;
+	material0->passes[0].face_mode = GL_BACK;
+	material0->passes[0].front_face = GL_CCW;
+	material0->passes[0].depth_test = Render::Enabled;
+	material0->passes[0].depth_function = GL_LEQUAL;
+	material0->passes[0].blend = Render::Disabled;
+	material0->passes[0].blend_src = GL_SRC_ALPHA;
+	material0->passes[0].blend_dst = GL_ONE_MINUS_SRC_ALPHA;
+	material0->passes[0].blend_equation = GL_FUNC_ADD;
+	material0->passes[0].scissor = Render::Ignore;
+	material0->passes[0].scissor_offset_x = 0.25f;
+	material0->passes[0].scissor_offset_y = 0.25f;
+	material0->passes[0].scissor_height = 0.5f;
+	material0->passes[0].scissor_width = 0.5f;
+
+	material0->passes[1].shader = shader0;
+	material0->passes[1].cull_face = Render::Enabled;
+	material0->passes[1].face_mode = GL_BACK;
+	material0->passes[1].front_face = GL_CCW;
+	material0->passes[1].depth_test = Render::Enabled;
+	material0->passes[1].depth_function = GL_LEQUAL;
+	material0->passes[1].blend = Render::Disabled;
+	material0->passes[1].blend_src = GL_SRC_ALPHA;
+	material0->passes[1].blend_dst = GL_ONE;
+	material0->passes[1].blend_equation = GL_FUNC_ADD;
+
+	materials.push_back(material0);
+
+	Material* material1 = (Material*)malloc(sizeof(Material) + sizeof(Pass)*2);
+	material1->pass_count = 1;
+
+	material1->passes[0].shader = shader1;
+	material1->passes[0].cull_face = Render::Enabled;
+	material1->passes[0].face_mode = GL_BACK;
+	material1->passes[0].front_face = GL_CCW;
+	material1->passes[0].depth_test = Render::Enabled;
+	material1->passes[0].depth_function = GL_LEQUAL;
+	material1->passes[0].blend = Render::Disabled;
+	material1->passes[0].blend_src = GL_SRC_ALPHA;
+	material1->passes[0].blend_dst = GL_ONE_MINUS_SRC_ALPHA;
+	material1->passes[0].blend_equation = GL_FUNC_ADD;
+	material1->passes[0].scissor = Render::Ignore;
+	material1->passes[0].scissor_offset_x = 0.25f;
+	material1->passes[0].scissor_offset_y = 0.25f;
+	material1->passes[0].scissor_height = 0.5f;
+	material1->passes[0].scissor_width = 0.5f;
+	materials.push_back(material1);
+}
+
+void RenderSystem::finalize() {
+}
+
+int32_t RenderSystem::load_mesh(const char* mesh_name) {
+	Mesh* mesh = mesh_read(mesh_name);
+
+	MeshLoaded* mesh_loaded = (MeshLoaded*)malloc(sizeof(MeshLoaded) + sizeof(Batch)*mesh->batch_count);
+	strcpy(mesh_loaded->name, mesh_name);
+	mesh_loaded->batch_count = mesh->batch_count;
+	memcpy(mesh_loaded->batches, mesh->batches_pointer(), sizeof(Batch)*mesh->batch_count);
+
+	for(int i = 0; i < Mesh::MaxAttributes; i++) {
+		if(mesh->offsets[i] != -1)
+			mesh_loaded->offsets[i] = mesh->offsets[i] - mesh->index_size();
+		else
+			mesh_loaded->offsets[i] = -1;
+	}
+
+	glGenBuffers(1, &mesh_loaded->vertex_buffer);
+	glGenBuffers(1, &mesh_loaded->index_buffer);
+
+	glBindBuffer(GL_ARRAY_BUFFER, mesh_loaded->vertex_buffer);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh_loaded->index_buffer);
+
+	glBufferData(GL_ARRAY_BUFFER, mesh->vertex_size(), mesh->vertex_pointer(), GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->index_size(), mesh->index_pointer(), GL_STATIC_DRAW);
+
+	mesh_destroy(mesh);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+	int32_t mesh_index = meshes_loaded.size();
+	meshes_loaded.push_back(mesh_loaded);
+
+	return mesh_index;
+}
+
+int32_t RenderSystem::create_model(const char* mesh_name) {
+	MeshLoaded* mesh_loaded = NULL;
+	int32_t mesh_index = 0;
+
+	for(size_t i = 0; i < meshes_loaded.size(); i++) {
+		if(!strcmp(meshes_loaded[i]->name, mesh_name)) {
+			mesh_loaded = meshes_loaded[i];
+			mesh_index = i;
+			break;
+		}
+	}
+
+	if(!mesh_loaded) {
+		mesh_index = load_mesh(mesh_name);
+		mesh_loaded = meshes_loaded[mesh_index];
+	}
+
+	Model* model = (Model*)malloc(sizeof(Model) + sizeof(int16_t)*mesh_loaded->batch_count);
+	model->material_count = mesh_loaded->batch_count;
+	model->mesh = mesh_index;
+
+	for(int8_t i = 0; i < mesh_loaded->batch_count; i++)
+		model->material[i] = i % materials.size();
+
+	int32_t model_index = models.size();
+
+	models.push_back(model);
+
+	return model_index;
+}
+
 void RenderSystem::collect_attributes(Render& render, const MeshLoaded* mesh_loaded) {
 	const Material* material = materials[render.material_id];
 	const std::vector<Location> locations = shader_system.get_attributes(material->passes[render.pass_id].shader);
@@ -94,10 +306,10 @@ void RenderSystem::collect_attributes(Render& render, const MeshLoaded* mesh_loa
 	}
 }
 
-void RenderSystem::collect_uniforms(Render& render, int32_t node) {
+void RenderSystem::collect_uniforms(Render& render, SceneGraph& scene_graph, int32_t node) {
 	Matrix4 projectionMatrix = Matrix4::perspectiveMatrix(60, (float)width/(float)height, 0.1, 1000);
 	Matrix4 viewMatrix = Matrix4::lookAtMatrix(Vector3::make(0, 0, 0), Vector3::make(0, 0, -1));
-	Matrix4 modelMatrix = scene_graph.get_world_matrix(node);
+	Matrix4 modelMatrix = scene_graph.get_world_matrices()[node];
 	Matrix4 modelViewMatrix = viewMatrix * modelMatrix;
 	Matrix3 normalMatrix = modelViewMatrix.upperLeft().inverse().transpose();
 
@@ -142,7 +354,7 @@ void RenderSystem::collect_uniforms(Render& render, int32_t node) {
 	}
 }
 
-void RenderSystem::collect_render_commands() {
+void RenderSystem::collect_render_commands(EntitySystem& entity_system, SceneGraph& scene_graph) {
 	render_list.clear();
 	uniform_list.clear();
 	attribute_list.clear();
@@ -150,7 +362,7 @@ void RenderSystem::collect_render_commands() {
 	int sequence = 0;
 
 	if(need_resize) {
-		swap_chain.resize(width, height);
+		swap_chain->resize(width, height);
 		need_resize = false;
 
 		render_list.push_back(Render());
@@ -168,29 +380,32 @@ void RenderSystem::collect_render_commands() {
 	render_list.back().clear_color = Vector4::make(1.0, 1.0, 1.0, 1.0);
 	render_list.back().clear_depth = 1.0;
 
-	if(!models.empty()) {
-		for(size_t j = 0; j < models.size(); j++) {
-			const Model* model = models[j];
-			const MeshLoaded* mesh_loaded = meshes_loaded[model->mesh];
+	for(int32_t j = 0; j < entity_system.entities_count(); j++) {
+		int32_t model_id = entity_system.get_component(j, MODEL_TYPE);
+		int32_t node_id = entity_system.get_component(j, scene_graph.TYPE);
 
-			for(int i = 0; i < mesh_loaded->batch_count; i++) {
-				const int16_t material_id = model->material[i];
-				const Material* material = materials[material_id];
+		if(model_id == -1) continue;
 
-				for(int pass_id = 0; pass_id < material->pass_count; pass_id++) {
-					render_list.push_back(Render());
+		const Model* model = models[model_id];
+		const MeshLoaded* mesh_loaded = meshes_loaded[model->mesh];
 
-					Render& render = render_list.back();
+		for(int i = 0; i < mesh_loaded->batch_count; i++) {
+			const int16_t material_id = model->material[i];
+			const Material* material = materials[material_id];
 
-					render.sort_key = COMMAND_BITS(Draw) | MATERIAL_BITS(material_id) | PASS_BITS(pass_id);
-					render.index_buffer = mesh_loaded->index_buffer;
-					render.vertex_buffer = mesh_loaded->vertex_buffer;
-					render.batch = mesh_loaded->batches[i];
-					render.material_id = material_id;
-					render.pass_id = pass_id;
-					collect_attributes(render, mesh_loaded);
-					collect_uniforms(render, model->node);
-				}
+			for(int pass_id = 0; pass_id < material->pass_count; pass_id++) {
+				render_list.push_back(Render());
+
+				Render& render = render_list.back();
+
+				render.sort_key = COMMAND_BITS(Draw) | MATERIAL_BITS(material_id) | PASS_BITS(pass_id);
+				render.index_buffer = mesh_loaded->index_buffer;
+				render.vertex_buffer = mesh_loaded->vertex_buffer;
+				render.batch = mesh_loaded->batches[i];
+				render.material_id = material_id;
+				render.pass_id = pass_id;
+				collect_attributes(render, mesh_loaded);
+				collect_uniforms(render, scene_graph, node_id);
 			}
 		}
 	}
@@ -349,6 +564,6 @@ void RenderSystem::render() {
 		get_error();
 	}
 
-	swap_chain.swap_buffers();
+	swap_chain->swap_buffers();
 	get_error();
 }
