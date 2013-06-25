@@ -34,3 +34,7 @@ int32_t EntitySystem::create_entity(const char* entity_name) {
 void EntitySystem::add_component(int32_t entity, int32_t type, int32_t component) {
 	ids[type][entity] = component;
 }
+
+int32_t EntitySystem::get_component(int32_t entity, int32_t type) {
+	return ids[type][entity];
+}

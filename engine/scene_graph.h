@@ -14,14 +14,19 @@
 
 #include <vector>
 
+class EntitySystem;
+
 class SceneGraph {
 	std::vector<Matrix4> local;
 	std::vector<Matrix4> world;
 	std::vector<int32_t> parents;
 public:
+	int32_t TYPE;
+
 	static const int32_t ROOT = 1;
 
-	SceneGraph();
+	void initialize(EntitySystem& entity_system);
+	void finalize();
 
 	void update();
 

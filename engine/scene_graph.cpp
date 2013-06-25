@@ -7,7 +7,7 @@
 
 #include "scene_graph.h"
 
-SceneGraph::SceneGraph() {
+void SceneGraph::initialize(EntitySystem& entity_system) {
 	Matrix4 m = MATRIX4_IDENTITY;
 
 	local.push_back(m);
@@ -17,6 +17,11 @@ SceneGraph::SceneGraph() {
 	local.push_back(m);
 	world.push_back(m);
 	parents.push_back(0);
+
+	TYPE = entity_system.register_component("SceneNode");
+}
+
+void SceneGraph::finalize() {
 }
 
 void SceneGraph::update() {

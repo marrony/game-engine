@@ -103,7 +103,7 @@ struct Material {
 
 struct Model {
 	int32_t mesh;
-	int32_t node;
+	//int32_t node;
 	int8_t material_count;
 	int16_t material[0];
 };

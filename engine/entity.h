@@ -23,6 +23,7 @@ public:
 	int32_t create_entity(const char* entity_name);
 
 	void add_component(int32_t entity, int32_t type, int32_t component);
+	int32_t get_component(int32_t entity, int32_t type);
 };
 
 #endif /* ENTITY_SYSTEM_H_ */

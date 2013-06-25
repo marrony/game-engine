@@ -121,8 +121,8 @@ int main(int argc, char* argv[]) {
 						Vector3 tr = Vector3::make(translation_x->number, translation_y->number, translation_z->number);
 
 						Matrix4 m = Matrix4::transformationMatrix(ori, tr, sc);
-						int32_t model = engine.create_model(json.data+mesh->string);
-						engine.transform_model(model, m);
+						int32_t entity = engine.create_model(json.data+mesh->string);
+						engine.transform_model(entity, m);
 					}
 				}
 

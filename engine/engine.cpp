@@ -116,23 +116,31 @@ int32_t Engine::create_model(const char* mesh_name) {
 		mesh_loaded = meshes_loaded[mesh_index];
 	}
 
+	int32_t entity = entity_system.create_entity("model");
+
 	Model* model = (Model*)malloc(sizeof(Model) + sizeof(int16_t)*mesh_loaded->batch_count);
 	model->material_count = mesh_loaded->batch_count;
-	model->node = scene_graph.create_node();
+	//model->node = scene_graph.create_node();
 	model->mesh = mesh_index;
+
+	int32_t node = scene_graph.create_node();
+
+	entity_system.add_component(entity, scene_graph.TYPE, node);
 
 	for(int8_t i = 0; i < mesh_loaded->batch_count; i++)
 		model->material[i] = i % materials.size();
 
-	int32_t model_index = models.size();
 	models.push_back(model);
-	return model_index;
+
+	return entity;
 }
 
-void Engine::transform_model(int32_t model, const Matrix4& m) {
-	if(model < 0 || model >= models.size()) return;
+void Engine::transform_model(int32_t entity, const Matrix4& m) {
+	//if(entity < 0 || entity >= models.size()) return;
 
-	scene_graph.transform_node(models[model]->node, m);
+	int32_t node = entity_system.get_component(entity, scene_graph.TYPE);
+
+	scene_graph.transform_node(node, m);
 }
 
 void Engine::resize(int width, int height) {
@@ -544,6 +552,7 @@ void Engine::initialize(WindowID handle, int width, int height) {
 	swap_chain.create(handle, width, height);
 
 	shader_system.initialize(entity_system);
+	scene_graph.initialize(entity_system);
 
 	task_manager.initialize(32);
 
