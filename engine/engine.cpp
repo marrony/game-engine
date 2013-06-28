@@ -57,7 +57,7 @@ void Engine::update() {
 
 	scene_graph.update();
 
-	render_system.collect_render_commands(entity_system, scene_graph);
+	render_system.collect_render_commands(scene_graph);
 }
 
 WorkItem Engine::update_task() {

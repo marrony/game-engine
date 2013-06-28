@@ -59,25 +59,21 @@ class Engine {
 	WorkItem update_task();
 
 	static void render_function(TaskId task, WorkItem& item) {
-		((Engine*)item.data)->render();
+		((Engine*) item.data)->render();
 	}
 
 	static void update_function(TaskId task, WorkItem& item) {
-		((Engine*)item.data)->update();
+		((Engine*) item.data)->update();
 	}
 public:
 	Engine();
 
 	int32_t create_model(int32_t entity, const char* mesh_name) {
-		int32_t model = render_system.create_model(mesh_name);
-		entity_system.add_component(entity, render_system.MODEL_TYPE, model);
-		return model;
+		return render_system.create_model(entity, mesh_name);
 	}
 
 	int32_t create_node(int32_t entity) {
-		int32_t node = scene_graph.create_node();
-		entity_system.add_component(entity, scene_graph.TYPE, node);
-		return node;
+		return scene_graph.create_node(entity);
 	}
 
 	int32_t create_entity(const std::string& entity_name) {

@@ -79,6 +79,8 @@ void get_error() {
 #endif
 
 void RenderSystem::initialize(EntitySystem& entity_system, SwapChain* swap_chain) {
+	this->entity_system = &entity_system;
+
 	MODEL_TYPE = entity_system.register_component("Model");
 
 	need_resize = true;
@@ -255,7 +257,7 @@ int32_t RenderSystem::load_mesh(const char* mesh_name) {
 	return mesh_index;
 }
 
-int32_t RenderSystem::create_model(const char* mesh_name) {
+int32_t RenderSystem::create_model(int32_t entity, const char* mesh_name) {
 	MeshLoaded* mesh_loaded = NULL;
 	int32_t mesh_index = 0;
 
@@ -282,6 +284,8 @@ int32_t RenderSystem::create_model(const char* mesh_name) {
 	int32_t model_index = models.size();
 
 	models.push_back(model);
+
+	entity_system->add_component(entity, MODEL_TYPE, model_index);
 
 	return model_index;
 }
@@ -354,7 +358,7 @@ void RenderSystem::collect_uniforms(Render& render, SceneGraph& scene_graph, int
 	}
 }
 
-void RenderSystem::collect_render_commands(EntitySystem& entity_system, SceneGraph& scene_graph) {
+void RenderSystem::collect_render_commands(SceneGraph& scene_graph) {
 	render_list.clear();
 	uniform_list.clear();
 	attribute_list.clear();
@@ -380,9 +384,12 @@ void RenderSystem::collect_render_commands(EntitySystem& entity_system, SceneGra
 	render_list.back().clear_color = Vector4::make(1.0, 1.0, 1.0, 1.0);
 	render_list.back().clear_depth = 1.0;
 
-	for(int32_t j = 0; j < entity_system.entities_count(); j++) {
-		int32_t model_id = entity_system.get_component(j, MODEL_TYPE);
-		int32_t node_id = entity_system.get_component(j, scene_graph.TYPE);
+	std::vector<int32_t> entities = scene_graph.get_visible_entities();
+
+	for(size_t j = 0; j < entities.size(); j++) {
+		int32_t entity = entities[j];
+		int32_t model_id = entity_system->get_component(entity, MODEL_TYPE);
+		int32_t node_id = entity_system->get_component(entity, scene_graph.TYPE);
 
 		if(model_id == -1) continue;
 

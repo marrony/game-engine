@@ -20,6 +20,8 @@ class SceneGraph {
 	std::vector<Matrix4> local;
 	std::vector<Matrix4> world;
 	std::vector<int32_t> parents;
+	std::vector<int32_t> entities;
+	EntitySystem* entity_system;
 public:
 	int32_t TYPE;
 
@@ -37,10 +39,12 @@ public:
 		return world;
 	}
 
-	int32_t create_node(int32_t parent = ROOT);
+	int32_t create_node(int32_t entity, int32_t parent = ROOT);
 	void destroy_node(int32_t node);
 
 	void transform_node(int32_t node, const Matrix4& m);
+
+	std::vector<int32_t> get_visible_entities();
 };
 
 #endif /* SCENE_GRAPH_H_ */

@@ -88,7 +88,6 @@ struct Material {
 
 struct Model {
 	int32_t mesh;
-	//int32_t node;
 	int8_t material_count;
 	int16_t material[0];
 };
@@ -159,6 +158,7 @@ class EntitySystem;
 class SwapChain;
 
 class RenderSystem {
+	EntitySystem* entity_system;
 	ShaderSystem shader_system;
 	std::vector<Material*> materials;
 	std::vector<MeshLoaded*> meshes_loaded;
@@ -181,13 +181,13 @@ public:
 	void initialize(EntitySystem& entity_system, SwapChain* swap_chain);
 	void finalize();
 
-	int32_t create_model(const char* mesh_name);
+	int32_t create_model(int32_t entity, const char* mesh_name);
 
 	void collect_attributes(Render& render, const MeshLoaded* mesh_loaded);
 
 	void collect_uniforms(Render& render, SceneGraph& scene_graph, int32_t node);
 
-	void collect_render_commands(EntitySystem& entity_system, SceneGraph& scene_graph);
+	void collect_render_commands(SceneGraph& scene_graph);
 
 	void resize(int width, int height) {
 		this->width = width;
