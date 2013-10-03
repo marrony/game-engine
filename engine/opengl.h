@@ -27,6 +27,13 @@ typedef HWND WindowID;
 #include <android_native_app_glue.h>
 
 typedef ANativeWindow* WindowID;
+#elif __APPLE__
+
+#include <GL/glew.h>
+#include <OpenGL/gl.h>
+
+typedef struct MacWindow* WindowID;
+
 #else
 #include <GL/glew.h>
 #include <GL/gl.h>

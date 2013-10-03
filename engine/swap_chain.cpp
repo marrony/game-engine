@@ -208,6 +208,27 @@ void SwapChain::process_events() {
 void SwapChain::resize(int width, int height) {
 }
 
+#elif __APPLE__
+
+struct MacWindow {
+
+};
+
+void SwapChain::create(WindowID handle, int width, int height) {
+}
+
+void SwapChain::destroy() {
+}
+
+void SwapChain::swap_buffers() {
+}
+
+void SwapChain::process_events() {
+}
+
+void SwapChain::resize(int width, int height) {
+}
+
 #else
 
 void SwapChain::create(WindowID handle, int width, int height) {

@@ -594,6 +594,8 @@ static void json_print(const Json& json, PrintfBuffer& buffer, const Value* valu
 	case TP_NULL:
 		buffer.snprintf("null");
 		break;
+	case TP_INVALID:
+		break;
 	}
 }
 

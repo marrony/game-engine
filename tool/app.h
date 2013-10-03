@@ -5,6 +5,7 @@
 #include <windows.h>
 #include <GL/gl.h>
 //#include <GL/glext.h>
+#elif __APPLE__
 #else
 #include <GL/gl.h>
 #include <GL/glx.h>
@@ -130,6 +131,8 @@ class Application {
 	HWND window;
 
 	static LRESULT CALLBACK MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+#elif __APPLE__
+	int window;
 #else
 	Window window;
 	Display* display;

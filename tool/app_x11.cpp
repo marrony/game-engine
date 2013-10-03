@@ -1,6 +1,6 @@
 #include "app.h"
 
-#ifndef WIN32
+#if (!WIN32 && !__APPLE__)
 
 void Application::initialize_variables() {
 	display = 0;

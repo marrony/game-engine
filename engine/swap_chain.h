@@ -22,6 +22,8 @@ struct SwapChain {
 	EGLContext context;
 	int width;
 	int height;
+#elif __APPLE__
+
 #else
 	Window parent;
 	Window window;

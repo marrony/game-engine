@@ -4,24 +4,29 @@ project(x11-win32)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
-if(UNIX AND NOT DEFINED ANDROID)
-find_package(X11 REQUIRED)
-set(LIBRARIES ${X11_LIBRARIES})
-endif(UNIX AND NOT DEFINED ANDROID)
+if(UNIX)
+   if(APPLE)
+   else(APPLE)
+      if(NOT DEFINED ANDROID)
+         find_package(X11 REQUIRED)
+         set(LIBRARIES ${X11_LIBRARIES})
+      endif(NOT DEFINED ANDROID)
+   endif(APPLE)
+endif(UNIX)
 
 if(WIN32)
-set(LIBRARIES ws2_32)
+   set(LIBRARIES ws2_32)
 endif(WIN32)
 
 if(NOT DEFINED ANDROID)
-set(CMAKE_THREAD_PREFER_PTHREAD)
-find_package(Threads REQUIRED)
+   set(CMAKE_THREAD_PREFER_PTHREAD)
+   find_package(Threads REQUIRED)
 endif(NOT DEFINED ANDROID)
 
 add_subdirectory(tinyxml)
 
 if(NOT ANDROID)
-add_subdirectory(collada)
+   add_subdirectory(collada)
 endif(NOT ANDROID)
 
 include_directories(lua/src)
@@ -64,17 +69,17 @@ add_subdirectory(engine)
 include_directories(engine)
 
 if(NOT ANDROID)
-add_subdirectory(tool)
+   add_subdirectory(tool)
 endif(NOT ANDROID)
 
 if(ANDROID)
-add_subdirectory(android)
+   add_subdirectory(android)
 endif(ANDROID)
 
 file(GLOB solver_srcs solver/*.cpp)
 
 #install(TARGETS prog DESTINATION bin)
-add_executable(solver ${solver_srcs})
+add_executable(solver-spike ${solver_srcs})
 
 add_executable(lua-tutorial tutorial.cpp)
 target_link_libraries(lua-tutorial ${LUA_LIBRARIES})
