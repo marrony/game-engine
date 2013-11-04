@@ -24,8 +24,9 @@ static void handle_cmd(struct android_app* app, int32_t cmd) {
 		// get the window ready for showing
 		engine->initialize(app->window, 0, 0);
 
-		engine->create_model("/mnt/sdcard/Seymour_triangulate.dae.mesh");
-		engine->create_model("/mnt/sdcard/duck_triangulate.dae.mesh");
+		int32_t entity = engine->create_entity("model");
+		engine->create_model(entity, "/mnt/sdcard/Seymour_triangulate.dae.mesh");
+		// engine->create_model("/mnt/sdcard/duck_triangulate.dae.mesh");
 
 		initialized = true;
 //
