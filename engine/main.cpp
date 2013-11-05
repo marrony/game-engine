@@ -49,7 +49,7 @@ int main(int argc, char* argv[]) {
 
 	server.create(port < 0 ? 9090 : port);
 
-	fprintf(stderr, "waint for connection\n");
+	fprintf(stderr, "wait for connection\n");
 	fflush(stderr);
 
 	client = server.accept();

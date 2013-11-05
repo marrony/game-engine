@@ -32,7 +32,7 @@ typedef ANativeWindow* WindowID;
 #include <GL/glew.h>
 #include <OpenGL/gl.h>
 
-typedef struct MacWindow* WindowID;
+typedef void* WindowID;
 
 #else
 #include <GL/glew.h>

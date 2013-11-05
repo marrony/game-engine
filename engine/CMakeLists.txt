@@ -19,14 +19,33 @@ endif(NOT ANDROID)
 
 add_library(socket_static STATIC socket.cpp)
 add_library(json_static STATIC json.cpp)
-add_library(engine_static STATIC engine.cpp swap_chain.cpp shader.cpp task.cpp entity.cpp scene_graph.cpp render.cpp)
+add_library(engine_static STATIC engine.cpp shader.cpp task.cpp entity.cpp scene_graph.cpp render.cpp)
 add_library(stream_static STATIC stream.cpp)
 add_library(protocol_static STATIC protocol.cpp)
+
+if(UNIX)
+    if(APPLE)
+        set(SWAP_CHAIN_SRC ${SWAP_CHAIN_SRC} swap_chain_mac.cpp swap_chain_mac.mm)
+    elseif(ANDROID)
+        set(SWAP_CHAIN_SRC ${SWAP_CHAIN_SRC} swap_chain_android.cpp)
+    else()
+        set(SWAP_CHAIN_SRC ${SWAP_CHAIN_SRC} swap_chain_x11.cpp)
+    endif()
+elseif(WIN32)
+    set(SWAP_CHAIN_SRC ${SWAP_CHAIN_SRC} swap_chain_win32.cpp)
+endif()
+
+add_library(swap_chain_static STATIC ${SWAP_CHAIN_SRC})
 
 if(NOT ANDROID)
 add_executable(engine main.cpp)
 target_link_libraries(
-    engine engine_static json_static socket_static protocol_static
+    engine
+    engine_static
+    json_static
+    socket_static
+    protocol_static
+    swap_chain_static
     ${LUA_LIBRARIES}
     ${OPENGL_LIBRARIES}
     ${GLEW_LIBRARY}
@@ -34,6 +53,6 @@ target_link_libraries(
     ${LIBRARIES}
 )
 
-add_dependencies(engine luajit)
+#add_dependencies(engine luajit)
 
 endif(NOT ANDROID)
