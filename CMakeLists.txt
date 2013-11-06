@@ -10,7 +10,7 @@ if(UNIX AND NOT DEFINED ANDROID)
       find_package(X11 REQUIRED)
       set(LIBRARIES ${X11_LIBRARIES})
    endif()
-endif(UNIX)
+endif()
 
 if(WIN32)
    set(LIBRARIES ws2_32)

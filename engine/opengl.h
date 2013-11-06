@@ -30,7 +30,7 @@ typedef ANativeWindow* WindowID;
 #elif __APPLE__
 
 #include <GL/glew.h>
-#include <OpenGL/gl.h>
+//#include <OpenGL/gl.h>
 
 typedef void* WindowID;
 

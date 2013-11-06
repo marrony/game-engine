@@ -133,7 +133,9 @@ void Engine::initialize(WindowID handle, int width, int height) {
 	this->width = width;
 	this->height = height;
 
+	printf("swap_chain.create\n");
 	swap_chain.create(handle, width, height);
+	printf("swap_chain.created\n");
 
 	scene_graph.initialize(entity_system);
 	render_system.initialize(entity_system, &swap_chain);

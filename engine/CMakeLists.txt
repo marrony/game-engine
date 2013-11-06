@@ -3,19 +3,19 @@ cmake_minimum_required(VERSION 2.6)
 project(engine)
 
 if(NOT ANDROID)
-find_package(OpenGL REQUIRED)
-find_package(GLEW REQUIRED)
-
-include_directories(${OPENGL_INCLUDE_DIRS})
-
-if(GLEW_FOUND)
-include_directories(${GLEW_INCLUDE_PATH})
-endif(GLEW_FOUND)
-
-else(NOT ANDROID)
-include_directories(${ANDROID_NDK}/sources/android/native_app_glue)
-include_directories(${ANDROID_NDK}/sources/android)
-endif(NOT ANDROID)
+    find_package(OpenGL REQUIRED)
+    find_package(GLEW REQUIRED)
+    
+    include_directories(${OPENGL_INCLUDE_DIRS})
+    
+    if(GLEW_FOUND)
+        include_directories(${GLEW_INCLUDE_PATH})
+    endif()
+    
+else()
+    include_directories(${ANDROID_NDK}/sources/android/native_app_glue)
+    include_directories(${ANDROID_NDK}/sources/android)
+endif()
 
 add_library(socket_static STATIC socket.cpp)
 add_library(json_static STATIC json.cpp)
@@ -26,6 +26,7 @@ add_library(protocol_static STATIC protocol.cpp)
 if(UNIX)
     if(APPLE)
         set(SWAP_CHAIN_SRC ${SWAP_CHAIN_SRC} swap_chain_mac.cpp swap_chain_mac.mm)
+        set(LIBRARIES ${LIBRARIES} "-framework Cocoa")
     elseif(ANDROID)
         set(SWAP_CHAIN_SRC ${SWAP_CHAIN_SRC} swap_chain_android.cpp)
     else()

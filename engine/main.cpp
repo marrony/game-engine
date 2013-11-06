@@ -66,9 +66,12 @@ int main(int argc, char* argv[]) {
 
 	int width = width_value->integer;
 	int height = height_value->integer;
+	fprintf(stderr, "initializing: %d %d %d\n", window_value->integer, width, height);
 	engine.initialize((WindowID)(intptr_t)window_value->integer, width, height);
+	fprintf(stderr, "initialized\n");
 
 	json_free(json);
+	fprintf(stderr, "initialized\n");
 
 	while(true) {
 		if(client.has_data()) {
@@ -134,7 +137,9 @@ int main(int argc, char* argv[]) {
 			}
 		}
 
+		fprintf(stderr, "run_one_frame()\n");
 		engine.run_one_frame();
+		fprintf(stderr, "run_one_framed()\n");
 	}
 
 	engine.finalize();

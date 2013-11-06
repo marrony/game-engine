@@ -23,7 +23,8 @@ struct SwapChain {
 	int width;
 	int height;
 #elif __APPLE__
-
+	void* window;
+	void* view;
 #else
 	Window parent;
 	Window window;
