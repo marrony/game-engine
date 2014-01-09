@@ -25,9 +25,9 @@ static StreamError refill_zeros(Stream* stream) {
 
 static StreamError fail_stream(Stream* stream, StreamError reason) {
 	stream->error = reason;
-	stream->refill = refill_zeros;
+	stream->_refill = refill_zeros;
 
-	return stream->refill(stream);
+	return stream->refill();
 }
 
 static StreamError refill_memory_stream(Stream* stream) {
@@ -44,12 +44,12 @@ void create_memory_stream(Stream* stream, const char* buffer, size_t size) {
 	stream->cursor = buffer;
 	stream->start = buffer;
 	stream->end = buffer + size;
-	stream->refill = refill_memory_stream;
-	stream->destroy = destroy_memory_stream;
+	stream->_refill = refill_memory_stream;
+	stream->_destroy = destroy_memory_stream;
 	stream->error = NoError;
 }
 
-const int FILE_BUFFER_SIZE = 256;
+const int FILE_BUFFER_SIZE = 2;
 
 static StreamError refill_file(FileStream* stream) {
 	int nbytes;
@@ -79,18 +79,19 @@ static void destroy_file_stream(FileStream* stream) {
 	stream->fd = 0;
 }
 
-void create_file_stream(FileStream* stream, const char* filename) {
-	stream->buffer = (const char*)malloc(FILE_BUFFER_SIZE);
-	stream->cursor = stream->buffer;
-	stream->start = stream->buffer;
-	stream->end = stream->start + FILE_BUFFER_SIZE;
+FileStream::FileStream(const char* filename) {
+	buffer = (const char*)malloc(FILE_BUFFER_SIZE);
+	cursor = buffer;
+	start = buffer;
+	end = start + FILE_BUFFER_SIZE;
+    error = NoError;
 
-	stream->refill = (RefillFunc)refill_file;
-	stream->destroy = (DestroyFunc)destroy_file_stream;
+	_refill = (RefillFunc)refill_file;
+	_destroy = (DestroyFunc)destroy_file_stream;
 
-	stream->fd = open(filename, O_RDONLY);
+	fd = open(filename, O_RDONLY);
 
-	stream->refill(stream);
+	_refill(this);
 }
 
 static StreamError refill_socket(SocketStream* stream) {
@@ -123,10 +124,26 @@ void create_socket_stream(SocketStream* stream, int sock) {
 	stream->start = stream->buffer;
 	stream->end = stream->start + FILE_BUFFER_SIZE;
 
-	stream->refill = (RefillFunc)refill_socket;
-	stream->destroy = (DestroyFunc)destroy_socket_stream;
+	stream->_refill = (RefillFunc)refill_socket;
+	stream->_destroy = (DestroyFunc)destroy_socket_stream;
 
 	stream->sock = sock;
 
-	stream->refill(stream);
+	stream->_refill(stream);
 }
+
+#include <stdio.h>
+
+int main() {
+    FileStream stream("test.txt");
+
+    while(stream.error != 1) {
+       printf("%s\n", stream.cursor);
+       stream.refill();
+    }
+
+    stream.destroy();
+
+    return 0;
+}
+

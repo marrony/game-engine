@@ -24,18 +24,29 @@ struct Stream {
 
 	StreamError error;
 
-	RefillFunc refill;
-	DestroyFunc destroy;
+	RefillFunc _refill;
+	DestroyFunc _destroy;
+
+	StreamError refill() { return _refill(this); }
+	void destroy() { _destroy(this); }
 };
 
 struct FileStream : public Stream {
 	const char* buffer;
 	int fd;
+
+	FileStream(const char* filename);
 };
 
 struct SocketStream : public Stream {
 	const char* buffer;
 	int sock;
+    
+	SocketStream(int sock);
+};
+
+struct MemoryStream : public Stream {
+	MemoryStream(const char* buffer, size_t size);
 };
 
 void create_memory_stream(Stream* stream, const char* buffer, size_t size);

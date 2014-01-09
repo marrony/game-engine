@@ -5,10 +5,11 @@
  *      Author: mneris
  */
 #include <vector>
+#include <stack>
 #include <string>
 
 #include <float.h>
-#include "vector3.h"
+#include "engine/vector3.h"
 
 struct Ray {
 	Vector3 origin;
@@ -19,46 +20,66 @@ struct Intersection {
 	float distance;
 	Vector3 point;
 	Vector3 normal;
-	int material;
+	size_t material;
 };
 
-struct Material {
-	Vector3 color;
-	float specularity;
-	float reflection;
+#define MAX_MATERIAL 1000
+struct Materials {
+    static int number_of_materials;
+	static Vector3 color[MAX_MATERIAL];
+	static float specularity[MAX_MATERIAL];
+	static float reflection[MAX_MATERIAL];
 };
 
-struct Sphere {
-	Vector3 position;
-	float radius;
-	int material;
+int Materials::number_of_materials = 0;
+Vector3 Materials::color[MAX_MATERIAL];
+float Materials::specularity[MAX_MATERIAL];
+float Materials::reflection[MAX_MATERIAL];
+
+//struct Sphere {
+//	Vector3 position;
+//	float radius;
+//	size_t material;
+//};
+
+//struct Plane {
+//	Vector3 normal;
+//	float d;
+//	size_t material;
+//};
+
+#define MAX_LIGHTS 100
+
+struct Lights {
+    static int number_of_lights;
+	static Vector3 position[MAX_LIGHTS];
+	static Vector3 color[MAX_LIGHTS];
 };
 
-struct Plane {
-	Vector3 normal;
-	float d;
-	int material;
-};
+int Lights::number_of_lights = 0;
+Vector3 Lights::position[];
+Vector3 Lights::color[];
 
-struct Light {
-	Vector3 position;
-	Vector3 color;
-};
+#define MAX_SPHERES 1000
 
 struct Spheres {
-	static int intersect(const Sphere sphere[], int spheres_count, const Ray& ray, Intersection intersections[]) {
+    static int number_of_spheres;
+	static Vector3 position[MAX_SPHERES];
+	static float radius[MAX_SPHERES];
+	static size_t material[MAX_SPHERES];
+    
+    
+	static int intersect(const Vector3 position[], const float radius[], size_t material[], size_t spheres_count, const Ray& ray, Intersection* intersection) {
 		int outputs = 0;
 		float distance = FLT_MAX;
-		int index = -1;
+		size_t index = -1;
 
-		for(int i = 0; i < spheres_count; i++) {
-			int type = 0;
-
-			Vector3 diff = sphere[i].position - ray.origin;
+		for(size_t i = 0; i < spheres_count; i++) {
+			Vector3 diff = position[i] - ray.origin;
 			float dot = Vector3::dot(diff, diff);
 			float b = Vector3::dot(diff, ray.direction);
 
-			float disc = b*b - dot + sphere[i].radius*sphere[i].radius;
+			float disc = b*b - dot + radius[i]*radius[i];
 
 			if(disc > 0) {
 				float d = std::sqrt(disc);
@@ -83,29 +104,41 @@ struct Spheres {
 			}
 		}
 
-		if(index >= 0) {
-			intersections->distance = distance;
-			intersections->point = ray.origin + ray.direction*distance;
-			intersections->normal = (intersections->point - sphere[index].position).normalize();
-			intersections->material = sphere[index].material;
+		if(index != -1) {
+			intersection->distance = distance;
+			intersection->point = ray.origin + ray.direction*distance;
+			intersection->normal = (intersection->point - position[index]).normalize();
+			intersection->material = material[index];
 		}
 
 		return outputs > 0;
 	}
 };
 
+int Spheres::number_of_spheres = 0;
+Vector3 Spheres::position[MAX_SPHERES];
+float Spheres::radius[MAX_SPHERES];
+size_t Spheres::material[MAX_SPHERES];
+
+#define MAX_PLANES 10
+
 struct Planes {
-	static int intersect(const Plane plane[], int planes_count, const Ray& ray, Intersection intersections[]) {
+    static int number_of_planes;
+	static Vector3 normal[MAX_PLANES];
+	static float d[MAX_PLANES];
+	static size_t material[MAX_PLANES];
+    
+	static int intersect(const Vector3 normal[], const float dx[], const size_t material[], size_t planes_count, const Ray& ray, Intersection* intersection) {
 		int outputs = 0;
 		float distance = FLT_MAX;
-		int index = -1;
+		size_t index = -1;
 
-		for(int i = 0; i < planes_count; i++) {
-			float ndotr = Vector3::dot(plane[i].normal, ray.direction);
+		for(size_t i = 0; i < planes_count; i++) {
+			float ndotr = Vector3::dot(normal[i], ray.direction);
 
 			if(ndotr*ndotr > 0.001) {
-				float ndoto = Vector3::dot(plane[i].normal, ray.origin);
-				float d = -(ndoto + plane[i].d) / ndotr;
+				float ndoto = Vector3::dot(normal[i], ray.origin);
+				float d = -(ndoto + dx[i]) / ndotr;
 
 				if(d > 0 && d < distance) {
 					outputs++;
@@ -115,62 +148,68 @@ struct Planes {
 			}
 		}
 
-		if(index >= 0) {
-			intersections->distance = distance;
-			intersections->point = ray.origin + ray.direction*distance;
-			intersections->normal = plane[index].normal;
-			intersections->material = plane[index].material;
+		if(index != -1) {
+			intersection->distance = distance;
+			intersection->point = ray.origin + ray.direction*distance;
+			intersection->normal = normal[index];
+			intersection->material = material[index];
 		}
 
 		return outputs > 0;
 	}
 };
 
+int Planes::number_of_planes = 0;
+Vector3 Planes::normal[MAX_PLANES];
+float Planes::d[MAX_PLANES];
+size_t Planes::material[MAX_PLANES];
+
 class Scene {
-	std::vector<Material> materials;
-	std::vector<Sphere> spheres;
-	std::vector<Plane> planes;
-	std::vector<Light> lights;
+//	std::vector<Material> materials;
+//	std::vector<Sphere> spheres;
+//	std::vector<Plane> planes;
+//	std::vector<Light> lights;
 public:
 	void addSphere(const Vector3& position, float radius, const Vector3& color, float specurality, float reflection) {
-		spheres.push_back(Sphere());
-		spheres.back().position = position;
-		spheres.back().radius = radius;
-		spheres.back().material = materials.size();
-
-		materials.push_back(Material());
-		materials.back().color = color;
-		materials.back().specularity = specurality;
-		materials.back().reflection = reflection;
+        Spheres::position[Spheres::number_of_spheres] = position;
+        Spheres::radius[Spheres::number_of_spheres] = radius;
+        Spheres::material[Spheres::number_of_spheres] = Materials::number_of_materials;
+        Spheres::number_of_spheres++;
+        
+        Materials::color[Materials::number_of_materials] = color;
+        Materials::specularity[Materials::number_of_materials] = specurality;
+        Materials::reflection[Materials::number_of_materials] = reflection;
+        Materials::number_of_materials++;
 	}
 
 	void addPlane(const Vector3& v0, const Vector3& v1, const Vector3& v2, const Vector3& color, float specurality, float reflection) {
 		Vector3 v1v0 = v1 - v0;
 		Vector3 v2v0 = v2 - v0;
+        
+        Planes::normal[Planes::number_of_planes] = Vector3::cross(v1v0, v2v0).normalize();
+        Planes::d[Planes::number_of_planes] = -Vector3::dot(Planes::normal[Planes::number_of_planes], v0);
+        Planes::material[Planes::number_of_planes] = Materials::number_of_materials;
+        Planes::number_of_planes++;
 
-		planes.push_back(Plane());
-		planes.back().normal = Vector3::cross(v1v0, v2v0).normalize();
-		planes.back().d = -Vector3::dot(planes.back().normal, v0);
-		planes.back().material = materials.size();
-
-		materials.push_back(Material());
-		materials.back().color = color;
-		materials.back().specularity = specurality;
-		materials.back().reflection = reflection;
+        Materials::color[Materials::number_of_materials] = color;
+        Materials::specularity[Materials::number_of_materials] = specurality;
+        Materials::reflection[Materials::number_of_materials] = reflection;
+        Materials::number_of_materials++;
 	}
 
 	void addLight(const Vector3& position, const Vector3& color) {
-		lights.push_back(Light());
-		lights.back().position = position;
-		lights.back().color = color;
+        Lights::position[Lights::number_of_lights] = position;
+        Lights::color[Lights::number_of_lights] = color;
+        Lights::number_of_lights++;
 	}
 
 	int intersect(const Ray& ray, Intersection* output) {
-		int count = 0;
 		Intersection intersections[2];
-		count += Planes::intersect(planes.data(), planes.size(), ray, intersections+count);
-		count += Spheres::intersect(spheres.data(), spheres.size(), ray, intersections+count);
-
+        
+		int count = 0;
+		count += Spheres::intersect(Spheres::position, Spheres::radius, Spheres::material, Spheres::number_of_spheres, ray, intersections+count);
+		count += Planes::intersect(Planes::normal, Planes::d, Planes::material, Planes::number_of_planes, ray, intersections+count);
+        
 		Intersection* found = intersections;
 		for(int i = 1; i < count; i++) {
 			if(intersections[i].distance < found->distance)
@@ -180,79 +219,152 @@ public:
 		*output = *found;
 		return count > 0;
 	}
-
-	Vector3 traceRay(const Ray& ray, int depth = 0) {
+    
+	Vector3 traceRay_no_rec(const Ray& ray) {
 		Vector3 color = Vector3::make(0, 0, 0);
+        
+        float lastReflection = 1;
+        Ray lastRay = ray;
+        
+        for (int j = 0; lastReflection > 0 && j < 3; j++) {
+            Intersection intersection;
+            
+            if(intersect(lastRay, &intersection)) {
+                Vector3 pt = intersection.point;
+                Vector3 normal = intersection.normal;
+                size_t material = intersection.material;
+                
+                Vector3 light_color = Vector3::make(0, 0, 0);
+                
+                for(int i = 0; i < Lights::number_of_lights; i++) {
+                    Vector3 ldir = Lights::position[i] - pt;
+                    float distance_from_light = ldir.length();
 
-		Intersection intersection;
+                    if(distance_from_light <= 0.0001f)
+                        distance_from_light = 1.0f;
 
-		int count = intersect(ray, &intersection);
+                    ldir /= distance_from_light;
+                    
+                    Ray sray = {pt + ldir/10000.0f, ldir};
 
-		if(count) {
-			Vector3 pt = intersection.point;
-			Vector3 normal = intersection.normal;
-			Material* material = &materials[intersection.material];
+#if 1
+//                    if(intersect(sray, &intersection)) {
+//                        if(intersection.distance < distance_from_light)
+//                            continue;
+//                    }
+                    float in = 1;
+#else
+                    float in = !intersect(sray, &intersection);
+                    in += (1-in) * (intersection.distance >= distance_from_light);
+#endif
+                    float cosine = std::max(Vector3::dot(normal, ldir), 0.0f);
+                    
+                    light_color += Materials::color[material] * Lights::color[i] * cosine * in;
 
-			for(int i = 0; i < lights.size(); i++) {
-				Light* the_light = &lights[i];
-
-				Vector3 ldir = the_light->position - pt;
-				float len = ldir.length();
-
-				if(len <= 0.0001f)
-					len = 1.0f;
-
-				ldir /= len;
-
-				Ray sray = {pt + ldir/10000.0f, ldir};
-
-				if(intersect(sray, &intersection)) {
-					if(intersection.distance < len)
-						continue;
-				}
-
-				float cosine = Vector3::dot(normal, ldir);
-				if(cosine < 0)
-					cosine = 0;
-
-				color += material->color * the_light->color * cosine;
-
-				if(material->specularity > 0) {
-					Vector3 vr = ldir - normal*cosine*2.0f;
-
-					float cosSigma = Vector3::dot(ray.direction, vr);
-
-					if(cosSigma > 0) {
-						float s = material->specularity * std::pow(cosSigma, 64.0f);
-						color += the_light->color * s;
-					}
-				}
-
-				if(material->reflection > 0 && depth < 3) {
-					float rdotn = Vector3::dot(ray.direction, normal);
-
-					Ray rr = {
-							pt, ray.direction - 2.0f * rdotn * normal
-					};
-
-					rr.origin += rr.direction / 10000.0f;
-
-					Vector3 rcolor = traceRay(rr, depth + 1);
-
-					color *= 1.0f - material->reflection;
-					color += rcolor * material->reflection;
-				}
-			}
-		}
-
-		if(color.x > 1) color.x = 1;
-		if(color.y > 1) color.y = 1;
-		if(color.z > 1) color.z = 1;
-
+                    Vector3 vr = ldir - normal * cosine * 2.0f;
+                        
+                    float cosSigma = std::max(Vector3::dot(lastRay.direction, vr), 0.0f);
+                        
+                    float s = Materials::specularity[material] * std::pow(cosSigma, 64.0f);
+                    light_color += Lights::color[i] * s * in;
+                }
+                
+//                if(light_color > 1) light_color.x = 1;
+//                if(light_color > 1) light_color.y = 1;
+//                if(light_color > 1) light_color.z = 1;
+                
+                color = Vector3::lerp(color, light_color, lastReflection);
+                
+                float rdotn = Vector3::dot(lastRay.direction, normal);
+                Vector3 rdir = lastRay.direction - 2.0f * rdotn * normal;
+                
+                Ray rray = {pt + rdir/10000.0f, rdir};
+                
+                lastRay = rray;
+                lastReflection = Materials::reflection[material];
+            }
+        }
+        
+        if(color.x > 1) color.x = 1;
+        if(color.y > 1) color.y = 1;
+        if(color.z > 1) color.z = 1;
+        
 		return color;
 	}
 
-	std::vector<unsigned char> traceScene(int screen_width, int screen_height) {
+	Vector3 traceRay(const Ray& ray, int depth = 0) {
+		Vector3 color = Vector3::make(0, 0, 0);
+        
+		Intersection intersection;
+        
+		if(intersect(ray, &intersection)) {
+			Vector3 pt = intersection.point;
+			Vector3 normal = intersection.normal;
+			size_t material = intersection.material;
+            
+			for(int i = 0; i < Lights::number_of_lights; i++) {
+				Vector3 ldir = Lights::position[i] - pt;
+				float distance_from_light = ldir.length();
+                
+				if(distance_from_light <= 0.0001f)
+					distance_from_light = 1.0f;
+                
+				ldir /= distance_from_light;
+                
+				Ray sray = {pt + ldir/10000.0f, ldir};
+                
+//				if(intersect(sray, &intersection)) {
+//					if(intersection.distance < distance_from_light)
+//						continue;
+//				}
+                
+				float cosine = std::max(Vector3::dot(normal, ldir), 0.0f);
+                
+				color += Materials::color[material] * Lights::color[i] * cosine;
+                
+				if(Materials::specularity[material] > 0) {
+					Vector3 vr = ldir - normal * cosine * 2.0f;
+                    
+					float cosSigma = Vector3::dot(ray.direction, vr);
+                    
+					if(cosSigma > 0) {
+						float s = Materials::specularity[material] * std::pow(cosSigma, 64.0f);
+						color += Lights::color[i] * s;
+					}
+				}
+                
+//                float in = 1;
+//                float cosine = std::max(Vector3::dot(normal, ldir), 0.0f);
+//                
+//                color += Materials::color[material] * Lights::color[i] * cosine * in;
+//                
+//                Vector3 vr = ldir - normal * cosine * 2.0f;
+//                
+//                float cosSigma = std::max(Vector3::dot(ray.direction, vr), 0.0f);
+//                
+//                float s = Materials::specularity[material] * std::pow(cosSigma, 64.0f);
+//                color += Lights::color[i] * s * in;
+			}
+            
+            if(Materials::reflection[material] > 0 && depth < 3) {
+                float rdotn = Vector3::dot(ray.direction, normal);
+                Vector3 rdir = ray.direction - 2.0f * rdotn * normal;
+                
+                Ray rr = {pt + rdir/10000.0f, rdir};
+                
+                Vector3 rcolor = traceRay(rr, depth + 1);
+                color = Vector3::lerp(color, rcolor, Materials::reflection[material]);
+            }
+		}
+        
+		if(color.x > 1) color.x = 1;
+		if(color.y > 1) color.y = 1;
+		if(color.z > 1) color.z = 1;
+        
+		return color;
+	}
+	
+    std::vector<unsigned char> traceScene(int screen_width, int screen_height) {
 		std::vector<unsigned char> pixels(3*screen_width*screen_height);
 
 		Vector3 pov = Vector3::make(0, 0, -4);
@@ -307,6 +419,16 @@ int main(int argc, char* argv[]) {
 			0.0f,
 			0.0f
 	);
+    
+    for (int i = 0; i < 800; i++) {
+        scene.addSphere(
+                        Vector3::make(1, -i, 0),
+                        0.5f,
+                        Vector3::make(1.0f, 0.3f, 0.3f),
+                        0.5f,
+                        0.09f
+        );
+    }
 
 	scene.addLight(Vector3::make(+4, -1, -2), Vector3::make(1.0f, 0.5f, 0.5f));
 	scene.addLight(Vector3::make(-1, -1, -2), Vector3::make(0.3f, 0.3f, 0.3f));

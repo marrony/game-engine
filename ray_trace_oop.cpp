@@ -8,7 +8,7 @@
 #include <string>
 
 #include <float.h>
-#include "vector3.h"
+#include "engine/vector3.h"
 
 struct Ray {
 	Vector3 origin;
@@ -190,20 +190,20 @@ public:
 			ldir /= len;
 
 			Ray sray = {pt + ldir/10000.0f, ldir};
-			bool shadow = false;
-
-			for(int j = 0; j < objects.size(); j++) {
-				Shape* test_obj = objects[j];
-				Intersection res = test_obj->intersect(sray);
-
-				if(res.type && res.distance < len) {
-					shadow = true;
-					break;
-				}
-			}
-
-			if(shadow)
-				continue;
+//			bool shadow = false;
+//
+//			for(int j = 0; j < objects.size(); j++) {
+//				Shape* test_obj = objects[j];
+//				Intersection res = test_obj->intersect(sray);
+//
+//				if(res.type && res.distance < len) {
+//					shadow = true;
+//					break;
+//				}
+//			}
+//
+//			if(shadow)
+//				continue;
 
 			float cosine = Vector3::dot(normal, ldir);
 			if(cosine < 0)
@@ -221,23 +221,22 @@ public:
 					color += the_light->getColor() * s;
 				}
 			}
-
-			if(obj->getReflection() > 0 && depth < 3) {
-				float rdotn = Vector3::dot(ray.direction, normal);
-
-				Ray rr = {
-						pt, ray.direction - 2.0f * rdotn * normal
-				};
-
-				rr.origin += rr.direction / 10000.0f;
-
-				Vector3 rcolor = traceRay(rr, depth + 1);
-
-				color *= 1.0f - obj->getReflection();
-				color += rcolor * obj->getReflection();
-			}
 		}
-
+        
+        if(obj->getReflection() > 0 && depth < 4) {
+            float rdotn = Vector3::dot(ray.direction, normal);
+            
+            Ray rr = {
+                pt, ray.direction - 2.0f * rdotn * normal
+            };
+            
+            rr.origin += rr.direction / 10000.0f;
+            
+            Vector3 rcolor = traceRay(rr, depth + 1);
+            
+            color = Vector3::lerp(color, rcolor, obj->getReflection());
+        }
+        
 		if(color.x > 1) color.x = 1;
 		if(color.y > 1) color.y = 1;
 		if(color.z > 1) color.z = 1;
@@ -288,6 +287,11 @@ int main(int argc, char* argv[]) {
 	Shape* plane = scene.addObject(new Plane("Ground", v0, v1, v2));
 	plane->setMaterial(Vector3::make(0.3f, 0.3f, 0.3f), 0.0f, 0.0f);
 
+    for (int i = 0; i < 800; i++) {
+        Shape* shape = scene.addObject(new Sphere("sss", Vector3::make(1, -i, 0), 0.5f));
+        shape->setMaterial(Vector3::make(1.0f, 0.3f, 0.3f), 0.5f, 0.09f);
+    }
+    
 	scene.addLight(new Light(Vector3::make(+4, -1, -2), Vector3::make(1.0f, 0.5f, 0.5f)));
 	scene.addLight(new Light(Vector3::make(-1, -1, -2), Vector3::make(0.3f, 0.3f, 0.3f)));
 	scene.addLight(new Light(Vector3::make(+1, -6, -2), Vector3::make(0.4f, 0.4f, 0.4f)));

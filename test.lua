@@ -1,8 +1,8 @@
 --print("Hello World from Lua")
 
-print_c("Hello World from C\n")
+--print_c("Hello World from C\n")
 
-print(my_sin(1))
+--print(my_sin(1))
 
 local count = 0
 
@@ -27,3 +27,16 @@ function DerivedTeste:update()
 	Teste.update(self)
 	print(self.name, self.derived_attr, self.test)
 end
+
+t = Teste:new()
+--t:update()
+
+print(t['name'])
+
+d = DerivedTeste:new()
+d.test = 20
+
+print(t.test, d.test)
+
+--d:update()
+
