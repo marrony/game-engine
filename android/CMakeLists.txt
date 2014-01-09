@@ -11,7 +11,7 @@ set(LIBRARIES android EGL GLESv2 log native_app_glue)
 add_library(engine-android SHARED main.cpp)
 
 target_link_libraries(
-    engine-android engine_static json_static socket_static protocol_static
+    engine-android engine_static json_static socket_static protocol_static swap_chain_static
     ${LUA_LIBRARIES}
     ${OPENGL_LIBRARIES}
     ${GLEW_LIBRARY}

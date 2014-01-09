@@ -107,67 +107,15 @@ struct Vector3 {
 		return *this;
 	}
 
-	static INLINE Vector3 min() {
-		float m = -std::numeric_limits<float>::max();
-		Vector3 v = {m, m, m};
-		return v;
-	}
-
-	static INLINE Vector3 max() {
-		float m = +std::numeric_limits<float>::max();
-		Vector3 v = {m, m, m};
-		return v;
-	}
-
-	static INLINE Vector3 make(float x, float y, float z) {
-		Vector3 v = {x, y, z};
-		return v;
-	}
-
-	static INLINE Vector3 cross(const Vector3& v0, const Vector3& v1) {
-		/*
-		 * | i    j    j    |   +i*(v0.y*v1.z - v0.z*v1.y)   +i*(v0.y*v1.z - v0.z*v1.y)
-		 * | v0.x v0.y v0.z | = -j*(v0.x*v1.z - v0.z*v1.x) = +j*(v0.z*v1.x - v0.x*v1.z)
-		 * | v1.x v1.y v1.z |   +k*(v0.x*v1.y - v0.y*v1.x)   +k*(v0.x*v1.y - v0.y*v1.x)
-		 */
-		float newX = v0.y*v1.z - v0.z*v1.y;
-		float newY = v0.z*v1.x - v0.x*v1.z;
-		float newZ = v0.x*v1.y - v0.y*v1.x;
-
-		Vector3 v = {newX, newY, newZ};
-		return v;
-	}
-
-	static INLINE float dot(const Vector3& v0, const Vector3& v1) {
-		return v0.x*v1.x + v0.y*v1.y + v0.z*v1.z;
-	}
-
-	static INLINE Vector3 max(const Vector3& v0, const Vector3& v1) {
-		float x = std::max(v0.x, v1.x);
-		float y = std::max(v0.y, v1.y);
-		float z = std::max(v0.z, v1.z);
-
-		Vector3 v = {x, y, z};
-		return v;
-	}
-
-	static INLINE Vector3 min(const Vector3& v0, const Vector3& v1) {
-		float x = std::min(v0.x, v1.x);
-		float y = std::min(v0.y, v1.y);
-		float z = std::min(v0.z, v1.z);
-
-		Vector3 v = {x, y, z};
-		return v;
-	}
-
-	static INLINE Vector3 abs(const Vector3& v) {
-		float x = std::abs(v.x);
-		float y = std::abs(v.y);
-		float z = std::abs(v.z);
-
-		Vector3 out = {x, y, z};
-		return out;
-	}
+	static INLINE Vector3 min();
+	static INLINE Vector3 max();
+	static INLINE Vector3 make(float x, float y, float z);
+	static INLINE Vector3 cross(const Vector3& v0, const Vector3& v1);
+	static INLINE float dot(const Vector3& v0, const Vector3& v1);
+	static INLINE Vector3 max(const Vector3& v0, const Vector3& v1);
+	static INLINE Vector3 min(const Vector3& v0, const Vector3& v1);
+	static INLINE Vector3 abs(const Vector3& v);
+    static INLINE Vector3 lerp(const Vector3& v0, const Vector3& v1, float alpha);
 };
 
 INLINE bool operator>(const Vector3& v0, const Vector3& v1) {
@@ -245,5 +193,72 @@ INLINE Vector3 operator-(const Vector3& v0, const Vector3& v1) {
 	Vector3 out = {v0.x-v1.x, v0.y-v1.y, v0.z-v1.z};
 	return out;
 }
+
+INLINE Vector3 Vector3::min() {
+    float m = -std::numeric_limits<float>::max();
+    Vector3 out = {m, m, m};
+    return out;
+}
+
+INLINE Vector3 Vector3::max() {
+    float m = +std::numeric_limits<float>::max();
+    Vector3 out = {m, m, m};
+    return out;
+}
+
+INLINE Vector3 Vector3::make(float x, float y, float z) {
+    Vector3 out = {x, y, z};
+    return out;
+}
+
+INLINE Vector3 Vector3::cross(const Vector3& v0, const Vector3& v1) {
+    /*
+     * | i    j    j    |   +i*(v0.y*v1.z - v0.z*v1.y)   +i*(v0.y*v1.z - v0.z*v1.y)
+     * | v0.x v0.y v0.z | = -j*(v0.x*v1.z - v0.z*v1.x) = +j*(v0.z*v1.x - v0.x*v1.z)
+     * | v1.x v1.y v1.z |   +k*(v0.x*v1.y - v0.y*v1.x)   +k*(v0.x*v1.y - v0.y*v1.x)
+     */
+    float newX = v0.y*v1.z - v0.z*v1.y;
+    float newY = v0.z*v1.x - v0.x*v1.z;
+    float newZ = v0.x*v1.y - v0.y*v1.x;
+    
+    Vector3 out = {newX, newY, newZ};
+    return out;
+}
+
+INLINE float Vector3::dot(const Vector3& v0, const Vector3& v1) {
+    return v0.x*v1.x + v0.y*v1.y + v0.z*v1.z;
+}
+
+INLINE Vector3 Vector3::max(const Vector3& v0, const Vector3& v1) {
+    float x = std::max(v0.x, v1.x);
+    float y = std::max(v0.y, v1.y);
+    float z = std::max(v0.z, v1.z);
+    
+    Vector3 out = {x, y, z};
+    return out;
+}
+
+INLINE Vector3 Vector3::min(const Vector3& v0, const Vector3& v1) {
+    float x = std::min(v0.x, v1.x);
+    float y = std::min(v0.y, v1.y);
+    float z = std::min(v0.z, v1.z);
+    
+    Vector3 out = {x, y, z};
+    return out;
+}
+
+INLINE Vector3 Vector3::abs(const Vector3& v) {
+    float x = std::abs(v.x);
+    float y = std::abs(v.y);
+    float z = std::abs(v.z);
+    
+    Vector3 out = {x, y, z};
+    return out;
+}
+
+INLINE Vector3 Vector3::lerp(const Vector3& v0, const Vector3& v1, float alpha) {
+    return v0*(1-alpha) + v1*alpha;
+}
+
 
 #endif /* VECTOR3_H_ */

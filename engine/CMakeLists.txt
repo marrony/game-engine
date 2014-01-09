@@ -2,37 +2,22 @@ cmake_minimum_required(VERSION 2.6)
 
 project(engine)
 
-if(NOT ANDROID)
-    find_package(OpenGL REQUIRED)
-    find_package(GLEW REQUIRED)
-    
-    include_directories(${OPENGL_INCLUDE_DIRS})
-    
-    if(GLEW_FOUND)
-        include_directories(${GLEW_INCLUDE_PATH})
-    endif()
-    
-else()
-    include_directories(${ANDROID_NDK}/sources/android/native_app_glue)
-    include_directories(${ANDROID_NDK}/sources/android)
-endif()
-
 add_library(socket_static STATIC socket.cpp)
 add_library(json_static STATIC json.cpp)
 add_library(engine_static STATIC engine.cpp shader.cpp task.cpp entity.cpp scene_graph.cpp render.cpp)
 add_library(stream_static STATIC stream.cpp)
 add_library(protocol_static STATIC protocol.cpp)
 
-if(UNIX)
-    if(APPLE)
+if(DEFINED UNIX)
+    if(DEFINED APPLE)
         set(SWAP_CHAIN_SRC ${SWAP_CHAIN_SRC} swap_chain_mac.cpp swap_chain_mac.mm)
-        set(LIBRARIES ${LIBRARIES} "-framework Cocoa")
-    elseif(ANDROID)
+        set(LIBRARIES ${LIBRARIES} "-framework Cocoa -framework Opengl -lobjc")
+    elseif(DEFINED ANDROID)
         set(SWAP_CHAIN_SRC ${SWAP_CHAIN_SRC} swap_chain_android.cpp)
     else()
         set(SWAP_CHAIN_SRC ${SWAP_CHAIN_SRC} swap_chain_x11.cpp)
     endif()
-elseif(WIN32)
+elseif()
     set(SWAP_CHAIN_SRC ${SWAP_CHAIN_SRC} swap_chain_win32.cpp)
 endif()
 

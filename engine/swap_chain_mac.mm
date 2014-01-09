@@ -81,7 +81,7 @@ extern "C" void swap_chain_create(SwapChain* swap_chain, WindowID parent, int wi
 
 	unsigned int styleMask = NSTitledWindowMask | NSClosableWindowMask | NSMiniaturizableWindowMask | NSResizableWindowMask;
 
-	NSRect frame = NSMakeRect(0, 0, 200, 200);
+	NSRect frame = NSMakeRect(0, 0, width, height);
 	NSWindow* window  = [[NSWindow alloc] initWithContentRect: frame
 	                    styleMask: styleMask
 	                    backing: NSBackingStoreBuffered
@@ -100,6 +100,8 @@ extern "C" void swap_chain_create(SwapChain* swap_chain, WindowID parent, int wi
 	[NSApp activateIgnoringOtherApps: YES];
 	
 	[pool release];
+	
+	glewInit();
 	
 	swap_chain->window = window;
 	swap_chain->view = view;

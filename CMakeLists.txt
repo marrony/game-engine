@@ -1,8 +1,23 @@
 cmake_minimum_required(VERSION 2.6)
 
-project(x11-win32)
+project(x11-win32 CXX)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
+
+if(NOT ANDROID)
+    find_package(OpenGL REQUIRED)
+    find_package(GLEW REQUIRED)
+    
+    include_directories(${OPENGL_INCLUDE_DIRS})
+    
+    if(GLEW_FOUND)
+        include_directories(${GLEW_INCLUDE_PATH})
+    endif()
+    
+else()
+    include_directories(${ANDROID_NDK}/sources/android/native_app_glue)
+    include_directories(${ANDROID_NDK}/sources/android)
+endif()
 
 if(UNIX AND NOT DEFINED ANDROID)
    if(APPLE)
@@ -66,10 +81,6 @@ set(LUA_LIBRARIES lua_static)
 add_subdirectory(engine)
 include_directories(engine)
 
-if(NOT ANDROID)
-   add_subdirectory(tool)
-endif(NOT ANDROID)
-
 if(ANDROID)
    add_subdirectory(android)
 endif(ANDROID)
@@ -77,10 +88,26 @@ endif(ANDROID)
 file(GLOB solver_srcs solver/*.cpp)
 
 #install(TARGETS prog DESTINATION bin)
-add_executable(solver-spike ${solver_srcs})
+#add_executable(solver-spike ${solver_srcs})
 
 add_executable(lua-tutorial tutorial.cpp)
 target_link_libraries(lua-tutorial ${LUA_LIBRARIES})
 #add_dependencies(lua-tutorial luajit)
 
-add_executable(spikes spikes.cpp)
+#add_executable(spikes spikes.cpp)
+
+if(NOT ANDROID)
+add_executable(swap_chain_test MACOSX_BUNDLE swap_chain_test.cpp)
+target_link_libraries(
+    swap_chain_test
+    swap_chain_static
+    ${OPENGL_LIBRARIES}
+    ${GLEW_LIBRARY}
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${LIBRARIES}
+    "-framework Cocoa -framework Opengl -lobjc"
+)
+endif(NOT ANDROID)
+
+add_executable(ray_trace_oop ray_trace_oop.cpp)
+add_executable(ray_trace_dod ray_trace_dod.cpp)

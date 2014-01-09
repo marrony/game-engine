@@ -14,7 +14,7 @@ endif()
 
 if(UNIX)
     if(APPLE)
-        set(TOOL_SRC ${TOOL_SRC} app_mac.cpp app_mac.m)
+        set(TOOL_SRC ${TOOL_SRC} app_mac.cpp)
     else()
         set(TOOL_SRC ${TOOL_SRC} app_x11.cpp)
     endif()

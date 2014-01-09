@@ -6,6 +6,7 @@
  */
 
 #include "task.h"
+#include <stdlib.h>
 
 struct Task {
 	TaskId id;
